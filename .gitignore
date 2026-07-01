@@ -1,0 +1,5 @@
+node_modules
+luxrides/backend/.env
+.env
+npm-debug.log*
+.DS_Store
