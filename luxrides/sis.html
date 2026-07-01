@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Despacho LuxRides</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"/>
+  <script src="config.js"></script>
+  <script src="js/lux-core.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    :root{
+      --gold:#D4AF37;--gold-hover:#F3E5AB;
+      --green:#22C55E;--red:#EF4444;--blue:#3B82F6;
+      --bg:#0a0a0a;--card:#141414;--card2:#1a1a1a;
+      --border:rgba(255,255,255,0.10);--fg:#f0f0f0;--muted:rgba(255,255,255,0.45);
+    }
+    body{background:var(--bg);color:var(--fg);font-family:'Outfit',sans-serif;min-height:100vh;padding:20px;}
+    header{text-align:center;padding-bottom:18px;border-bottom:2px solid var(--gold);margin-bottom:24px;}
+    header h1{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:700;letter-spacing:0.18em;color:var(--gold);}
+    header p{font-size:0.7rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+    #status-bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:22px;}
+    .badge{font-size:0.72rem;letter-spacing:0.06em;padding:5px 14px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);transition:all .3s;}
+    .badge.ok{border-color:rgba(34,197,94,0.5);color:#86efac;background:rgba(34,197,94,0.10);}
+    .badge.warn{border-color:rgba(239,68,68,0.5);color:#fca5a5;background:rgba(239,68,68,0.10);}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+    @media(max-width:900px){.grid{grid-template-columns:1fr;}}
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;}
+    .panel-title{font-family:'Playfair Display',serif;color:var(--gold);font-size:1.1rem;font-weight:700;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+    .panel-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+    .btn-link-panel{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:rgba(59,130,246,0.18);color:#bfdbfe;border:1px solid rgba(59,130,246,0.45);border-radius:6px;padding:8px 10px;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all .2s;}
+    .btn-link-panel:hover{background:rgba(59,130,246,0.28);}
+    .btn-link-panel.btn-gold{background:rgba(212,175,55,0.18);color:#f5d57b;border-color:rgba(212,175,55,0.45);}
+    .btn-link-panel.btn-gold:hover{background:rgba(212,175,55,0.28);}
+    .btn-link-panel.btn-danger{background:rgba(239,68,68,0.18);color:#fecaca;border-color:rgba(239,68,68,0.45);}
+    .btn-link-panel.btn-danger:hover{background:rgba(239,68,68,0.28);}
+    .sel-filter{min-width:180px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:'Outfit',sans-serif;font-size:0.82rem;outline:none;}
+    .sel-filter:focus{border-color:var(--gold);}
+    .quick-form{display:none;background:rgba(255,255,255,0.03);border:1px dashed var(--border);border-radius:10px;padding:10px;margin-bottom:12px;}
+    .quick-row{display:flex;gap:8px;flex-wrap:wrap;}
+    .quick-row input{flex:1;min-width:120px;background:#0f0f0f;color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:9px 10px;font-family:'Outfit',sans-serif;font-size:0.84rem;outline:none;}
+    .quick-row input:focus{border-color:var(--gold);}
+    .count{background:var(--gold);color:#050505;font-family:'Outfit',sans-serif;font-size:0.72rem;font-weight:700;padding:2px 7px;border-radius:999px;}
+    .tarjeta{background:var(--card2);border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:8px;padding:14px;margin-bottom:12px;}
+    .tarjeta p{font-size:0.85rem;color:var(--muted);margin:3px 0;}
+    .tarjeta p b{color:var(--fg);}
+    .tarjeta .precio{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--gold);margin:8px 0;}
+    .tarjeta hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
+    .assign-row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;}
+    .assign-row label{font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);padding-top:9px;}
+    select.sel-chofer{flex:1;min-width:140px;background:var(--bg);color:var(--fg);border:1px solid var(--border);padding:8px 10px;border-radius:6px;font-family:'Outfit',sans-serif;font-size:0.85rem;outline:none;transition:border-color .2s;cursor:pointer;}
+    select.sel-chofer:focus{border-color:var(--gold);}
+    select.sel-chofer option{background:#1a1a1a;}
+    .csd-wrap{position:relative;flex:1;min-width:160px;}
+    .csd-input{width:100%;padding:8px 10px;background:#0f0f0f;border:1px solid var(--border);color:var(--fg);border-radius:6px;font-family:'Outfit',sans-serif;font-size:.85rem;outline:none;box-sizing:border-box;transition:border-color .2s;}
+    .csd-input:focus{border-color:var(--gold);}
+    .csd-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1a1a1a;border:1px solid var(--gold);border-radius:8px;max-height:200px;overflow-y:auto;z-index:8000;display:none;box-shadow:0 8px 24px rgba(0,0,0,.6);}
+    .csd-list.open{display:block;}
+    .csd-item{display:flex;align-items:center;gap:8px;padding:9px 11px;cursor:pointer;font-size:.84rem;border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s;}
+    .csd-item:last-child{border-bottom:none;}
+    .csd-item:hover,.csd-item.sel{background:rgba(212,175,55,.14);color:var(--gold);}
+    .btn-despachar{background:var(--gold);color:#050505;border:none;padding:9px 16px;border-radius:6px;font-family:'Outfit',sans-serif;font-size:0.875rem;font-weight:700;cursor:pointer;transition:background .2s;white-space:nowrap;}
+    .btn-despachar:hover{background:var(--gold-hover);}
+    .btn-despachar:disabled{opacity:0.45;cursor:not-allowed;}
+    .chofer-card{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;}
+    .chofer-avatar{width:42px;height:42px;border-radius:50%;background:rgba(212,175,55,0.15);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+    .chofer-info{flex:1;}
+    .chofer-nombre{font-weight:600;font-size:0.95rem;}
+    .chofer-id{font-size:0.72rem;color:var(--muted);}
+    .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;}
+    .dot.libre{background:var(--green);}
+    .dot.ocupado{background:var(--red);}
+    .dot.desconectado{background:var(--muted);}
+    .chofer-estado{font-size:0.78rem;margin-top:3px;}
+    .chofer-hotel{font-size:0.75rem;color:#fde68a;margin-top:4px;}
+    .viaje-actual{font-size:0.75rem;color:var(--muted);margin-top:4px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .chofer-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+    .btn-small{background:rgba(212,175,55,0.16);color:var(--gold);border:1px solid rgba(212,175,55,0.45);border-radius:6px;padding:6px 10px;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all .2s;}
+    .btn-small:hover{background:rgba(212,175,55,0.26);}
+    .monitor-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;}
+    @media(max-width:1000px){.monitor-grid{grid-template-columns:1fr;}}
+    #map-choferes{height:360px;border-radius:10px;border:1px solid var(--border);background:#111;position:relative;overflow:hidden;}
+    #map-choferes .gm-style-cc{display:none!important;}
+    .btn-despachar,.btn-small,.btn-link-panel{transition:transform .25s cubic-bezier(.4,0,.2,1),background .25s ease-in-out,box-shadow .25s ease-in-out!important;}
+    .btn-despachar:hover:not(:disabled),.btn-small:hover,.btn-link-panel:hover{transform:translateY(-1px);}
+    .btn-despachar:active:not(:disabled),.btn-small:active,.btn-link-panel:active{transform:scale(.98);}
+    .tarjeta{transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s ease-in-out;}
+    .tarjeta:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.25);}
+    .chofer-card{transition:transform .25s cubic-bezier(.4,0,.2,1),border-color .25s ease-in-out;}
+    .chofer-card:hover{transform:translateX(2px);}
+    .chofer-avatar{transition:transform .25s cubic-bezier(.4,0,.2,1);}
+    .chofer-card:hover .chofer-avatar{transform:scale(1.05);}
+    .pay-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+    .pay-select{flex:1;min-width:180px;background:#0f0f0f;color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;}
+    .pay-total{font-size:0.84rem;color:#86efac;border:1px solid rgba(34,197,94,0.4);background:rgba(34,197,94,0.12);padding:6px 10px;border-radius:999px;}
+    .history-list{max-height:320px;overflow:auto;padding-right:4px;}
+    .history-item{background:var(--card2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.82rem;color:var(--muted);}
+    .history-item b{color:var(--fg);}
+    .history-empty{color:var(--muted);font-size:0.86rem;padding:8px 2px;}
+    .totals-box{margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+    .totals-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+    .totals-summary{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+    .totals-chip{font-size:0.84rem;color:#86efac;border:1px solid rgba(34,197,94,0.4);background:rgba(34,197,94,0.12);padding:7px 11px;border-radius:999px;}
+    .totals-list{max-height:240px;overflow:auto;padding-right:4px;}
+    .totals-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card2);border:1px solid var(--border);border-left:3px solid rgba(34,197,94,0.75);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+    .totals-item strong{display:block;color:var(--fg);font-size:0.9rem;}
+    .totals-item span{display:block;color:var(--muted);font-size:0.76rem;margin-top:2px;}
+    .totals-amount{font-weight:700;color:#86efac;white-space:nowrap;}
+    #modal-vehiculo{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.72);align-items:center;justify-content:center;}
+    #modal-vehiculo.open{display:flex;}
+    .modal-vehiculo-card{background:#1a1a1a;border:1.5px solid var(--gold);border-radius:16px;padding:26px 22px;width:92%;max-width:420px;position:relative;overflow-y:auto;max-height:90vh;}
+    .modal-vehiculo-card h3{font-family:'Playfair Display',serif;color:var(--gold);font-size:1.15rem;margin-bottom:16px;}
+    .modal-vehiculo-card label{font-size:.7rem;text-transform:uppercase;letter-spacing:.15em;color:var(--muted);display:block;margin-bottom:6px;margin-top:12px;}
+    .modal-vehiculo-card input,.modal-vehiculo-card select{width:100%;padding:10px 12px;background:#0f0f0f;border:1px solid var(--border);color:var(--fg);border-radius:7px;font-family:'Outfit',sans-serif;font-size:.9rem;outline:none;box-sizing:border-box;}
+    .modal-vehiculo-card input:focus,.modal-vehiculo-card select:focus{border-color:var(--gold);}
+    .tipo-vehiculo-row{display:flex;gap:10px;margin-bottom:4px;}
+    .tipo-btn{flex:1;padding:14px 8px;border-radius:10px;border:2px solid var(--border);background:#0f0f0f;color:var(--muted);font-size:1.5rem;text-align:center;cursor:pointer;transition:all .2s;}
+    .tipo-btn.activo{border-color:var(--gold);background:rgba(212,175,55,.12);color:var(--gold);}
+    .tipo-btn span{display:block;font-size:.72rem;font-family:'Outfit',sans-serif;margin-top:4px;}
+    .modal-vehiculo-actions{display:flex;gap:10px;margin-top:18px;}
+    .btn-guardar-vehiculo{flex:1;padding:12px;background:var(--gold);color:#050505;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;}
+    .btn-cancelar-vehiculo{flex:0 0 auto;padding:12px 16px;background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.4);border-radius:8px;cursor:pointer;font-family:'Outfit',sans-serif;}
+    .chofer-vehiculo{font-size:.74rem;color:#a3a3a3;margin-top:3px;}
+    .empty{text-align:center;padding:30px 10px;color:var(--muted);font-size:0.9rem;}
+    .empty span{font-size:2rem;display:block;margin-bottom:8px;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(40px);background:#1e1e1e;border:1px solid var(--gold);color:var(--gold);padding:12px 24px;border-radius:8px;font-size:0.9rem;font-weight:600;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:9999;white-space:nowrap;}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    #toast.error{border-color:var(--red);color:#fca5a5;}
+    #login-screen{display:flex;justify-content:center;align-items:center;height:100vh;position:fixed;inset:0;z-index:10000;background:radial-gradient(circle at top,#141414,#070707 55%);}
+    #login-screen.hidden{display:none;}
+    .login-card{background:var(--card);padding:34px;border-radius:20px;border:2px solid var(--gold);width:360px;box-shadow:0 12px 36px rgba(0,0,0,.45);}
+    .login-card h2{color:var(--gold);font-size:1.7rem;letter-spacing:2px;text-align:center;font-family:'Playfair Display',serif;}
+    .login-card p{text-align:center;color:var(--muted);font-size:.78rem;margin:8px 0 18px;letter-spacing:.18em;text-transform:uppercase;}
+    .login-card input{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #303030;background:#0d0d0d;color:#fff;text-align:center;font-size:.95rem;font-family:'Outfit',sans-serif;}
+    .login-card input:focus{outline:none;border-color:var(--gold);}
+    .login-card button{width:100%;padding:12px;background:var(--gold);color:#050505;border:none;border-radius:10px;font-weight:700;cursor:pointer;margin-top:8px;font-family:'Outfit',sans-serif;font-size:1rem;}
+    .login-card button:hover{background:var(--gold-hover);}
+    .login-error{color:#fca5a5;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);padding:8px 10px;border-radius:8px;font-size:.82rem;margin-top:8px;display:none;text-align:center;}
+    .marcador-cliente-mapa{width:18px;height:18px;border-radius:50%;cursor:pointer;border:3px solid rgba(255,255,255,0.9);box-shadow:0 0 14px rgba(34,197,94,0.7);}
+    .marcador-chofer-mapa{width:15px;height:15px;border-radius:50%;cursor:pointer;border:3px solid rgba(255,255,255,0.9);}
+    .map-label{font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.95),0 0 12px rgba(0,0,0,.8);color:#fff;text-align:center;white-space:nowrap;pointer-events:none;padding:2px 6px;border-radius:4px;margin-bottom:4px;letter-spacing:0.03em;background:rgba(0,0,0,0.35);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
+    .map-marker-wrap{display:flex;flex-direction:column;align-items:center;pointer-events:none;}
+    .map-marker-wrap .marcador-chofer-mapa,.map-marker-wrap .marcador-cliente-mapa{pointer-events:auto;}
+    .notif-area{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+    .notif-toast{padding:12px 22px;border-radius:12px;background:rgba(10,10,10,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);font-size:.82rem;pointer-events:auto;animation:toastIn .35s ease-out;white-space:nowrap;}
+    @keyframes toastIn{from{opacity:0;transform:translateY(-12px) scale(.95);}to{opacity:1;transform:translateY(0) scale(1);}}
+    .notif-toast.ok{border-color:rgba(34,197,94,.4);box-shadow:0 0 20px rgba(34,197,94,.1);}
+    .notif-toast.err{border-color:rgba(239,68,68,.4);box-shadow:0 0 20px rgba(239,68,68,.1);}
+    #map-refresh-btn{position:absolute;bottom:10px;right:10px;z-index:10;background:var(--gold);color:#050505;border:none;padding:8px 14px;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);transition:background .2s;}
+    #map-refresh-btn:hover{background:var(--gold-hover);}
+    #mapa-timestamp{position:absolute;bottom:10px;left:10px;z-index:10;font-size:0.7rem;color:rgba(255,255,255,0.55);background:rgba(0,0,0,0.45);padding:4px 9px;border-radius:6px;pointer-events:none;letter-spacing:0.04em;}
+    @keyframes pulso-marker{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.7),0 0 10px rgba(239,68,68,0.4);}60%{box-shadow:0 0 0 9px rgba(239,68,68,0),0 0 18px rgba(239,68,68,0.15);}}
+    @keyframes pulso-camioneta{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,0.7),0 0 10px rgba(59,130,246,0.4);}60%{box-shadow:0 0 0 9px rgba(59,130,246,0),0 0 18px rgba(59,130,246,0.15);}}
+    @keyframes pulso-cliente{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.75),0 0 14px rgba(34,197,94,0.5);}60%{box-shadow:0 0 0 10px rgba(34,197,94,0),0 0 22px rgba(34,197,94,0.2);}}
+    .marcador-chofer-mapa.pulso-carro{animation:pulso-marker 2.2s ease-in-out infinite;}
+    .marcador-chofer-mapa.pulso-camioneta{animation:pulso-camioneta 2.2s ease-in-out infinite;}
+    .marcador-cliente-mapa{animation:pulso-cliente 2s ease-in-out infinite;}
+    .driver-info-badge{display:flex;align-items:center;gap:10px;background:rgba(212,175,55,0.07);border:1px solid rgba(212,175,55,0.25);border-radius:10px;padding:10px 12px;margin:8px 0;}
+    .driver-info-badge .dib-avatar{width:46px;height:46px;border-radius:50%;border:2px solid var(--gold);overflow:hidden;flex-shrink:0;background:rgba(212,175,55,0.12);display:flex;align-items:center;justify-content:center;font-size:1.3rem;}
+    .driver-info-badge .dib-avatar img{width:100%;height:100%;object-fit:cover;}
+    .driver-info-badge .dib-data{flex:1;min-width:0;}
+    .driver-info-badge .dib-name{font-weight:700;font-size:.9rem;color:var(--fg);}
+    .driver-info-badge .dib-vehicle{font-size:.74rem;color:var(--muted);margin-top:2px;}
+    .driver-info-badge .dib-stars{color:#fde68a;font-size:.8rem;margin-top:4px;letter-spacing:.06em;}
+    .driver-info-badge .dib-opinion{font-size:.72rem;color:var(--muted);font-style:italic;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;}
+    #chofer-live-panel{position:fixed;top:50%;right:20px;transform:translateY(-50%);width:310px;background:rgba(14,14,14,0.96);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1.5px solid var(--gold);border-radius:16px;padding:18px;z-index:8500;box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 0 1px rgba(212,175,55,.15);display:none;animation:panelSlideIn .3s ease-out;}
+    @keyframes panelSlideIn{from{opacity:0;transform:translateY(-50%) translateX(30px);}to{opacity:1;transform:translateY(-50%) translateX(0);}}
+    #chofer-live-panel .clp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+    #chofer-live-panel .clp-title{font-family:'Playfair Display',serif;color:var(--gold);font-size:1rem;font-weight:700;display:flex;align-items:center;gap:6px;}
+    #chofer-live-panel .clp-close{background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:2px 6px;border-radius:6px;transition:color .2s;}
+    #chofer-live-panel .clp-close:hover{color:#fff;}
+    #chofer-live-panel .clp-nombre{font-size:1.05rem;font-weight:700;color:var(--fg);margin-bottom:2px;}
+    #chofer-live-panel .clp-vehiculo{font-size:.78rem;color:var(--muted);margin-bottom:10px;}
+    #chofer-live-panel .clp-estado-badge{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:999px;margin-bottom:12px;}
+    #chofer-live-panel .clp-estado-badge.libre{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.4);}
+    #chofer-live-panel .clp-estado-badge.ocupado{background:rgba(234,179,8,.15);color:#fde68a;border:1px solid rgba(234,179,8,.4);}
+    #chofer-live-panel .clp-estado-badge.offline{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+    #chofer-live-panel .clp-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;font-size:.82rem;}
+    #chofer-live-panel .clp-row .clp-icon{font-size:1rem;flex-shrink:0;margin-top:1px;}
+    #chofer-live-panel .clp-row .clp-val{flex:1;color:var(--fg);line-height:1.4;}
+    #chofer-live-panel .clp-row .clp-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:1px;}
+    #chofer-live-panel .clp-coords{font-family:monospace;font-size:.78rem;color:rgba(212,175,55,.8);background:rgba(212,175,55,.07);padding:6px 10px;border-radius:8px;margin-bottom:10px;letter-spacing:.02em;}
+    #chofer-live-panel .clp-direccion{font-size:.82rem;color:var(--fg);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.45;}
+    #chofer-live-panel .clp-direccion.loading{color:var(--muted);font-style:italic;}
+    #chofer-live-panel .clp-viaje{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.35);border-radius:8px;padding:8px 10px;font-size:.8rem;margin-bottom:10px;color:#93c5fd;}
+    #chofer-live-panel .clp-ts{font-size:.7rem;color:var(--muted);text-align:right;margin-top:4px;}
+    #chofer-live-panel .clp-btn-centrar{width:100%;padding:9px;background:rgba(212,175,55,.18);color:var(--gold);border:1px solid rgba(212,175,55,.4);border-radius:8px;font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:background .2s;margin-top:6px;}
+    #chofer-live-panel .clp-btn-centrar:hover{background:rgba(212,175,55,.28);}
+    .clp-ping{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22C55E;animation:clp-blink 1.2s ease-in-out infinite;margin-right:4px;}
+    @keyframes clp-blink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.6);}50%{opacity:.6;box-shadow:0 0 0 5px rgba(34,197,94,0);}}
+
+    
+    .seccion-bloque{display:flex;align-items:center;gap:14px;margin:28px 0 14px;}
+    .seccion-bloque .sb-linea{flex:1;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);opacity:0.35;}
+    .seccion-bloque .sb-etiqueta{display:flex;align-items:center;gap:8px;padding:6px 18px;border:1px solid rgba(212,175,55,0.45);border-radius:999px;background:rgba(212,175,55,0.07);font-family:'Outfit',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(212,175,55,0.85);white-space:nowrap;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <h2>🛰️ DESPACHO</h2>
+    <p>LuxRides</p>
+    <input id="login-id" type="text" placeholder="ID de administrador" autocomplete="off"/>
+    <input id="login-pass" type="password" placeholder="Contraseña" autocomplete="current-password"/>
+    <button onclick="intentarLogin()">INGRESAR</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<div class="notif-area" id="notif-area"></div>
+
+<div id="app-content" style="display:none;">
+<header>
+  <h1>🛰️ DESPACHO LUXRIDES</h1>
+  <p>Solo el despachador puede asignar viajes</p>
+</header>
+
+<div id="status-bar">
+  <span id="badge-supabase" class="badge">Supabase: iniciando…</span>
+  <span id="badge-pendientes" class="badge">Pendientes: —</span>
+  <span id="badge-choferes" class="badge">Choferes: —</span>
+</div>
+
+<div class="seccion-bloque">
+  <div class="sb-linea"></div>
+  <div class="sb-etiqueta">📋 Reservas &amp; Clientes</div>
+  <div class="sb-linea"></div>
+</div>
+
+<div class="grid">
+  <div class="panel">
+    <div class="panel-title">
+      📱 Clientes Esperando
+      <span class="count" id="cnt-clientes">0</span>
+    </div>
+    <div class="panel-actions">
+      <button class="btn-link-panel btn-gold" onclick="refrescarReservas(this)">🔄 Refrescar</button>
+      <button class="btn-link-panel btn-danger" onclick="borrarClientesPendientesAdmin()">🗑️ Borrar pendientes</button>
+    </div>
+    <div id="lista-clientes">
+      <div class="empty"><span>⏳</span>Conectando con Supabase…</div>
+    </div>
+  </div>
+
+  <div class="panel" style="position:relative;">
+    <div class="seccion-bloque" style="margin-top:0;margin-bottom:14px;">
+      <div class="sb-linea"></div>
+      <div class="sb-etiqueta">👤 Admin &amp; Choferes</div>
+      <div class="sb-linea"></div>
+    </div>
+    <div class="panel-title">
+      🚕 Flota de Choferes
+      <span class="count" id="cnt-choferes">0</span>
+    </div>
+    <div class="panel-actions">
+      <button class="btn-link-panel btn-gold" onclick="toggleQuickChoferForm()">➕ Agregar chofer</button>
+      <button class="btn-link-panel btn-gold" onclick="abrirModalVehiculo(null)">🚗 Asignar vehículo</button>
+      <button class="btn-link-panel btn-danger" onclick="borrarChoferesAdmin()">🗑️ Borrar choferes</button>
+      <select id="filtro-hotel" class="sel-filter" onchange="aplicarFiltroHotel(this.value)">
+        <option value="TODOS">🏨 Todos los hoteles</option>
+      </select>
+    </div>
+    <div style="padding:0 0 8px;">
+      <input id="buscador-choferes" type="text" placeholder="🔍 Buscar por nombre, ID o vehículo…"
+        oninput="renderizarChoferes()"
+        style="width:100%;padding:9px 12px;background:#0f0f0f;border:1px solid var(--border);color:var(--fg);border-radius:8px;font-family:'Outfit',sans-serif;font-size:.88rem;outline:none;box-sizing:border-box;"/>
+    </div>
+    <div id="quick-chofer-form" class="quick-form">
+      <div class="quick-row">
+        <input id="nuevo-chofer-id" type="text" placeholder="ID chofer (ej: 009)"/>
+        <input id="nuevo-chofer-nombre" type="text" placeholder="Nombre del chofer"/>
+        <input id="nuevo-chofer-hotel" type="text" placeholder="Hotel (opcional)"/>
+        <button class="btn-small" onclick="confirmarNuevoChofer()">Confirmar</button>
+      </div>
+    </div>
+    <div id="lista-choferes">
+      <div class="empty"><span>📡</span>Monitoreando flota…</div>
+    </div>
+  </div>
+</div>
+
+<div class="seccion-bloque">
+  <div class="sb-linea"></div>
+  <div class="sb-etiqueta">🗺️ Mapa en Tiempo Real &amp; Pagos</div>
+  <div class="sb-linea"></div>
+</div>
+
+<div class="panel" style="margin-top:0;">
+  <div class="panel-title">🗺️ Monitoreo Activo y Pagos</div>
+  <div class="monitor-grid">
+    <div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <button class="btn-small" id="mapa-tab-todos" onclick="filtrarMapa('todos')" style="background:rgba(212,175,55,0.35);color:var(--gold);">🚦 Todos</button>
+        <button class="btn-small" id="mapa-tab-carro" onclick="filtrarMapa('carro')">🚗 Carros</button>
+        <button class="btn-small" id="mapa-tab-camioneta" onclick="filtrarMapa('camioneta')">🚙 Camionetas</button>
+        <button class="btn-small" id="btn-toggle-rutas" onclick="toggleRutasMapa()" style="margin-left:auto;">🗺️ Ocultar rutas</button>
+      </div>
+      <div id="map-choferes"></div>
+    </div>
+    <div>
+      <div class="pay-head">
+        <select id="pay-chofer-select" class="pay-select" onchange="cargarHistorialChofer(this.value)">
+          <option value="">Selecciona chofer</option>
+        </select>
+        <span class="pay-total" id="pay-total">Total: $0 MXN</span>
+        <button class="btn-small" onclick="borrarHistorialChoferAdmin()">🗑️ Borrar</button>
+      </div>
+      <div class="history-list" id="history-list">
+        <div class="history-empty">Elige un chofer para ver historial.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="totals-box">
+    <div class="totals-head">
+      <div class="panel-title" style="margin-bottom:0;">💰 Ganancias Totales</div>
+      <button class="btn-small" onclick="borrarPreciosTotalesAdmin()">🧹 Borrar precios</button>
+    </div>
+    <div class="totals-summary">
+      <span class="totals-chip" id="total-general-choferes">Total: $0 MXN</span>
+      <span class="totals-chip" id="total-viajes-choferes">Viajes: 0</span>
+      <span class="totals-chip" id="total-dia-choferes">Hoy: $0 MXN</span>
+    </div>
+    <div class="totals-list" id="lista-ganancias-choferes">
+      <div class="history-empty">Cargando…</div>
+    </div>
+  </div>
+</div>
+
+<div class="seccion-bloque">
+  <div class="sb-linea"></div>
+  <div class="sb-etiqueta">🚗 Flota de Vehículos</div>
+  <div class="sb-linea"></div>
+</div>
+
+<div class="panel" style="margin-top:0;">
+  <div class="panel-title">🚗 Flota de Vehículos</div>
+  <div style="display:flex;gap:12px;margin-bottom:12px;">
+    <button class="btn-small" onclick="mostrarFlota('todos')" id="flota-tab-todos" style="background:rgba(212,175,55,0.35);color:var(--gold);">🚘 Todos</button>
+    <button class="btn-small" onclick="mostrarFlota('carro')" id="flota-tab-carro">🚗 Carros</button>
+    <button class="btn-small" onclick="mostrarFlota('camioneta')" id="flota-tab-camioneta">🚙 Camionetas</button>
+    <button class="btn-small" onclick="mostrarFlota('sin')" id="flota-tab-sin">❌ Sin vehículo</button>
+  </div>
+  <div id="lista-flota" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;"></div>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<div id="chofer-live-panel">
+  <div class="clp-header">
+    <div class="clp-title"><span class="clp-ping"></span>📍 En vivo</div>
+    <button class="clp-close" onclick="cerrarPanelChofer()">✕</button>
+  </div>
+  <div class="clp-nombre" id="clp-nombre">—</div>
+  <div class="clp-vehiculo" id="clp-vehiculo">—</div>
+  <span class="clp-estado-badge" id="clp-estado-badge">—</span>
+  <div class="clp-row">
+    <span class="clp-icon">📌</span>
+    <div class="clp-val">
+      <span class="clp-label">Dirección exacta</span>
+      <div class="clp-direccion loading" id="clp-direccion">Obteniendo dirección…</div>
+    </div>
+  </div>
+  <div class="clp-coords" id="clp-coords">—</div>
+  <div id="clp-viaje-info" style="display:none;" class="clp-viaje"></div>
+  <div class="clp-ts" id="clp-ts">—</div>
+  <button class="clp-btn-centrar" id="clp-btn-centrar" onclick="centrarEnChofer()">🎯 Centrar mapa aquí</button>
+</div>
+
+<div id="modal-vehiculo">
+  <div class="modal-vehiculo-card">
+    <h3>🚗 Asignar Vehículo</h3>
+    <label>Tipo</label>
+    <div class="tipo-vehiculo-row">
+      <div class="tipo-btn activo" id="tipo-carro" onclick="seleccionarTipoVehiculo('carro')">🚗<span>Carro</span></div>
+      <div class="tipo-btn" id="tipo-camioneta" onclick="seleccionarTipoVehiculo('camioneta')">🚙<span>Camioneta</span></div>
+    </div>
+    <label>Buscar chofer</label>
+    <input id="mv-buscar-chofer" type="text" placeholder="🔍 Escribe nombre o ID…" oninput="filtrarChoferesModal(this.value)" autocomplete="off"/>
+    <div id="mv-chofer-lista" style="max-height:200px;overflow-y:auto;margin-top:6px;display:flex;flex-direction:column;gap:6px;"></div>
+    <input type="hidden" id="mv-chofer-select" value=""/>
+    <div class="modal-vehiculo-actions">
+      <button class="btn-guardar-vehiculo" onclick="guardarVehiculo()">💾 Guardar</button>
+      <button class="btn-cancelar-vehiculo" onclick="cerrarModalVehiculo()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
+const _SUPABASE_KEY = (window.LuxCfg && LuxCfg.supabaseAnonKey()) || '';
+const GOOGLE_MAPS_API_KEY = (window.LuxCfg && LuxCfg.googleMapsKey()) || '';
+const GMAP_SIS_STYLE = [
+  { elementType: 'geometry',            stylers: [{ color: '#1c1c2e' }] },
+  { elementType: 'labels.text.fill',    stylers: [{ color: '#d1d5db' }] },
+  { elementType: 'labels.text.stroke',  stylers: [{ color: '#1c1c2e' }] },
+  { featureType: 'road',                elementType: 'geometry',            stylers: [{ color: '#3b3b5c' }] },
+  { featureType: 'road',                elementType: 'geometry.stroke',     stylers: [{ color: '#23234a' }] },
+  { featureType: 'road.highway',        elementType: 'geometry',            stylers: [{ color: '#5a4fcf' }] },
+  { featureType: 'road.highway',        elementType: 'geometry.stroke',     stylers: [{ color: '#3b2ea0' }] },
+  { featureType: 'road.highway',        elementType: 'labels.text.fill',    stylers: [{ color: '#e0e0e0' }] },
+  { featureType: 'water',               elementType: 'geometry',            stylers: [{ color: '#0d1b3e' }] },
+  { featureType: 'water',               elementType: 'labels.text.fill',    stylers: [{ color: '#4a6fa5' }] },
+  { featureType: 'poi',                 elementType: 'geometry',            stylers: [{ color: '#252540' }] },
+  { featureType: 'poi.park',            elementType: 'geometry',            stylers: [{ color: '#1a3a2a' }] },
+  { featureType: 'poi.park',            elementType: 'labels.text.fill',    stylers: [{ color: '#6ab187' }] },
+  { featureType: 'transit',             elementType: 'geometry',            stylers: [{ color: '#2d2d4e' }] },
+  { featureType: 'administrative',      elementType: 'geometry.stroke',     stylers: [{ color: '#4a4a7a' }] },
+  { featureType: 'administrative.land_parcel', elementType: 'labels.text.fill', stylers: [{ color: '#8a8aaa' }] }
+];
+var SUPABASE = null;
+try { SUPABASE = supabase.createClient(_SUPABASE_URL, _SUPABASE_KEY); } catch(e) { console.error('Supabase init:', e); }
+
+const ADMIN_SESSION_KEY = 'luxrides_admin_session';
+
+async function intentarLogin(){
+  var id = (document.getElementById('login-id').value || '').trim();
+  var pass = (document.getElementById('login-pass').value || '').trim();
+  var errorEl = document.getElementById('login-error');
+  if (!id || !pass) { errorEl.textContent = '⚠️ Ingresa ID y contraseña'; errorEl.style.display = 'block'; return; }
+  try {
+    var base = (window.LuxCfg && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
+    var res = await fetch(base + '/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, pass: pass })
+    });
+    var data = await res.json().catch(function(){ return {}; });
+    if (res.ok && data.ok) {
+      errorEl.style.display = 'none';
+      sessionStorage.setItem(ADMIN_SESSION_KEY, 'ok');
+      mostrarApp();
+      return;
+    }
+    errorEl.textContent = '❌ ' + (data.error || 'Credenciales incorrectas');
+    errorEl.style.display = 'block';
+  } catch(e) {
+    errorEl.textContent = '❌ Sin conexión al servidor';
+    errorEl.style.display = 'block';
+  }
+}
+
+function mostrarApp(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app-content').style.display = 'block';
+  setTimeout(function() { initMapaChoferes(); }, 800);
+}
+
+function verificarSesionAdmin(){
+  if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'ok') { mostrarApp(); return true; }
+  return false;
+}
+
+document.getElementById('login-pass').addEventListener('keydown', function(e) { if (e.key === 'Enter') intentarLogin(); });
+document.getElementById('login-id').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('login-pass').focus(); });
+
+verificarSesionAdmin();
+
+var choferesDisponibles = {};
+var choferesLista = [];
+var reservasActivas = {};
+var reservaEstadosPrevios = {};
+var filtroHotelActivo = 'TODOS';
+var mapaFiltroVehiculo = 'todos';
+var flotaFiltro = 'todos';
+var tipoVehiculoSeleccionado = 'carro';
+var mapChoferes = null;
+var mapMarkersChoferes = {};
+var mapMarkersClientes = {};
+var mapPolylines = {};
+var mapaDebounceTimer = null;
+var historialChoferCallback = null;
+var historialGeneralCallback = null;
+var ultimoConteoClientes = 0;
+var channels = [];
+
+function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function notify(msg, tipo) {
+  var a = document.getElementById('notif-area');
+  if (!a) return;
+  var t = document.createElement('div'); t.className = 'notif-toast ' + (tipo||'ok'); t.textContent = msg;
+  a.appendChild(t); setTimeout(function() { t.remove(); }, 4000);
+}
+
+function showToast(msg, isError) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+
+function setBadge(id, type, text) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'badge ' + type;
+  el.textContent = text;
+}
+
+function formatNum(n) { return Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+
+function dbGet(table, id) {
+  return SUPABASE.from(table).select().eq('id', id).maybeSingle().then(function(res) { return res.data; }).catch(function(e) { console.warn('dbGet:', e); return null; });
+}
+
+function dbGetAll(table) {
+  return SUPABASE.from(table).select('*').then(function(res) { return res.data || []; }).catch(function(e) { console.warn('dbGetAll:', e); return []; });
+}
+
+function dbGetList(table, col, val) {
+  return SUPABASE.from(table).select('*').eq(col, val).order('created_at', { ascending: false }).then(function(res) { return res.data || []; }).catch(function(e) { console.warn('dbGetList:', e); return []; });
+}
+
+function dbUpdate(table, id, data) {
+  return SUPABASE.from(table).update(data).eq('id', id);
+}
+
+function dbInsert(table, data) {
+  return SUPABASE.from(table).insert(data).select().single();
+}
+
+function dbDelete(table, id) {
+  return SUPABASE.from(table).delete().eq('id', id);
+}
+
+function dbGetReserva(reservaId) {
+  return SUPABASE.from('reservas').select().eq('reserva_id', reservaId).maybeSingle().then(function(res) { return res.data; }).catch(function(e) { console.warn('dbGetReserva:', e); return null; });
+}
+function dbUpdateReserva(reservaId, data) {
+  return SUPABASE.from('reservas').update(data).eq('reserva_id', reservaId);
+}
+async function dbDeleteReserva(reservaId) {
+  // Borrar viajes asociados primero para que el chofer no los siga viendo
+  try {
+    await SUPABASE.from('viajes').delete().eq('reserva_id', reservaId);
+  } catch(e) { console.warn('dbDeleteReserva viajes:', e); }
+  return SUPABASE.from('reservas').delete().eq('reserva_id', reservaId);
+}
+
+function dbSubscribe(table, filterCol, filterVal, eventType, cb) {
+  var ch = SUPABASE.channel(table + '-' + Date.now() + '-' + Math.random());
+  var filterObj = {};
+  filterObj[filterCol] = 'eq.' + filterVal;
+  ch.on('postgres_changes', { event: eventType, schema: 'public', table: table, filter: filterObj }, cb).subscribe();
+  return ch;
+}
+
+function dbSubscribeAll(table, eventType, cb) {
+  var ch = SUPABASE.channel(table + '-all-' + Date.now() + '-' + Math.random());
+  ch.on('postgres_changes', { event: eventType, schema: 'public', table: table }, cb).subscribe();
+  return ch;
+}
+
+function initMapaChoferes() {
+  var el = document.getElementById('map-choferes');
+  if (!el || mapChoferes) return;
+  if (typeof google === 'undefined' || !google.maps) { setTimeout(initMapaChoferes, 500); return; }
+  try {
+    mapChoferes = new google.maps.Map(el, {
+      center: { lat: 19.4326, lng: -99.1332 },
+      zoom: 11,
+      styles: GMAP_SIS_STYLE,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false
+    });
+    setTimeout(function() {
+      try {
+        google.maps.event.trigger(mapChoferes, 'resize');
+        if (typeof actualizarMapaChoferes === 'function') actualizarMapaChoferes();
+        var btn = document.createElement('button');
+        btn.id = 'map-refresh-btn';
+        btn.innerHTML = '↺ Actualizar';
+        btn.onclick = function() {
+          btn.disabled = true; btn.innerHTML = '⟳ Cargando…';
+          refrescarUbicacionesChoferes().then(function() {
+            btn.disabled = false; btn.innerHTML = '↺ Actualizar';
+          });
+        };
+        el.appendChild(btn);
+        var ts = document.createElement('div');
+        ts.id = 'mapa-timestamp'; ts.textContent = '🔴 En vivo';
+        el.appendChild(ts);
+      } catch(e) {}
+    }, 300);
+    setInterval(function() { if (mapChoferes) refrescarUbicacionesChoferes(); }, 3000);
+  } catch(e) { console.error('Error initMapa:', e); }
+}
+
+async function refrescarUbicacionesChoferes() {
+  if (!SUPABASE) return;
+  try {
+    var data = await dbGetAll('choferes');
+    if (!data) return;
+    data.forEach(function(ch) { choferesDisponibles[ch.id] = ch; });
+    choferesLista = data.map(function(ch) { return formatearChofer(ch.id, ch); });
+    actualizarMapaChoferes();
+    var _ts = document.getElementById('mapa-timestamp');
+    if (_ts) {
+      var _ahora = new Date();
+      _ts.textContent = '🔴 En vivo · ' + _ahora.getHours().toString().padStart(2,'0') + ':' + _ahora.getMinutes().toString().padStart(2,'0') + ':' + _ahora.getSeconds().toString().padStart(2,'0');
+    }
+  } catch(e) { console.error('refrescarUbicaciones:', e); }
+}
+
+function actualizarMapaChoferes() {
+  if (!mapChoferes) return;
+  var bounds = new google.maps.LatLngBounds();
+  var visibles = 0;
+  var choferesActivos = {};
+  var clientesActivos = {};
+  var lineasActivas = {};
+
+  choferesLista.forEach(function(ch) {
+    var ubi = ch.ubicacion; 
+    var lat = ubi ? Number(ubi.lat) : NaN;
+    var lng = ubi ? Number(ubi.lng) : NaN;
+    var online = LuxCfg.choferActivoEnMapa(ch.estado);
+    var pasaFiltro = mapaFiltroVehiculo === 'todos' || (ch.vehiculo_tipo || '') === mapaFiltroVehiculo;
+    var coordsValidas = ubi && LuxCfg.esUbicacionGPSValida(lat, lng);
+    if (!online || !pasaFiltro || !coordsValidas) return;
+
+    var tipoVehiculo = (ch.vehiculo_tipo || '').toLowerCase();
+    var color = tipoVehiculo === 'camioneta' ? '#3B82F6' : '#EF4444';
+    var id = 'chofer-' + ch.id;
+
+    if (mapMarkersChoferes[id]) {
+      mapMarkersChoferes[id].setPosition({ lat: lat, lng: lng });
+    } else {
+      var marker = new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: mapChoferes,
+        title: ch.nombre,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+        label: { text: ch.nombre.split(' ')[0], color: '#fff', fontSize: '10px', fontWeight: '600' }
+      });
+      (function(_chId) {
+        marker.addListener('click', function(e) { if (e && e.stop) e.stop(); abrirPanelChofer(_chId); });
+      })(ch.id);
+      mapMarkersChoferes[id] = marker;
+    }
+    choferesActivos[id] = true;
+    bounds.extend({ lat: lat, lng: lng });
+    visibles++;
+  });
+
+  Object.keys(reservasActivas).forEach(function(reservaId) {
+    var r = reservasActivas[reservaId];
+    var estado = String(r.estado || '').toLowerCase();
+    if (estado !== 'pendiente' && estado !== 'asignado' && estado !== 'en curso' && estado !== 'en_curso') return;
+    if (!r.origen_lat || !r.origen_lng) {
+      geocodificarReserva(reservaId, r);
+      return;
+    }
+    var lat = Number(r.origen_lat);
+    var lng = Number(r.origen_lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      geocodificarReserva(reservaId, r);
+      return;
+    }
+
+    var cid = 'cliente-' + reservaId;
+    if (mapMarkersClientes[cid]) {
+      mapMarkersClientes[cid].setPosition({ lat: lat, lng: lng });
+    } else {
+      var marker = new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: mapChoferes,
+        title: r.cliente || 'Cliente',
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#22C55E', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }
+      });
+      var popup = new google.maps.InfoWindow({ content: '<div style="color:#1a1a1a;font-size:12px;font-family:Outfit,sans-serif;"><b>' + escHtml(r.cliente || 'Cliente') + '</b></div>' });
+      marker.addListener('click', function() { popup.open({ map: mapChoferes, anchor: marker }); });
+      mapMarkersClientes[cid] = marker;
+    }
+    clientesActivos[cid] = true;
+    bounds.extend({ lat: lat, lng: lng });
+    visibles++;
+
+    if (r.chofer_id) {
+      var ch = choferesLista.find(function(c) { return c.id === r.chofer_id; });
+      var chUbi = ch ? ch.ubicacion : null;
+      var chLat = chUbi ? Number(chUbi.lat) : NaN;
+      var chLng = chUbi ? Number(chUbi.lng) : NaN;
+      var chCoordsOk = isFinite(chLat) && isFinite(chLng) && !(chLat === 0 && chLng === 0);
+      if (chUbi && chCoordsOk) {
+        var lid = 'linea-' + reservaId;
+        var path = [{ lat: lat, lng: lng }, { lat: chLat, lng: chLng }];
+
+        if (mapPolylines[lid]) {
+          mapPolylines[lid].setPath(path);
+          mapPolylines[lid].setVisible(!!rutasVisibles);
+        } else {
+          mapPolylines[lid] = new google.maps.Polyline({
+            path: path,
+            strokeColor: '#60A5FA',
+            strokeWeight: 2.5,
+            strokeOpacity: 0.7,
+            map: mapChoferes,
+            visible: !!rutasVisibles
+          });
+        }
+        lineasActivas[lid] = true;
+      }
+    }
+  });
+
+  Object.keys(mapMarkersChoferes).forEach(function(id) {
+    if (!choferesActivos[id]) { mapMarkersChoferes[id].setMap(null); delete mapMarkersChoferes[id]; }
+  });
+  Object.keys(mapMarkersClientes).forEach(function(id) {
+    if (!clientesActivos[id]) { mapMarkersClientes[id].setMap(null); delete mapMarkersClientes[id]; }
+  });
+  Object.keys(mapPolylines).forEach(function(id) {
+    if (!lineasActivas[id]) {
+      if (mapPolylines[id]) mapPolylines[id].setMap(null);
+      delete mapPolylines[id];
+    }
+  });
+
+  if (visibles > 0) { try { mapChoferes.fitBounds(bounds, 50); } catch(e){} }
+  var _ts = document.getElementById('mapa-timestamp');
+  if (_ts) {
+    var _ahora = new Date();
+    _ts.textContent = '🔴 En vivo · ' + _ahora.getHours().toString().padStart(2,'0') + ':' + _ahora.getMinutes().toString().padStart(2,'0') + ':' + _ahora.getSeconds().toString().padStart(2,'0');
+  }
+}
+
+var geocodeCache = {};
+var geocodePending = {};
+var geocodeFailed = {};
+var _luxGeocoder = null;
+
+function _getGeocoder() {
+  if (!_luxGeocoder && typeof google !== 'undefined' && google.maps) {
+    _luxGeocoder = new google.maps.Geocoder();
+  }
+  return _luxGeocoder;
+}
+
+function _queryGeocode(direccion) {
+  if (!direccion) return direccion;
+  if (/ciudad de m[eé]xico|cdmx|m[eé]xico/i.test(direccion)) return direccion;
+  return direccion + ', Ciudad de México, México';
+}
+
+function geocodificarDireccion(direccion) {
+  if (!direccion) return Promise.resolve(null);
+  if (geocodeCache[direccion]) return Promise.resolve(geocodeCache[direccion]);
+  if (geocodeFailed[direccion]) return Promise.resolve(null);
+  if (geocodePending[direccion]) return geocodePending[direccion];
+
+  var geocoder = _getGeocoder();
+  if (!geocoder) return Promise.resolve(null);
+
+  geocodePending[direccion] = new Promise(function(resolve) {
+    geocoder.geocode(
+      { address: _queryGeocode(direccion), componentRestrictions: { country: 'MX' } },
+      function(results, status) {
+        delete geocodePending[direccion];
+        if (status === 'OK' && results && results[0]) {
+          var loc = results[0].geometry.location;
+          var pos = { lat: loc.lat(), lng: loc.lng() };
+          geocodeCache[direccion] = pos;
+          resolve(pos);
+        } else {
+          geocodeFailed[direccion] = Date.now();
+          resolve(null);
+        }
+      }
+    );
+  });
+  return geocodePending[direccion];
+}
+
+function geocodificarReserva(reservaId, r) {
+  if (!r || !r.origen) return;
+  if (geocodeCache[r.origen]) {
+    reservasActivas[reservaId].origen_lat = geocodeCache[r.origen].lat;
+    reservasActivas[reservaId].origen_lng = geocodeCache[r.origen].lng;
+    actualizarMapaChoferes();
+    return;
+  }
+  if (geocodeFailed[r.origen] || geocodePending[r.origen]) return;
+
+  geocodificarDireccion(r.origen).then(function(pos) {
+    if (pos && reservasActivas[reservaId]) {
+      reservasActivas[reservaId].origen_lat = pos.lat;
+      reservasActivas[reservaId].origen_lng = pos.lng;
+      actualizarMapaChoferes();
+    }
+  });
+}
+
+var rutasVisibles = true;
+
+function toggleRutasMapa() {
+  rutasVisibles = !rutasVisibles;
+  var btn = document.getElementById('btn-toggle-rutas');
+  Object.keys(mapPolylines).forEach(function(id) {
+    if (mapPolylines[id]) mapPolylines[id].setVisible(rutasVisibles);
+  });
+  if (!rutasVisibles) {
+    if (btn) btn.textContent = '🗺️ Mostrar rutas';
+  } else {
+    if (btn) btn.textContent = '🗺️ Ocultar rutas';
+    actualizarMapaChoferes();
+  }
+}
+
+function limpiarTodasLasRutas() {
+  Object.keys(mapPolylines).forEach(function(id) {
+    if (mapPolylines[id]) mapPolylines[id].setMap(null);
+  });
+  mapPolylines = {};
+}
+
+function filtrarMapa(tipo) {
+  mapaFiltroVehiculo = tipo;
+  ['todos','carro','camioneta'].forEach(function(f) {
+    var btn = document.getElementById('mapa-tab-' + f);
+    if (btn) btn.style.background = f === tipo ? 'rgba(212,175,55,0.35)' : '';
+  });
+  actualizarMapaChoferes();
+}
+
+function scheduleActualizarMapa() {
+  if (mapaDebounceTimer) clearTimeout(mapaDebounceTimer);
+  mapaDebounceTimer = setTimeout(function() {
+    mapaDebounceTimer = null;
+    actualizarMapaChoferes();
+  }, 500);
+}
+
+var _panelChoferActivo = null; // id del chofer actualmente en panel
+var _geocodeReversoCache = {}; // cache lat,lng -> dirección
+
+async function reverseGeocodeGoogle(lat, lng) {
+  var key = lat.toFixed(5) + ',' + lng.toFixed(5);
+  if (_geocodeReversoCache[key]) return _geocodeReversoCache[key];
+  try {
+    if (typeof google === 'undefined' || !google.maps) return null;
+    var result = await new Promise(function(resolve) {
+      var geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ location: { lat: lat, lng: lng } }, function(results, status) {
+        if (status === 'OK' && results && results[0]) resolve(results[0].formatted_address);
+        else resolve(null);
+      });
+    });
+    if (result) _geocodeReversoCache[key] = result;
+    return result;
+  } catch(e) { return null; }
+}
+
+function abrirPanelChofer(choferId) {
+  var ch = choferesDisponibles[choferId];
+  if (!ch) return;
+  _panelChoferActivo = choferId;
+  var panel = document.getElementById('chofer-live-panel');
+  panel.style.display = 'block';
+  actualizarContenidoPanelChofer(ch);
+}
+
+function cerrarPanelChofer() {
+  _panelChoferActivo = null;
+  document.getElementById('chofer-live-panel').style.display = 'none';
+}
+
+async function actualizarContenidoPanelChofer(ch) {
+  var nombre = ch.nombre || ch.id;
+  var tipo = ch.vehiculo_tipo || '';
+  var tipoEmoji = tipo === 'camioneta' ? '🚙' : tipo === 'carro' ? '🚗' : '🚘';
+  var marca = [ch.vehiculo_marca, ch.vehiculo_modelo, ch.vehiculo_color, ch.placa ? '🪪' + ch.placa : ''].filter(Boolean).join(' ');
+
+  document.getElementById('clp-nombre').textContent = nombre;
+  document.getElementById('clp-vehiculo').textContent = tipoEmoji + ' ' + (marca || 'Sin datos de vehículo');
+
+  var estado = (ch.estado || '').toLowerCase();
+  var estadoBadge = document.getElementById('clp-estado-badge');
+  var badgeClass = 'offline', badgeText = '🔴 Desconectado';
+  if (/en linea|online|libre|demo/i.test(estado)) { badgeClass = 'libre'; badgeText = '🟢 En línea'; }
+  else if (/ocupado|en_viaje|en viaje|en curso|en_curso/i.test(estado)) { badgeClass = 'ocupado'; badgeText = '🟡 En viaje'; }
+  estadoBadge.className = 'clp-estado-badge ' + badgeClass;
+  estadoBadge.textContent = badgeText;
+
+  var ubi = ch.ubicacion;
+  var lat = ubi ? Number(ubi.lat) : NaN;
+  var lng = ubi ? Number(ubi.lng) : NaN;
+  var coordsOk = !isNaN(lat) && !isNaN(lng) && isFinite(lat) && isFinite(lng) && !(lat === 0 && lng === 0);
+
+  if (coordsOk) {
+    document.getElementById('clp-coords').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+    var dirEl = document.getElementById('clp-direccion');
+    dirEl.className = 'clp-direccion loading';
+    dirEl.textContent = 'Obteniendo dirección…';
+    var dir = await reverseGeocodeGoogle(lat, lng);
+    dirEl.className = 'clp-direccion';
+    dirEl.textContent = dir || 'Ubicación GPS: ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+    document.getElementById('clp-btn-centrar').dataset.lat = lat;
+    document.getElementById('clp-btn-centrar').dataset.lng = lng;
+  } else {
+    document.getElementById('clp-coords').textContent = 'Sin señal GPS';
+    document.getElementById('clp-direccion').textContent = 'Posición no disponible';
+    document.getElementById('clp-direccion').className = 'clp-direccion loading';
+  }
+
+  var viajeEl = document.getElementById('clp-viaje-info');
+  if (ch.viaje_actual) {
+    viajeEl.style.display = 'block';
+    viajeEl.textContent = '🗺️ En ruta: ' + ch.viaje_actual;
+  } else {
+    var viajeAsig = Object.values(reservasActivas).find(function(r) {
+      return r.chofer_id === ch.id && /asignado|en curso|en_curso/.test(String(r.estado || '').toLowerCase());
+    });
+    if (viajeAsig) {
+      viajeEl.style.display = 'block';
+      viajeEl.textContent = '🚘 ' + (viajeAsig.cliente || 'Cliente') + '  ' + (viajeAsig.origen || '') + ' → ' + (viajeAsig.destino || '');
+    } else {
+      viajeEl.style.display = 'none';
+    }
+  }
+
+  var ahora = new Date();
+  document.getElementById('clp-ts').textContent = '🕐 Actualizado: ' + ahora.toLocaleTimeString('es-MX');
+}
+
+function centrarEnChofer() {
+  var btn = document.getElementById('clp-btn-centrar');
+  var lat = parseFloat(btn.dataset.lat);
+  var lng = parseFloat(btn.dataset.lng);
+  if (mapChoferes && !isNaN(lat) && !isNaN(lng) && !(lat === 0 && lng === 0)) {
+    mapChoferes.panTo({ lat: lat, lng: lng });
+    mapChoferes.setZoom(16);
+  }
+}
+
+function iniciarAppSupabase() {
+  if (!SUPABASE) { setBadge('badge-supabase', 'warn', 'Supabase: error'); return; }
+  setBadge('badge-supabase', 'ok', 'Supabase: activo ✓');
+  suscribirReservas();
+  suscribirChoferes();
+}
+
+function suscribirReservas() {
+  var ch = SUPABASE.channel('despacho-reservas-' + Date.now());
+  ch.on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, function(payload) {
+    manejarCambioReserva(payload);
+  }).subscribe();
+  channels.push(ch);
+}
+
+function manejarCambioReserva(payload) {
+  var r = payload.new;
+  if (payload.eventType === 'DELETE') {
+    delete reservasActivas[payload.old.reserva_id];
+    delete reservaEstadosPrevios[payload.old.reserva_id];
+    renderizarClientes();
+    scheduleActualizarMapa();
+    return;
+  }
+  if (!r) return;
+  var estadoNormalizado = String(r.estado || '').toLowerCase();
+  var estadoPrevio = reservaEstadosPrevios[r.reserva_id] || '';
+
+  if (estadoPrevio && estadoPrevio !== estadoNormalizado) {
+    if ((estadoNormalizado === 'en curso' || estadoNormalizado === 'en_curso') && estadoPrevio === 'asignado') {
+      notify('🚘 ' + (r.chofer_nombre || 'Chofer') + ' recogió a ' + (r.cliente || 'cliente'), 'ok');
+    }
+  }
+
+  reservasActivas[r.reserva_id] = r;
+  reservaEstadosPrevios[r.reserva_id] = estadoNormalizado;
+  renderizarClientes();
+  scheduleActualizarMapa();
+
+  var pendientes = Object.values(reservasActivas).filter(function(x) { return String(x.estado || '').toLowerCase() === 'pendiente'; });
+  var count = pendientes.length;
+  if (count > 0 && ultimoConteoClientes === 0) {
+    notify('📱 ' + count + ' cliente(s) esperando asignación', 'ok');
+  } else if (count > ultimoConteoClientes && ultimoConteoClientes > 0) {
+    notify('📱 +' + (count - ultimoConteoClientes) + ' nueva solicitud', 'ok');
+  }
+  ultimoConteoClientes = count;
+}
+
+async function cargarReservasIniciales() {
+  var data = await dbGetAll('reservas');
+  if (!data) return;
+  data.forEach(function(r) {
+    var estado = String(r.estado || '').toLowerCase();
+    if (['pendiente', 'asignado', 'en curso', 'en_curso'].includes(estado)) {
+      reservasActivas[r.reserva_id] = r;
+      reservaEstadosPrevios[r.reserva_id] = estado;
+    }
+  });
+  renderizarClientes();
+  scheduleActualizarMapa();
+
+  var pendientes = Object.values(reservasActivas).filter(function(x) { return String(x.estado || '').toLowerCase() === 'pendiente'; });
+  ultimoConteoClientes = pendientes.length;
+}
+
+function suscribirChoferes() {
+  var ch = SUPABASE.channel('despacho-choferes-' + Date.now());
+  ch.on('postgres_changes', { event: '*', schema: 'public', table: 'choferes' }, function(payload) {
+    manejarCambioChofer(payload);
+  }).subscribe(function(status) {
+    if (status === 'SUBSCRIBED') {
+      setBadge('badge-supabase', 'ok', 'Supabase: activo ✓ · 🔴 en vivo');
+    }
+    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+      setTimeout(function() { suscribirChoferes(); }, 3000);
+    }
+  });
+  channels.push(ch);
+}
+
+function moverMarcadorChofer(ch) {
+  if (!mapChoferes) return;
+  var ubi = ch.ubicacion;
+  var lat = ubi ? Number(ubi.lat) : NaN;
+  var lng = ubi ? Number(ubi.lng) : NaN;
+  var online = LuxCfg.choferActivoEnMapa(ch.estado);
+  if (isNaN(lat) || isNaN(lng) || !LuxCfg.esUbicacionGPSValida(lat, lng) || !online) return;
+  var id = 'chofer-' + ch.id;
+  if (mapMarkersChoferes[id]) {
+    mapMarkersChoferes[id].setPosition({ lat: lat, lng: lng });
+  }
+  if (_panelChoferActivo === ch.id) {
+    actualizarContenidoPanelChofer(ch);
+  }
+}
+
+function manejarCambioChofer(payload) {
+  if (payload.eventType === 'DELETE') {
+    delete choferesDisponibles[payload.old.id];
+    choferesLista = Object.entries(choferesDisponibles).map(function(e) { return formatearChofer(e[0], e[1]); });
+    renderizarChoferes();
+    renderFlota();
+    refrescarOpcionesHoteles();
+    refrescarSelectPagos();
+    scheduleActualizarMapa();
+    return;
+  }
+  var ch = payload.new;
+  if (!ch) return;
+  choferesDisponibles[ch.id] = ch;
+  choferesLista = Object.entries(choferesDisponibles).map(function(e) { return formatearChofer(e[0], e[1]); });
+  moverMarcadorChofer(ch);
+  renderizarChoferes();
+  renderFlota();
+  refrescarOpcionesHoteles();
+  refrescarSelectPagos();
+  scheduleActualizarMapa();
+}
+
+async function cargarChoferesIniciales() {
+  var data = await dbGetAll('choferes');
+  if (!data) return;
+  data.forEach(function(ch) { choferesDisponibles[ch.id] = ch; });
+  choferesLista = data.map(function(ch) { return formatearChofer(ch.id, ch); });
+  renderizarChoferes();
+  renderFlota();
+  refrescarOpcionesHoteles();
+  refrescarSelectPagos();
+  scheduleActualizarMapa();
+
+  var online = choferesLista.filter(function(c) { return /en linea|libre/i.test(c.estado); }).length;
+  var ocup = choferesLista.filter(function(c) { return /ocupado/i.test(c.estado); }).length;
+  var off = choferesLista.filter(function(c) { return /desconectado|offline/i.test(c.estado); }).length;
+  setBadge('badge-choferes', choferesLista.length > 0 ? 'ok' : 'warn', 'Choferes: ' + choferesLista.length + ' | 🟢' + online + ' 🟡' + ocup + ' 🔴' + off);
+}
+
+function _parseUbicacion(ub) {
+  if (!ub) return null;
+  if (typeof ub === 'string') {
+    try { ub = JSON.parse(ub); } catch(e) { return null; }
+  }
+  var lat = Number(ub.lat);
+  var lng = Number(ub.lng);
+  if (!window.LuxCfg || !LuxCfg.esUbicacionGPSValida(lat, lng)) return null;
+  return { lat: lat, lng: lng };
+}
+
+function formatearChofer(id, ch) {
+  return {
+    id: id,
+    nombre: ch.nombre || id,
+    estado: ch.estado || 'Desconectado',
+    hotel: ch.hotel || '',
+    ubicacion: _parseUbicacion(ch.ubicacion),
+    viajeActual: ch.viaje_actual || null,
+    vehiculo_tipo: ch.vehiculo_tipo || '',
+    vehiculo_marca: ch.vehiculo_marca || '',
+    vehiculo_modelo: ch.vehiculo_modelo || '',
+    vehiculo_color: ch.vehiculo_color || '',
+    vehiculo_anio: ch.vehiculo_anio || '',
+    placa: ch.placa || ''
+  };
+}
+
+function buildDriverInfoHTML(r) {
+  var ch = choferesDisponibles[r.chofer_id] || {};
+  var foto = ch.foto_url || '';
+  var nombre = escHtml(r.chofer_nombre || ch.nombre || 'Chofer asignado');
+  var marca = escHtml(r.chofer_marca || ch.vehiculo_marca || '');
+  var modelo = escHtml(r.chofer_modelo || ch.vehiculo_modelo || '');
+  var color = escHtml(r.chofer_color || ch.vehiculo_color || '');
+  var placa = escHtml(r.chofer_placa || ch.placa || '');
+  var tipo = ch.vehiculo_tipo || '';
+  var tipoEmoji = tipo === 'camioneta' ? '🚙' : tipo === 'carro' ? '🚗' : '🚘';
+  var vehiculoStr = [marca, modelo, color].filter(Boolean).join(' ');
+  var cal = Number(ch.calificacion_promedio || ch.rating || 0);
+  var calStr = '';
+  if (cal > 0) { var ll = Math.round(cal); calStr = '<div class="dib-stars">' + '★'.repeat(Math.min(5,ll)) + '☆'.repeat(Math.max(0,5-ll)) + ' <span style="font-size:.7rem;color:var(--muted);">(' + cal.toFixed(1) + '/5)</span></div>'; }
+  var op = ch.ultima_opinion || ch.opinion || '';
+  var opStr = op ? '<div class="dib-opinion">&ldquo;' + escHtml(op) + '&rdquo;</div>' : '';
+  var fotoHTML = foto ? '<img src="' + foto + '" alt="" onerror="this.parentElement.innerHTML=\'🤵\'">' : '🤵';
+  return '<div class="driver-info-badge"><div class="dib-avatar">' + fotoHTML + '</div><div class="dib-data">'
+    + '<div class="dib-name">' + nombre + '</div>'
+    + (vehiculoStr ? '<div class="dib-vehicle">' + tipoEmoji + ' ' + vehiculoStr + (placa ? ' &nbsp;·&nbsp; 🪪 ' + placa : '') + '</div>' : '')
+    + calStr + opStr
+    + '</div></div>';
+}
+
+function renderizarClientes() {
+  var div = document.getElementById('lista-clientes');
+  div.innerHTML = '';
+  var pendientes = 0;
+
+  var ids = Object.keys(reservasActivas).sort();
+  ids.forEach(function(reservaId) {
+    var r = reservasActivas[reservaId];
+    var estado = String(r.estado || '').toLowerCase();
+    if (!['pendiente', 'asignado', 'en curso', 'en_curso'].includes(estado)) return;
+    if (estado === 'pendiente') pendientes++;
+
+    var borderColor = estado === 'pendiente' ? 'var(--gold)' : estado === 'asignado' ? 'rgba(59,130,246,0.7)' : 'rgba(34,197,94,0.7)';
+    var estadoBadge = estado === 'pendiente'
+      ? '<span style="background:rgba(212,175,55,0.2);color:#f5d57b;padding:3px 8px;border-radius:999px;font-size:0.72rem;font-weight:600;">⏳ PENDIENTE</span>'
+      : estado === 'asignado'
+      ? '<span style="background:rgba(59,130,246,0.15);color:#93c5fd;padding:3px 8px;border-radius:999px;font-size:0.72rem;font-weight:600;">🚗 ASIGNADO a ' + escHtml(r.chofer_nombre || r.chofer_id || '?') + '</span>'
+      : '<span style="background:rgba(34,197,94,0.15);color:#86efac;padding:3px 8px;border-radius:999px;font-size:0.72rem;font-weight:600;">🚘 EN CURSO — ' + escHtml(r.chofer_nombre || r.chofer_id || '?') + '</span>';
+
+    var calificacion = Number(r.calificacion_cliente || 0);
+    var califHtml = calificacion > 0
+      ? '<p style="color:#fde68a;">⭐ Calificación: ' + '★'.repeat(calificacion) + '☆'.repeat(5 - calificacion) + (r.opinion_cliente ? ' — <i>"' + escHtml(r.opinion_cliente) + '"</i>' : '') + '</p>'
+      : '';
+    var avisoReasignacion = r.reasignacion_pendiente ? '<p style="color:#fca5a5"><b>↻ Reasignación:</b> ' + escHtml(r.reasignacion_motivo || '') + '</p>' : '';
+    var avisoReembolso = r.reembolso_automatico ? '<p style="color:#86efac"><b>💸 Reembolso:</b> ' + escHtml(r.reembolso_estado || 'registrado') + '</p>' : '';
+    var vlNum = r.numero_vuelo ? ' · Vuelo: ' + escHtml(r.numero_vuelo) : '';
+    var choferInfoHTML = (estado === 'asignado' || estado === 'en curso' || estado === 'en_curso') && r.chofer_id ? buildDriverInfoHTML(r) : '';
+
+    div.innerHTML += '<div class="tarjeta" style="border-left-color:' + borderColor + ';">'
+      + estadoBadge
+      + choferInfoHTML
+      + '<p style="margin-top:6px;"><b>👤 ' + escHtml(r.cliente || 'Sin nombre') + '</b></p>'
+      + '<p>📍 <b>' + escHtml(r.origen) + '</b>' + (r.destino && r.destino !== 'Por tiempo' ? ' ➔ <b>' + escHtml(r.destino) + '</b>' : '') + '</p>'
+      + '<p>📅 ' + escHtml(r.fecha || '—') + ' · ⏰ ' + escHtml(r.hora_recogida || '—') + '</p>'
+      + '<p>🚘 ' + escHtml(r.vehiculo || '—') + ' · 👥 ' + (r.pasajeros || 1) + ' pax · ' + escHtml(r.servicio || '—') + ' · ' + escHtml(r.traslado || 'Normal') + escHtml(vlNum) + '</p>'
+      + (r.distancia_km ? '<p>📏 ' + r.distancia_km + ' km · ⏱️ ' + r.duracion_min + ' min</p>' : '')
+      + avisoReasignacion + avisoReembolso + califHtml
+      + '<div class="precio">$' + formatNum(r.total || 0) + ' MXN</div><hr>'
+      + (estado === 'pendiente' ? '<div class="assign-row"><label>Asignar a:</label><div class="csd-wrap"><input type="text" class="csd-input" id="si-' + reservaId + '" placeholder="🔍 Nombre, ID o vehículo…" oninput="csdFiltrar(\'' + reservaId + '\',this.value)" onfocus="csdAbrir(\'' + reservaId + '\')" autocomplete="off"/><div class="csd-list" id="sd-' + reservaId + '"></div><input type="hidden" id="sel-' + reservaId + '" value=""/></div><button class="btn-despachar" onclick="despachar(\'' + reservaId + '\')">ENVIAR 🚀</button></div>' : '')
+      + (estado === 'asignado' ? '<div class="assign-row" style="margin-top:8px;"><label>↻ Reasignar a:</label><div class="csd-wrap"><input type="text" class="csd-input" id="si-' + reservaId + '" placeholder="🔍 Nombre, ID o vehículo…" oninput="csdFiltrar(\'' + reservaId + '\',this.value)" onfocus="csdAbrir(\'' + reservaId + '\')" autocomplete="off"/><div class="csd-list" id="sd-' + reservaId + '"></div><input type="hidden" id="sel-' + reservaId + '" value=""/></div><button class="btn-despachar" style="background:#3B82F6;color:#fff;" onclick="reasignarChofer(\'' + reservaId + '\')">REASIGNAR ↻</button></div>' : '')
+      + '<div style="display:flex;gap:8px;margin-top:10px;">'
+      + '<button onclick="compartirEnlace(\'' + reservaId + '\')" style="flex:1;padding:9px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:#86efac;border-radius:10px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .2s;" onmouseover="this.style.background=\'rgba(34,197,94,.22)\'" onmouseout="this.style.background=\'rgba(34,197,94,.12)\'">🔗 Copiar enlace</button>'
+      + '<button onclick="compartirWhatsApp(\'' + reservaId + '\',\'' + escHtml(r.cliente || '') + '\')" style="flex:1;padding:9px;background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.4);color:#4ade80;border-radius:10px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .2s;" onmouseover="this.style.background=\'rgba(37,211,102,.22)\'" onmouseout="this.style.background=\'rgba(37,211,102,.12)\'">📲 WhatsApp</button>'
+      + '<button onclick="borrarReservaForzada(\'' + reservaId + '\')" style="flex:1;padding:9px;background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.45);color:#fecaca;border-radius:10px;font-size:.78rem;font-weight:700;cursor:pointer;transition:background .2s;" onmouseover="this.style.background=\'rgba(239,68,68,.24)\'" onmouseout="this.style.background=\'rgba(239,68,68,.14)\'">🗑️ Borrar forzado</button>'
+      + '</div>'
+      + '</div>';
+  });
+
+  document.getElementById('cnt-clientes').textContent = pendientes;
+  setBadge('badge-pendientes', pendientes > 0 ? 'warn' : 'ok', 'Pendientes: ' + pendientes);
+
+  if (div.innerHTML.trim() === '') {
+    div.innerHTML = '<div class="empty"><span>✅</span>Sin solicitudes activas</div>';
+  }
+}
+
+function obtenerUrlCliente(reservaId) {
+  var base = window.location.href.replace(/[^/]*$/, '') + 'clientes';
+  return base + '?id=' + encodeURIComponent(reservaId);
+}
+
+function compartirEnlace(reservaId) {
+  var url = obtenerUrlCliente(reservaId);
+  if (navigator.share) {
+    navigator.share({ title: 'Tu viaje LuxRides', text: 'Sigue tu viaje en tiempo real:', url: url })
+      .catch(function() {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() {
+      notify('✅ Enlace copiado al portapapeles', 'ok');
+    }).catch(function() {
+      prompt('Copia este enlace y envíaselo al cliente:', url);
+    });
+  } else {
+    prompt('Copia este enlace y envíaselo al cliente:', url);
+  }
+}
+
+function compartirWhatsApp(reservaId, nombreCliente) {
+  var url = obtenerUrlCliente(reservaId);
+  var r = reservasActivas[reservaId];
+  var msg = '✦ *LuxRides* — Tu viaje está confirmado' + (nombreCliente ? ', ' + nombreCliente : '') + '.\n\n'
+    + (r ? '📍 Recogida: ' + (r.origen || '—') + '\n📅 ' + (r.fecha || '') + ' · ⏰ ' + (r.hora_recogida || '') + '\n\n' : '')
+    + '🔗 Sigue a tu chofer en tiempo real:\n' + url;
+  var waUrl = 'https://wa.me/?text=' + encodeURIComponent(msg);
+  window.open(waUrl, '_blank');
+}
+
+function csdRender(reservaId, q) {
+  var lista = document.getElementById('sd-' + reservaId);
+  if (!lista) return;
+  var filtro = (q || '').trim().toLowerCase();
+  var items = filtro
+    ? Object.entries(choferesDisponibles).filter(function(e) { var ch = e[1]; return ch.nombre.toLowerCase().indexOf(filtro) !== -1 || e[0].toLowerCase().indexOf(filtro) !== -1 || (ch.vehiculo_tipo || '').toLowerCase().indexOf(filtro) !== -1; })
+    : Object.entries(choferesDisponibles);
+
+  if (!items.length) { lista.innerHTML = '<div class="csd-item">Sin resultados</div>'; lista.classList.add('open'); return; }
+  var selVal = document.getElementById('sel-' + reservaId) ? document.getElementById('sel-' + reservaId).value : '';
+  lista.innerHTML = items.map(function(e) {
+    var id = e[0], ch = e[1];
+    var emoji = ch.vehiculo_tipo === 'camioneta' ? '🚙' : ch.vehiculo_tipo === 'carro' ? '🚗' : '❓';
+    var vLabel = ch.vehiculo_tipo === 'camioneta' ? 'Camioneta' : ch.vehiculo_tipo === 'carro' ? 'Carro' : 'Sin vehículo';
+    var activo = id === selVal ? ' sel' : '';
+    return '<div class="csd-item' + activo + '" onclick="csdSeleccionar(\'' + reservaId + '\',\'' + id + '\',\'' + escHtml(ch.nombre) + '\')"><span>' + emoji + '</span><span style="flex:1">' + escHtml(ch.nombre) + '</span><span style="font-size:.72rem;color:var(--muted);">' + vLabel + '</span></div>';
+  }).join('');
+  lista.classList.add('open');
+}
+
+function csdAbrir(reservaId) { csdRender(reservaId, document.getElementById('si-' + reservaId) ? document.getElementById('si-' + reservaId).value : ''); }
+function csdFiltrar(reservaId, q) { csdRender(reservaId, q); }
+function csdSeleccionar(reservaId, id, nombre) {
+  var hidden = document.getElementById('sel-' + reservaId);
+  var input = document.getElementById('si-' + reservaId);
+  var lista = document.getElementById('sd-' + reservaId);
+  if (hidden) hidden.value = id;
+  if (input) input.value = nombre + ' (' + id + ')';
+  if (lista) lista.classList.remove('open');
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.csd-wrap')) {
+    document.querySelectorAll('.csd-list.open').forEach(function(l) { l.classList.remove('open'); });
+  }
+});
+
+async function despachar(reservaID) {
+  var sel = document.getElementById('sel-' + reservaID);
+  if (!sel || !sel.value) { showToast('⚠️ Selecciona un chofer primero.', true); return; }
+  var choferID = sel.value;
+  var btn = sel.closest('.tarjeta').querySelector('.btn-despachar');
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
+
+  try {
+    var r = reservasActivas[reservaID];
+    if (!r) throw new Error('Reserva no encontrada');
+    var ch = choferesDisponibles[choferID];
+    var choferNombre = ch ? ch.nombre : 'Chofer ' + choferID;
+
+    // Geocodificar origen y destino si no tienen coordenadas
+    if (!r.origen_lat && r.origen) {
+      var orPos = await geocodificarDireccion(r.origen);
+      if (orPos) { r.origen_lat = orPos.lat; r.origen_lng = orPos.lng; }
+    }
+    if (!r.destino_lat && r.destino) {
+      var dePos = await geocodificarDireccion(r.destino);
+      if (dePos) { r.destino_lat = dePos.lat; r.destino_lng = dePos.lng; }
+    }
+
+    await dbInsert('viajes', {
+      chofer_id: choferID,
+      reserva_id: reservaID,
+      estado: 'pendiente',
+      cliente: r.cliente || '',
+      origen: r.origen || '',
+      destino: r.destino || '',
+      total: r.total || 0,
+      precio: r.total || 0,
+      fecha: r.fecha || '',
+      hora_recogida: r.hora_recogida || '',
+      pasajeros: r.pasajeros || 1,
+      vehiculo: r.vehiculo || '',
+      servicio: r.servicio || '',
+      traslado: r.traslado || '',
+      numero_vuelo: r.numero_vuelo || '',
+      distancia_km: r.distancia_km || '',
+      duracion_min: r.duracion_min || '',
+      origen_lat: r.origen_lat || null,
+      origen_lng: r.origen_lng || null,
+      destino_lat: r.destino_lat || null,
+      destino_lng: r.destino_lng || null,
+      despachado_en: new Date().toISOString()
+    });
+
+    await dbUpdateReserva(reservaID, {
+      estado: 'Asignado',
+      chofer_id: choferID,
+      chofer_asignado: choferID,
+      chofer_nombre: choferNombre,
+      chofer_marca: ch ? ch.vehiculo_marca || ch.marca || '' : '',
+      chofer_modelo: ch ? ch.vehiculo_modelo || ch.modelo || '' : '',
+      chofer_color: ch ? ch.vehiculo_color || ch.color || '' : '',
+      chofer_placa: ch ? ch.placa || '' : '',
+      chofer_ubicacion_inicial: ch && _parseUbicacion(ch.ubicacion) ? ch.ubicacion : null,
+      asignado_en: new Date().toISOString(),
+      reasignacion_pendiente: false,
+      reasignacion_motivo: ''
+    });
+
+    await dbInsert('push_notifications', {
+      chofer_id: choferID,
+      reserva_id: reservaID,
+      titulo: 'Nuevo viaje LuxRides',
+      cuerpo: r.cliente + ' • ' + (r.origen || '') + ' → ' + (r.destino || ''),
+      datos: { cliente: r.cliente, origen: r.origen, destino: r.destino, reservaId: reservaID }
+    });
+
+    if (reservasActivas[reservaID]) {
+      reservasActivas[reservaID].estado = 'Asignado';
+      reservasActivas[reservaID].chofer_id = choferID;
+      reservasActivas[reservaID].chofer_asignado = choferID;
+      reservasActivas[reservaID].chofer_nombre = choferNombre;
+      reservasActivas[reservaID].chofer_marca = ch ? ch.vehiculo_marca || '' : '';
+      reservasActivas[reservaID].chofer_modelo = ch ? ch.vehiculo_modelo || '' : '';
+      reservasActivas[reservaID].chofer_color = ch ? ch.vehiculo_color || '' : '';
+      reservasActivas[reservaID].chofer_placa = ch ? ch.placa || '' : '';
+      reservaEstadosPrevios[reservaID] = 'asignado';
+    }
+    renderizarClientes();
+    showToast('✅ Viaje enviado a ' + choferNombre);
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Error: ' + (err.message || err), true);
+    btn.disabled = false;
+    btn.textContent = 'ENVIAR 🚀';
+  }
+}
+
+async function reasignarChofer(reservaID) {
+  var sel = document.getElementById('sel-' + reservaID);
+  if (!sel || !sel.value) { showToast('⚠️ Selecciona un nuevo chofer.', true); return; }
+  var nuevoChoferID = sel.value;
+  var r = reservasActivas[reservaID];
+  if (!r) { showToast('❌ Reserva no encontrada', true); return; }
+
+  var choferAnteriorID = r.chofer_id || r.chofer_asignado || '';
+  if (nuevoChoferID === choferAnteriorID) { showToast('⚠️ Es el mismo chofer. Elige otro.', true); return; }
+
+  var btn = sel.closest('.tarjeta').querySelector('.btn-despachar');
+  btn.disabled = true;
+  btn.textContent = 'Reasignando…';
+
+  try {
+    var ch = choferesDisponibles[nuevoChoferID];
+    var nuevoNombre = ch ? ch.nombre : 'Chofer ' + nuevoChoferID;
+    var anteriorNombre = r.chofer_nombre || choferAnteriorID;
+
+    if (choferAnteriorID) {
+      await dbUpdate('choferes', choferAnteriorID, {
+        estado: 'online',
+        viaje_actual: null,
+        ultima_conexion: new Date().toISOString()
+      });
+    }
+
+    // Geocodificar origen y destino si no tienen coordenadas
+    if (!r.origen_lat && r.origen) {
+      var orPos2 = await geocodificarDireccion(r.origen);
+      if (orPos2) { r.origen_lat = orPos2.lat; r.origen_lng = orPos2.lng; }
+    }
+    if (!r.destino_lat && r.destino) {
+      var dePos2 = await geocodificarDireccion(r.destino);
+      if (dePos2) { r.destino_lat = dePos2.lat; r.destino_lng = dePos2.lng; }
+    }
+
+    await dbInsert('viajes', {
+      chofer_id: nuevoChoferID,
+      reserva_id: reservaID,
+      estado: 'pendiente',
+      cliente: r.cliente || '',
+      origen: r.origen || '',
+      destino: r.destino || '',
+      total: r.total || 0,
+      precio: r.total || 0,
+      fecha: r.fecha || '',
+      hora_recogida: r.hora_recogida || '',
+      pasajeros: r.pasajeros || 1,
+      vehiculo: r.vehiculo || '',
+      servicio: r.servicio || '',
+      traslado: r.traslado || '',
+      numero_vuelo: r.numero_vuelo || '',
+      distancia_km: r.distancia_km || '',
+      duracion_min: r.duracion_min || '',
+      origen_lat: r.origen_lat || null,
+      origen_lng: r.origen_lng || null,
+      destino_lat: r.destino_lat || null,
+      destino_lng: r.destino_lng || null,
+      despachado_en: new Date().toISOString(),
+      reasignado_de: choferAnteriorID
+    });
+
+    await dbUpdateReserva(reservaID, {
+      estado: 'Asignado',
+      chofer_id: nuevoChoferID,
+      chofer_asignado: nuevoChoferID,
+      chofer_nombre: nuevoNombre,
+      chofer_marca: ch ? ch.vehiculo_marca || ch.marca || '' : '',
+      chofer_modelo: ch ? ch.vehiculo_modelo || ch.modelo || '' : '',
+      chofer_color: ch ? ch.vehiculo_color || ch.color || '' : '',
+      chofer_placa: ch ? ch.placa || '' : '',
+      reasignacion_pendiente: false,
+      reasignacion_motivo: '',
+      reasignado_de_chofer: choferAnteriorID,
+      reasignado_de_nombre: anteriorNombre,
+      reasignado_en: new Date().toISOString(),
+      asignado_en: new Date().toISOString()
+    });
+
+    await dbInsert('push_notifications', {
+      chofer_id: nuevoChoferID,
+      reserva_id: reservaID,
+      titulo: 'Nuevo viaje LuxRides',
+      cuerpo: r.cliente + ' • ' + (r.origen || '') + ' → ' + (r.destino || ''),
+      datos: { cliente: r.cliente, origen: r.origen, destino: r.destino, reservaId: reservaID, reasignado: true }
+    });
+
+    if (reservasActivas[reservaID]) {
+      reservasActivas[reservaID].estado = 'Asignado';
+      reservasActivas[reservaID].chofer_id = nuevoChoferID;
+      reservasActivas[reservaID].chofer_asignado = nuevoChoferID;
+      reservasActivas[reservaID].chofer_nombre = nuevoNombre;
+      var chNuevo = choferesDisponibles[nuevoChoferID] || {};
+      reservasActivas[reservaID].chofer_marca = chNuevo.vehiculo_marca || '';
+      reservasActivas[reservaID].chofer_modelo = chNuevo.vehiculo_modelo || '';
+      reservasActivas[reservaID].chofer_color = chNuevo.vehiculo_color || '';
+      reservasActivas[reservaID].chofer_placa = chNuevo.placa || '';
+      reservasActivas[reservaID].reasignacion_pendiente = false;
+      reservaEstadosPrevios[reservaID] = 'asignado';
+    }
+    renderizarClientes();
+    showToast('↻ Reasignado: ' + anteriorNombre + ' → ' + nuevoNombre);
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Error: ' + (err.message || err), true);
+    btn.disabled = false;
+    btn.textContent = 'REASIGNAR ↻';
+  }
+}
+
+function renderizarChoferes() {
+  var div = document.getElementById('lista-choferes');
+  div.innerHTML = '';
+  var q = (document.getElementById('buscador-choferes') ? document.getElementById('buscador-choferes').value : '').trim().toLowerCase();
+
+  var filtrados = choferesLista.filter(function(ch) {
+    if (filtroHotelActivo !== 'TODOS' && (ch.hotel || 'Sin asignar') !== filtroHotelActivo) return false;
+    if (!q) return true;
+    return ch.nombre.toLowerCase().indexOf(q) !== -1 || ch.id.toLowerCase().indexOf(q) !== -1 || (ch.vehiculo_tipo || '').toLowerCase().indexOf(q) !== -1;
+  });
+
+  filtrados.forEach(function(ch) {
+    var estadoLower = ch.estado.toLowerCase();
+    var dotClass = (estadoLower.indexOf('en linea') !== -1 || estadoLower.indexOf('online') !== -1 || estadoLower.indexOf('libre') !== -1 || estadoLower.indexOf('demo') !== -1) ? 'libre'
+      : (estadoLower.indexOf('ocupado') !== -1 || estadoLower.indexOf('en_viaje') !== -1 || estadoLower.indexOf('en viaje') !== -1) ? 'ocupado' : 'desconectado';
+    var estadoLabel = (estadoLower.indexOf('en linea') !== -1 || estadoLower.indexOf('online') !== -1 || estadoLower.indexOf('libre') !== -1 || estadoLower.indexOf('demo') !== -1) ? '🟢 En línea'
+      : (estadoLower.indexOf('ocupado') !== -1 || estadoLower.indexOf('en_viaje') !== -1 || estadoLower.indexOf('en viaje') !== -1) ? '🟡 En viaje' : '🔴 Desconectado';
+
+    div.innerHTML += '<div class="chofer-card"><div class="chofer-avatar">' + (ch.vehiculo_tipo === 'camioneta' ? '🚙' : '🚗') + '</div><div class="chofer-info">'
+      + '<div class="chofer-nombre">' + escHtml(ch.nombre) + '</div><div class="chofer-id">ID: ' + escHtml(ch.id) + '</div>'
+      + '<div class="chofer-estado"><span class="dot ' + dotClass + '"></span>' + estadoLabel + '</div>'
+      + '<div class="chofer-hotel">🏨 Hotel: <b>' + escHtml(ch.hotel || 'Sin asignar') + '</b></div>'
+      + (ch.vehiculo_tipo ? '<div class="chofer-vehiculo">' + (ch.vehiculo_tipo === 'camioneta' ? '🚙 Camioneta' : '🚗 Carro') + '</div>' : '<div class="chofer-vehiculo" style="color:#666;">Sin vehículo</div>')
+      + (ch.viajeActual ? '<div class="viaje-actual">🗺️ ' + escHtml(ch.viajeActual) + '</div>' : '')
+      + (!ch.ubicacion && LuxCfg.choferActivoEnMapa(ch.estado) ? '<div class="viaje-actual" style="color:#fde68a;">📡 En línea — sin GPS (usa Demo en ses o activa ubicación)</div>' : '')
+      + (ch.ubicacion ? '<div class="viaje-actual" style="color:#86efac;">📍 GPS activo</div>' : '')
+      + '<div class="chofer-actions"><button class="btn-small" onclick="editarNombreChofer(\'' + ch.id + '\')">✏️ Nombre</button><button class="btn-small" onclick="asignarHotel(\'' + ch.id + '\')">🏨 Hotel</button><button class="btn-small" onclick="abrirModalVehiculo(\'' + ch.id + '\')">🚗 Vehículo</button><button class="btn-small" onclick="abrirPanelChofer(\'' + ch.id + '\')">📍 Ubicación</button><button class="btn-small" onclick="borrarChoferIndividual(\'' + ch.id + '\')">🗑️ Borrar</button></div></div></div>';
+  });
+
+  document.getElementById('cnt-choferes').textContent = filtrados.length;
+  var online = filtrados.filter(function(c) { return /en linea|libre/i.test(c.estado); }).length;
+  var ocup = filtrados.filter(function(c) { return /ocupado/i.test(c.estado); }).length;
+  var off = filtrados.filter(function(c) { return /desconectado|offline/i.test(c.estado); }).length;
+  setBadge('badge-choferes', filtrados.length > 0 ? 'ok' : 'warn', 'Choferes: ' + filtrados.length + ' | 🟢' + online + ' 🟡' + ocup + ' 🔴' + off);
+
+  if (filtrados.length === 0) div.innerHTML = '<div class="empty"><span>🏨</span>No hay choferes para este filtro</div>';
+}
+
+async function confirmarNuevoChofer() {
+  var id = (document.getElementById('nuevo-chofer-id') ? document.getElementById('nuevo-chofer-id').value : '').trim();
+  var nombre = (document.getElementById('nuevo-chofer-nombre') ? document.getElementById('nuevo-chofer-nombre').value : '').trim();
+  var hotelInput = (document.getElementById('nuevo-chofer-hotel') ? document.getElementById('nuevo-chofer-hotel').value : '').trim();
+  if (!id || !nombre) { showToast('⚠️ ID y nombre son obligatorios.', true); return; }
+  try {
+    await dbInsert('choferes', { id: id, nombre: nombre, hotel: hotelInput || 'Sin hotel', estado: 'offline', creado_en: new Date().toISOString() });
+    document.getElementById('nuevo-chofer-id').value = '';
+    document.getElementById('nuevo-chofer-nombre').value = '';
+    document.getElementById('nuevo-chofer-hotel').value = '';
+    showToast('✅ Chofer ' + nombre + ' agregado');
+  } catch (err) { console.error(err); showToast('❌ ' + (err.message || err), true); }
+}
+
+async function editarNombreChofer(choferID) {
+  var actual = choferesDisponibles[choferID] ? choferesDisponibles[choferID].nombre : '';
+  var nuevo = window.prompt('Nombre para chofer ' + choferID + ':', actual);
+  if (nuevo === null || !nuevo.trim()) return;
+  try { await dbUpdate('choferes', choferID, { nombre: nuevo.trim(), updated_at: new Date().toISOString() }); showToast('✏️ Nombre actualizado'); }
+  catch (err) { showToast('❌ ' + (err.message || err), true); }
+}
+
+async function asignarHotel(choferID) {
+  var actual = choferesDisponibles[choferID] ? choferesDisponibles[choferID].hotel : '';
+  var nuevo = window.prompt('Hotel para chofer ' + choferID + ':', actual);
+  if (nuevo === null || !nuevo.trim()) return;
+  try { await dbUpdate('choferes', choferID, { hotel: nuevo.trim(), updated_at: new Date().toISOString() }); showToast('🏨 Hotel guardado'); }
+  catch (err) { showToast('❌ ' + (err.message || err), true); }
+}
+
+async function borrarChoferIndividual(choferID) {
+  var nombre = choferesDisponibles[choferID] ? choferesDisponibles[choferID].nombre : choferID;
+  if (!window.confirm('¿Borrar al chofer ' + nombre + ' (' + choferID + ')?')) return;
+  try { await dbDelete('choferes', choferID); showToast('🗑️ ' + nombre + ' borrado'); }
+  catch (err) { showToast('❌ ' + (err.message || err), true); }
+}
+
+async function borrarChoferesAdmin() {
+  if (!window.confirm('¿Borrar TODOS los choferes?')) return;
+  try {
+    var data = await dbGetAll('choferes');
+    if (data) { for (var i = 0; i < data.length; i++) { await dbDelete('choferes', data[i].id); } }
+    showToast('🗑️ Todos los choferes borrados');
+  } catch (err) { showToast('❌ ' + (err.message || err), true); }
+}
+
+async function borrarClientesPendientesAdmin() {
+  if (!window.confirm('¿Borrar TODOS los clientes pendientes?')) return;
+  try {
+    var data = await dbGetAll('reservas');
+    var count = 0;
+    if (data) { for (var i = 0; i < data.length; i++) { if (String(data[i].estado || '').toLowerCase() === 'pendiente') { await dbDeleteReserva(data[i].reserva_id); count++; } } }
+    showToast('🗑️ ' + count + ' pendientes borrados');
+  } catch (err) { showToast('❌ ' + (err.message || err), true); }
+}
+
+async function borrarReservaForzada(reservaId) {
+  var r = reservasActivas[reservaId] || null;
+  var estado = String((r && r.estado) || '').toLowerCase();
+  var choferTxt = (r && (r.chofer_nombre || r.chofer_id)) ? (' · Chofer: ' + (r.chofer_nombre || r.chofer_id)) : '';
+  var msg = '¿Borrar FORZADO la reserva ' + reservaId + '?\nEstado: ' + (estado || 'desconocido') + choferTxt + '\n\nEsto eliminará viaje y vínculos asociados.';
+  if (!window.confirm(msg)) return;
+
+  try {
+    // 1) Liberar chofer asociado si existe.
+    var choferId = r ? (r.chofer_id || r.chofer_asignado || null) : null;
+    if (choferId) {
+      try {
+        await dbUpdate('choferes', choferId, { viaje_actual: null, updated_at: new Date().toISOString() });
+      } catch (e1) {
+        console.warn('borrarReservaForzada: no se pudo liberar chofer', e1);
+      }
+    }
+
+    // 2) Quitar referencias en la propia reserva para evitar bloqueos por FK/lógica.
+    try {
+      await dbUpdateReserva(reservaId, {
+        chofer_id: null,
+        chofer_asignado: null,
+        chofer_nombre: null,
+        estado: 'cancelado',
+        updated_at: new Date().toISOString()
+      });
+    } catch (e2) {
+      console.warn('borrarReservaForzada: no se pudo limpiar referencia en reserva', e2);
+    }
+
+    // 3) Borrar posibles dependencias por reserva_id (si existen en tu proyecto).
+    var tablasDependientes = ['viajes', 'calificaciones', 'notificaciones'];
+    for (var i = 0; i < tablasDependientes.length; i++) {
+      try {
+        await SUPABASE.from(tablasDependientes[i]).delete().eq('reserva_id', reservaId);
+      } catch (e3) {
+        console.warn('borrarReservaForzada: tabla dependiente', tablasDependientes[i], e3);
+      }
+    }
+
+    // 4) Borrar reserva (paso final).
+    var del = await SUPABASE.from('reservas').delete().eq('reserva_id', reservaId);
+    if (del && del.error) throw del.error;
+
+    delete reservasActivas[reservaId];
+    delete reservaEstadosPrevios[reservaId];
+    renderizarClientes();
+    scheduleActualizarMapa();
+    showToast('🗑️ Reserva ' + reservaId + ' eliminada (forzado)');
+  } catch (err) {
+    console.error('borrarReservaForzada error:', err);
+    showToast('❌ No se pudo borrar reserva ' + reservaId + ': ' + (err.message || err), true);
+  }
+}
+
+function toggleQuickChoferForm() {
+  var form = document.getElementById('quick-chofer-form');
+  if (form) form.style.display = form.style.display === 'block' ? 'none' : 'block';
+}
+
+function aplicarFiltroHotel(valor) {
+  filtroHotelActivo = valor || 'TODOS';
+  renderizarChoferes();
+}
+
+function refrescarOpcionesHoteles() {
+  var sel = document.getElementById('filtro-hotel');
+  var anterior = filtroHotelActivo;
+  var hoteles = new Set();
+  choferesLista.forEach(function(ch) { hoteles.add(ch.hotel || 'Sin asignar'); });
+  sel.innerHTML = '<option value="TODOS">🏨 Todos los hoteles</option>';
+  Array.from(hoteles).sort(function(a,b) { return a.localeCompare(b, 'es'); }).forEach(function(hotel) {
+    var opt = document.createElement('option');
+    opt.value = hotel; opt.textContent = '🏨 ' + hotel; sel.appendChild(opt);
+  });
+  filtroHotelActivo = Array.from(sel.options).some(function(o) { return o.value === anterior; }) ? anterior : 'TODOS';
+  sel.value = filtroHotelActivo;
+}
+
+function refrescarSelectPagos() {
+  var sel = document.getElementById('pay-chofer-select');
+  if (!sel) return;
+  var actual = sel.value;
+  sel.innerHTML = '<option value="">Selecciona chofer</option>';
+  var lista = choferesLista.slice().sort(function(a,b) { return a.nombre.localeCompare(b.nombre, 'es'); });
+  lista.forEach(function(ch) {
+    var opt = document.createElement('option');
+    opt.value = ch.id; opt.textContent = ch.nombre + ' (' + ch.id + ') · ' + (ch.hotel || 'Sin hotel'); sel.appendChild(opt);
+  });
+  if (actual) sel.value = actual;
+}
+
+function mostrarFlota(filtro) {
+  flotaFiltro = filtro;
+  ['todos','carro','camioneta','sin'].forEach(function(f) {
+    var btn = document.getElementById('flota-tab-' + f);
+    if (btn) btn.style.background = f === filtro ? 'rgba(212,175,55,0.35)' : '';
+  });
+  renderFlota();
+}
+
+function renderFlota() {
+  var lista = document.getElementById('lista-flota');
+  if (!lista) return;
+  var filtrados = choferesLista.filter(function(ch) {
+    if (flotaFiltro === 'todos') return true;
+    if (flotaFiltro === 'sin') return !ch.vehiculo_tipo;
+    return ch.vehiculo_tipo === flotaFiltro;
+  });
+  if (!filtrados.length) { lista.innerHTML = '<div class="empty" style="grid-column:1/-1"><span>🚫</span>Sin vehículos aquí</div>'; return; }
+  lista.innerHTML = filtrados.map(function(ch) {
+    return '<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">'
+      + '<div style="font-size:2.2rem;">' + (ch.vehiculo_tipo === 'camioneta' ? '🚙' : ch.vehiculo_tipo === 'carro' ? '🚗' : '❓') + '</div>'
+      + '<div style="font-weight:600;margin:6px 0 2px;">' + escHtml(ch.nombre) + '</div>'
+      + '<div style="font-size:.75rem;color:var(--muted);">ID: ' + escHtml(ch.id) + '</div>'
+      + '<div style="margin-top:6px;font-size:.8rem;color:' + (ch.vehiculo_tipo ? 'var(--gold)' : '#666') + ';">' + (ch.vehiculo_tipo ? (ch.vehiculo_tipo === 'camioneta' ? '🚙 Camioneta' : '🚗 Carro') : 'Sin vehículo') + '</div>'
+      + '<button class="btn-small" style="margin-top:8px;width:100%;" onclick="abrirModalVehiculo(\'' + ch.id + '\')">✏️ Cambiar</button></div>';
+  }).join('');
+}
+
+function abrirModalVehiculo(choferId) {
+  tipoVehiculoSeleccionado = 'carro';
+  seleccionarTipoVehiculo('carro');
+  document.getElementById('mv-buscar-chofer').value = '';
+  document.getElementById('mv-chofer-select').value = '';
+
+  if (choferId) {
+    var ch = choferesLista.find(function(c) { return c.id === choferId; });
+    if (ch) {
+      document.getElementById('mv-chofer-select').value = choferId;
+      document.getElementById('mv-buscar-chofer').value = ch.nombre + ' (' + ch.id + ')';
+      if (ch.vehiculo_tipo) seleccionarTipoVehiculo(ch.vehiculo_tipo);
+    }
+  }
+  renderChoferesModal('', null);
+  document.getElementById('modal-vehiculo').classList.add('open');
+  setTimeout(function() { document.getElementById('mv-buscar-chofer').focus(); }, 120);
+}
+
+function renderChoferesModal(filtroTexto, seleccionado) {
+  var lista = document.getElementById('mv-chofer-lista');
+  var q = filtroTexto.trim().toLowerCase();
+  var filtrados = q ? choferesLista.filter(function(ch) { return ch.nombre.toLowerCase().indexOf(q) !== -1 || ch.id.toLowerCase().indexOf(q) !== -1; }) : choferesLista;
+  if (!filtrados.length) { lista.innerHTML = '<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:8px;">Sin resultados</div>'; return; }
+  lista.innerHTML = filtrados.map(function(ch) {
+    var activo = document.getElementById('mv-chofer-select').value === ch.id;
+    var emoji = ch.vehiculo_tipo === 'camioneta' ? '🚙' : ch.vehiculo_tipo === 'carro' ? '🚗' : '❓';
+    return '<div onclick="seleccionarChoferModal(\'' + ch.id + '\',\'' + escHtml(ch.nombre) + '\')" style="display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:8px;cursor:pointer;border:1.5px solid ' + (activo ? 'var(--gold)' : 'var(--border)') + ';background:' + (activo ? 'rgba(212,175,55,.12)' : '#0f0f0f') + ';transition:all .15s;"><span style="font-size:1.3rem;">' + emoji + '</span><div><div style="font-size:.88rem;font-weight:600;">' + escHtml(ch.nombre) + '</div><div style="font-size:.72rem;color:var(--muted);">ID: ' + escHtml(ch.id) + '</div></div></div>';
+  }).join('');
+}
+
+function filtrarChoferesModal(q) { renderChoferesModal(q, null); }
+
+function seleccionarChoferModal(id, nombre) {
+  document.getElementById('mv-chofer-select').value = id;
+  document.getElementById('mv-buscar-chofer').value = nombre + ' (' + id + ')';
+  renderChoferesModal('', null);
+  var ch = choferesLista.find(function(c) { return c.id === id; });
+  if (ch && ch.vehiculo_tipo) seleccionarTipoVehiculo(ch.vehiculo_tipo);
+}
+
+function cerrarModalVehiculo() { document.getElementById('modal-vehiculo').classList.remove('open'); }
+
+function seleccionarTipoVehiculo(tipo) {
+  tipoVehiculoSeleccionado = tipo;
+  document.getElementById('tipo-carro').classList.toggle('activo', tipo === 'carro');
+  document.getElementById('tipo-camioneta').classList.toggle('activo', tipo === 'camioneta');
+}
+
+async function guardarVehiculo() {
+  var choferId = document.getElementById('mv-chofer-select').value;
+  if (!choferId) { showToast('⚠️ Selecciona un chofer.', true); return; }
+  try {
+    await dbUpdate('choferes', choferId, { vehiculo_tipo: tipoVehiculoSeleccionado });
+    cerrarModalVehiculo();
+    var nombre = (choferesLista.find(function(c) { return c.id === choferId; }) || {}).nombre || choferId;
+    showToast('✅ ' + nombre + ': ' + (tipoVehiculoSeleccionado === 'camioneta' ? '🚙 Camioneta' : '🚗 Carro'));
+  } catch (err) { showToast('❌ ' + (err.message || err), true); }
+}
+
+document.getElementById('modal-vehiculo').addEventListener('click', function(e) { if (e.target === this) cerrarModalVehiculo(); });
+
+function obtenerPagoChofer(item) {
+  var pago = Number(item && item.pago_chofer);
+  if (Number.isFinite(pago) && pago >= 0) return pago;
+  var precio = Number(item && (item.precio || item.total || 0));
+  if (!Number.isFinite(precio) || precio <= 0) return 0;
+  return Math.round(precio * 0.78);
+}
+
+function cargarHistorialChofer(choferId) {
+  var list = document.getElementById('history-list');
+  var totalEl = document.getElementById('pay-total');
+  if (!choferId) { list.innerHTML = '<div class="history-empty">Elige un chofer.</div>'; totalEl.textContent = 'Total: $0 MXN'; return; }
+
+  dbGetList('historial', 'chofer_id', choferId).then(function(items) {
+    list.innerHTML = '';
+    var totalPago = 0;
+    items.sort(function(a,b) { return (b.timestamp || b.created_at || 0) - (a.timestamp || a.created_at || 0); });
+    items.forEach(function(h) {
+      var estado = (h.estado || '').toLowerCase();
+      var precio = obtenerPagoChofer(h);
+      if (estado === 'completado') totalPago += precio;
+      list.innerHTML += '<div class="history-item"><div><b>' + escHtml(h.cliente || 'Cliente') + '</b> · ' + escHtml((h.estado || '').toUpperCase()) + '</div><div>' + escHtml(h.origen || '-') + ' ➔ ' + escHtml(h.destino || '-') + '</div><div>' + escHtml(h.fecha || '-') + ' ' + escHtml(h.hora || '') + '</div><div>Monto: <b>$' + formatNum(precio) + ' MXN</b></div></div>';
+    });
+    if (!items.length) list.innerHTML = '<div class="history-empty">Sin historial.</div>';
+    totalEl.textContent = 'Total: $' + formatNum(totalPago) + ' MXN';
+  }).catch(function(err) { console.error(err); });
+}
+
+async function borrarHistorialChoferAdmin() {
+  var sel = document.getElementById('pay-chofer-select');
+  var choferId = sel ? sel.value : '';
+  if (!choferId) { showToast('⚠️ Selecciona un chofer.', true); return; }
+  var nombre = (choferesDisponibles[choferId] || {}).nombre || choferId;
+  if (!window.confirm('¿Borrar historial de ' + nombre + '?')) return;
+  try {
+    var items = await dbGetList('historial', 'chofer_id', choferId);
+    if (items) { for (var i = 0; i < items.length; i++) { await dbDelete('historial', items[i].id); } }
+    showToast('🗑️ Historial borrado');
+    cargarHistorialChofer(choferId);
+  } catch (err) { showToast('❌ ' + (err.message || err), true); }
+}
+
+async function cargarGananciasTotales() {
+  var data = await dbGetAll('historial');
+  if (!data) return;
+  var resumen = new Map();
+  var totalGeneral = 0, totalViajes = 0, totalDia = 0;
+  var hoy = new Date();
+  var hoyKey = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+
+  data.forEach(function(h) {
+    if (String(h.estado || '').toLowerCase() !== 'completado') return;
+    var monto = obtenerPagoChofer(h);
+    totalGeneral += monto; totalViajes++;
+
+    var fechaViaje = '';
+    if (h.fecha) { fechaViaje = String(h.fecha).trim(); }
+    if (fechaViaje === hoyKey || fechaViaje === hoy.toLocaleDateString() || fechaViaje === hoy.toLocaleDateString('es-MX')) {
+      totalDia += monto;
+    }
+
+    var actual = resumen.get(h.chofer_id) || { id: h.chofer_id, nombre: (choferesDisponibles[h.chofer_id] || {}).nombre || h.chofer_id, hotel: (choferesDisponibles[h.chofer_id] || {}).hotel || 'Sin hotel', total: 0, viajes: 0 };
+    actual.total += monto; actual.viajes++;
+    resumen.set(h.chofer_id, actual);
+  });
+
+  document.getElementById('total-general-choferes').textContent = 'Total: $' + formatNum(totalGeneral) + ' MXN';
+  document.getElementById('total-viajes-choferes').textContent = 'Viajes: ' + totalViajes;
+  document.getElementById('total-dia-choferes').textContent = 'Hoy: $' + formatNum(totalDia) + ' MXN';
+
+  var items = Array.from(resumen.values()).sort(function(a,b) { return b.total - a.total || a.nombre.localeCompare(b.nombre, 'es'); });
+  var lista = document.getElementById('lista-ganancias-choferes');
+  if (!items.length) { lista.innerHTML = '<div class="history-empty">Sin ganancias.</div>'; return; }
+  lista.innerHTML = items.map(function(item) {
+    return '<div class="totals-item"><div><strong>' + escHtml(item.nombre) + '</strong><span>ID ' + escHtml(item.id) + ' · ' + escHtml(item.hotel) + ' · ' + item.viajes + ' viaje(s)</span></div><div class="totals-amount">$' + formatNum(item.total) + ' MXN</div></div>';
+  }).join('');
+}
+
+async function borrarPreciosTotalesAdmin() {
+  if (!window.confirm('¿Poner precios en 0 en todo el historial?')) return;
+  try {
+    var data = await dbGetAll('historial');
+    if (!data) { showToast('ℹ️ Sin datos'); return; }
+    for (var i = 0; i < data.length; i++) {
+      await dbUpdate('historial', data[i].id, { precio: 0, pago_chofer: 0 });
+    }
+    showToast('🧹 Precios borrados en ' + data.length + ' registros');
+    cargarGananciasTotales();
+  } catch (err) { showToast('❌ ' + (err.message || err), true); }
+}
+
+async function refrescarReservas(btnEl) {
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⟳ Cargando…'; }
+  reservasActivas = {};
+  reservaEstadosPrevios = {};
+  await cargarReservasIniciales();
+  if (btnEl) { btnEl.disabled = false; btnEl.textContent = '🔄 Refrescar'; }
+  showToast('🔄 Clientes actualizados');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  if (SUPABASE) {
+    setBadge('badge-supabase', 'ok', 'Supabase: activo ✓');
+    cargarReservasIniciales();
+    cargarChoferesIniciales();
+    cargarGananciasTotales();
+    setTimeout(function() { iniciarAppSupabase(); }, 100);
+  }
+});
+</script>
+<script>
+function initLuxSisMaps() {
+  try { initMapaChoferes(); } catch(e) { console.warn('SIS map init:', e); }
+}
+if (window.LuxCfg) LuxCfg.loadGoogleMaps('initLuxSisMaps');
+</script>
+</body>
+</html>

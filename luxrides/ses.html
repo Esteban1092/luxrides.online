@@ -1,0 +1,2202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>LuxRides Choferes</title>
+<meta name="description" content="Plataforma de conductores LuxRides"/>
+<link rel="icon" type="image/png" href="/logo-luxrides.png"/>
+<link rel="apple-touch-icon" href="/logo-luxrides.png"/>
+<script src="config.js"></script>
+<script src="js/lux-core.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Outfit',sans-serif;}
+html,body{width:100%;height:100%;background:#050505;color:#fff;overflow:hidden;-webkit-user-select:none;user-select:none;}
+:root{--gold:#D4AF37;--gold-glow:rgba(212,175,55,0.25);--gold-light:#F3E5AB;--green:#22C55E;--red:#EF4444;--glass:rgba(15,15,15,0.92);--card-bg:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);}
+
+#login-screen{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%, rgba(212,175,55,0.08) 0%, #050505 60%);padding:24px;gap:16px;}
+#login-screen::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+#login-screen .logo{font-family:'Playfair Display',serif;font-size:2.6rem;letter-spacing:.15em;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px;position:relative;}
+#login-screen .logo::after{content:'LUXRIDES';position:absolute;inset:0;filter:blur(12px);opacity:0.4;z-index:-1;font-family:'Playfair Display',serif;}
+#login-screen .sub{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:24px;}
+#login-screen input{width:100%;max-width:320px;padding:15px 18px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;color:#fff;font-size:.92rem;outline:none;transition:all .3s;}
+#login-screen input:focus{border-color:var(--gold);background:rgba(212,175,55,.04);box-shadow:0 0 24px rgba(212,175,55,.08);}
+#login-screen input::placeholder{color:rgba(255,255,255,.2);}
+#btn-login{width:100%;max-width:320px;padding:15px;background:linear-gradient(135deg,var(--gold),#B8942E);border:none;border-radius:12px;color:#050505;font-weight:700;font-size:1rem;cursor:pointer;transition:all .3s;letter-spacing:.05em;position:relative;overflow:hidden;}
+#btn-login:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(212,175,55,.3);}
+#btn-login:active{transform:translateY(0);}
+#btn-login:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none;}
+#login-error{color:var(--red);font-size:.8rem;min-height:20px;text-align:center;}
+
+#app{display:none;width:100%;height:100%;position:relative;}
+#tab-mapa{overflow:hidden;padding:0;}
+#map-live{position:absolute;inset:0;z-index:0;height:100%;width:100%;}
+#map{position:absolute;inset:0;z-index:0;}
+.maplibregl-ctrl-attrib{display:none!important;}
+.maplibregl-ctrl-bottom-right{display:none!important;}
+.btn-sm{transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s ease-in-out,background .25s ease-in-out!important;}
+.btn-sm:hover:not(:disabled){transform:translateY(-1px);}
+.btn-sm:active:not(:disabled){transform:scale(.97);}
+.viaje-actions button{transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s ease-in-out!important;}
+.viaje-actions button:hover{transform:translateY(-2px);}
+.viaje-actions button:active{transform:scale(.98);}
+.retiro-pill{transition:transform .25s cubic-bezier(.4,0,.2,1),border-color .25s ease-in-out,background .25s ease-in-out;}
+.retiro-pill:hover{transform:translateY(-1px);}
+.retiro-pill:active{transform:scale(.98);}
+.retiro-pill .pill-icon{transition:transform .25s cubic-bezier(.4,0,.2,1);display:inline-block;}
+.retiro-pill:hover .pill-icon{transform:scale(1.1);}
+#ruta-body{animation:luxFadeIn .28s cubic-bezier(.4,0,.2,1);}
+@keyframes luxFadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.driver-marker{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#B8942E);border:3px solid #fff;box-shadow:0 0 20px rgba(212,175,55,.6),0 2px 8px rgba(0,0,0,.4);cursor:pointer;position:relative;}
+.driver-marker::after{content:'';position:absolute;inset:-8px;border-radius:50%;border:2px solid rgba(212,175,55,.2);animation:pulse-marker 2s ease-in-out infinite;}
+@keyframes pulse-marker{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.3);opacity:0;}}
+.driver-car-wrap{display:flex;flex-direction:column;align-items:center;pointer-events:none;filter:drop-shadow(0 0 10px rgba(212,175,55,0.9)) drop-shadow(0 0 22px rgba(212,175,55,0.5));animation:car-glow 2s ease-in-out infinite alternate;}
+.driver-car-wrap svg{pointer-events:auto;cursor:pointer;}
+@keyframes car-glow{from{filter:drop-shadow(0 0 8px rgba(212,175,55,0.85)) drop-shadow(0 0 18px rgba(212,175,55,0.4));}to{filter:drop-shadow(0 0 20px rgba(212,175,55,1)) drop-shadow(0 0 40px rgba(212,175,55,0.75));}}
+.live-ruta-badge{background:linear-gradient(135deg,rgba(212,175,55,0.95),rgba(184,148,46,0.9));color:#050505;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:999px;margin-bottom:4px;letter-spacing:.04em;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(212,175,55,0.4);}
+.trip-marker-origin{width:20px;height:20px;border-radius:50%;background:#22C55E;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.trip-marker-dest{width:20px;height:20px;border-radius:50%;background:#EF4444;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+
+.btn-lux-danger{
+  width:100%;display:flex;align-items:center;gap:14px;
+  padding:16px 18px;border-radius:14px;border:1.5px solid rgba(239,68,68,0.25);
+  background:rgba(239,68,68,0.06);cursor:pointer;
+  transition:background .22s,border-color .22s,transform .18s;
+  text-align:left;
+}
+.btn-lux-danger:hover{background:rgba(239,68,68,0.13);border-color:rgba(239,68,68,0.5);transform:translateY(-1px);}
+.btn-lux-danger:active{transform:scale(.98);}
+.btn-lux-soft{border-color:rgba(251,191,36,0.2);background:rgba(251,191,36,0.05);}
+.btn-lux-soft:hover{background:rgba(251,191,36,0.1)!important;border-color:rgba(251,191,36,0.4)!important;}
+.btn-ld-icon{font-size:1.3rem;flex-shrink:0;}
+.btn-ld-text{display:flex;flex-direction:column;gap:2px;}
+.btn-ld-main{font-size:.85rem;font-weight:600;color:#FCA5A5;letter-spacing:.01em;}
+.btn-ld-sub{font-size:.68rem;color:rgba(255,255,255,.3);letter-spacing:.02em;}
+#bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;display:flex;background:rgba(8,8,8,.98);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.06);padding-bottom:env(safe-area-inset-bottom,0);}
+.gm-style-cc,.gm-style .gm-style-cc{display:none!important;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 6px;border:none;background:transparent;color:rgba(255,255,255,.35);font-size:.58rem;letter-spacing:.06em;cursor:pointer;transition:color .25s ease-in-out,transform .25s cubic-bezier(.4,0,.2,1);position:relative;}
+.nav-btn .icon{font-size:1.3rem;transition:transform .25s cubic-bezier(.4,0,.2,1);display:inline-block;}
+.nav-btn:hover .icon{transform:translateY(-2px) scale(1.08);}
+.nav-btn[data-tab="historial"]:hover .icon{transform:translateY(-2px) rotate(90deg);}
+.nav-btn[data-tab="viajes"]:hover .icon{transform:translateY(-3px) scale(1.1);}
+.nav-btn:active .icon{transform:scale(.94);}
+.nav-btn.active .icon{transform:translateY(-2px) scale(1.1);}
+.nav-btn.active::after{content:'';position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:20px;height:2px;border-radius:2px;background:var(--gold);box-shadow:0 0 10px var(--gold-glow);}
+.nav-btn.active{color:var(--gold);}
+
+.tab-content{position:fixed;top:0;left:0;right:0;bottom:60px;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;}
+.tab-content.active{display:block;}
+.tab-header{position:sticky;top:0;z-index:10;padding:18px 20px 14px;background:rgba(8,8,8,.92);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;}
+.tab-header h2{font-family:'Playfair Display',serif;font-size:1.15rem;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.tab-header .state-badge{display:inline-block;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;padding:4px 12px;border-radius:999px;}
+.state-badge.online{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.state-badge.offline{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+.state-badge.en_viaje{background:rgba(212,175,55,.12);color:var(--gold);border:1px solid rgba(212,175,55,.3);}
+
+.card{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.05);}
+.card-title{font-size:.85rem;font-weight:600;letter-spacing:.01em;}
+.card-sub{font-size:.7rem;color:rgba(255,255,255,.45);letter-spacing:.02em;}
+.card-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.badge{display:inline-block;border-radius:999px;padding:3px 10px;font-size:.62rem;letter-spacing:.04em;font-weight:600;}
+.badge.ok{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.25);}
+.badge.warn{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+.badge.gold{background:rgba(212,175,55,.1);color:var(--gold);border:1px solid rgba(212,175,55,.25);}
+
+.btn-sm{padding:10px 20px;border-radius:10px;border:none;font-weight:600;font-size:.78rem;cursor:pointer;transition:all .25s;letter-spacing:.02em;}
+.btn-sm.gold{background:linear-gradient(135deg,var(--gold),#B8942E);color:#050505;}
+.btn-sm.gold:hover{box-shadow:0 4px 20px rgba(212,175,55,.35);transform:translateY(-1px);}
+.btn-sm.danger{background:linear-gradient(135deg,var(--red),#DC2626);color:#fff;}
+.btn-sm.outline{background:transparent;border:1.5px solid rgba(212,175,55,.5);color:var(--gold);}
+.btn-sm.outline:hover{background:rgba(212,175,55,.08);border-color:var(--gold);}
+.btn-sm:disabled{opacity:.3;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+
+#viaje-screen{position:fixed;inset:0;z-index:200;background:#050505;display:none;flex-direction:column;animation:slideUp .35s ease-out;}
+#viaje-screen.active{display:flex;}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0;}to{transform:translateY(0);opacity:1;}}
+#viaje-screen .top-bar{display:flex;align-items:center;padding:14px 18px;background:rgba(10,10,10,.98);border-bottom:1px solid rgba(255,255,255,.06);gap:10px;}
+#viaje-screen .top-bar .back-btn{background:rgba(255,255,255,.06);border:none;color:#fff;font-size:1.1rem;cursor:pointer;padding:6px 10px;border-radius:8px;transition:background .2s;}
+#viaje-screen .top-bar h3{flex:1;font-size:.92rem;font-weight:600;}
+.viaje-info{padding:16px 18px;background:rgba(255,255,255,.02);margin:6px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.06);}
+.viaje-info .item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;}
+.viaje-info .item .ico{font-size:1rem;min-width:24px;text-align:center;}
+.viaje-info .item .lbl{font-size:.74rem;color:rgba(255,255,255,.45);}
+.viaje-info .item .val{font-size:.85rem;font-weight:500;}
+.viaje-actions{display:flex;gap:10px;padding:14px 18px;margin-top:auto;padding-bottom:calc(14px + env(safe-area-inset-bottom,0));}
+.viaje-actions button{flex:1;padding:15px;border:none;border-radius:12px;font-weight:700;font-size:.88rem;cursor:pointer;transition:all .25s;letter-spacing:.03em;}
+.viaje-actions .btn-accept{background:linear-gradient(135deg,var(--gold),#B8942E);color:#050505;}
+.viaje-actions .btn-accept:hover{box-shadow:0 4px 24px rgba(212,175,55,.35);transform:translateY(-1px);}
+.viaje-actions .btn-reject{background:rgba(239,68,68,.85);color:#fff;}
+.viaje-actions .btn-finalize{background:linear-gradient(135deg,var(--green),#16A34A);color:#fff;}
+
+#lock-overlay{position:fixed;inset:0;z-index:99999;background:#050505;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:12px;}
+#lock-overlay .ico{font-size:3rem;filter:drop-shadow(0 0 20px rgba(212,175,55,.3));}
+#lock-overlay .msg{font-size:1.1rem;color:var(--gold);font-weight:600;text-align:center;}
+#lock-overlay .sub{font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;}
+#no-sleep{position:fixed;bottom:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;}
+#install-modal{position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px;}
+#install-modal .card{background:linear-gradient(145deg,#151515,#0a0a0a);border:1.5px solid rgba(212,175,55,.3);border-radius:20px;padding:32px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.6);}
+#install-modal .card h3{font-family:'Playfair Display',serif;color:var(--gold);margin-bottom:10px;}
+#install-modal .card p{font-size:.84rem;color:rgba(255,255,255,.5);margin-bottom:18px;line-height:1.4;}
+#install-modal .card button{width:100%;padding:13px;margin-top:8px;border:none;border-radius:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+#install-modal .card .install-btn{background:linear-gradient(135deg,var(--gold),#B8942E);color:#050505;}
+#install-modal .card .close-btn{background:rgba(255,255,255,.06);color:#fff;}
+#stripe-modal{position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;}
+.stripe-modal-card{background:linear-gradient(145deg,#151515,#0a0a0a);border:1.5px solid rgba(212,175,55,.3);border-radius:20px;padding:28px 22px;width:100%;max-width:380px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.6);}
+.stripe-modal-card .close{position:absolute;top:12px;right:16px;background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.5);font-size:1.2rem;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.stripe-modal-card .close:hover{background:rgba(255,255,255,.1);color:#fff;}
+.stripe-modal-card h4{color:var(--gold);margin-bottom:14px;font-size:.95rem;}
+.stripe-modal-card .monto-box{background:rgba(255,255,255,.03);border-radius:12px;padding:14px;text-align:center;margin-bottom:16px;border:1px solid rgba(255,255,255,.06);}
+.stripe-modal-card .monto-box .lbl{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.35);}
+.stripe-modal-card .monto-box .val{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+#stripe-card-element{padding:13px;border:1.5px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.04);margin-bottom:10px;}
+#stripe-card-element.StripeElement--focus{border-color:var(--gold);box-shadow:0 0 20px rgba(212,175,55,.08);}
+#stripe-card-error{color:var(--red);font-size:.76rem;min-height:18px;margin-bottom:8px;}
+#btn-pagar-stripe{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),#B8942E);border:none;border-radius:12px;color:#050505;font-weight:700;font-size:.92rem;cursor:pointer;transition:all .3s;letter-spacing:.05em;}
+#btn-pagar-stripe:hover{box-shadow:0 4px 24px rgba(212,175,55,.3);transform:translateY(-1px);}
+#btn-pagar-stripe:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none;}
+.searching-banner{position:absolute;bottom:76px;left:18px;right:18px;z-index:50;background:rgba(8,8,8,.95);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1.5px solid rgba(212,175,55,.35);border-radius:16px;padding:16px 18px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.searching-banner .spin{display:inline-block;width:20px;height:20px;border:2px solid rgba(212,175,55,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.notif-area{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.notif-toast{padding:12px 22px;border-radius:12px;background:rgba(10,10,10,.95);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);font-size:.82rem;pointer-events:auto;animation:toastIn .35s ease-out;white-space:nowrap;}
+@keyframes toastIn{from{opacity:0;transform:translateY(-12px) scale(.95);}to{opacity:1;transform:translateY(0) scale(1);}}
+.notif-toast.ok{border-color:rgba(34,197,94,.4);box-shadow:0 0 20px rgba(34,197,94,.1);}
+.notif-toast.err{border-color:rgba(239,68,68,.4);box-shadow:0 0 20px rgba(239,68,68,.1);}
+
+.profile-avatar{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;margin-right:14px;flex-shrink:0;background-size:cover;background-position:center;border:2px solid rgba(212,175,55,.2);}
+.foto-perfil{width:64px;height:64px;border-width:2px;}
+.profile-avatar-letter{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--gold);opacity:0;transition:opacity .3s;}
+.card-row .profile-avatar:not([style*="background-image"]) .profile-avatar-letter{opacity:1;}
+.edit-section{background:linear-gradient(145deg,rgba(212,175,55,.04),rgba(255,255,255,.01));border:1px solid rgba(212,175,55,.15);border-radius:18px;margin:8px 14px;padding:16px 18px;position:relative;overflow:hidden;animation:editSlideIn .4s cubic-bezier(.22,1,.36,1);}
+.edit-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.edit-section::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 0%, rgba(212,175,55,.04) 0%, transparent 50%);pointer-events:none;}
+.edit-section-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;position:relative;z-index:1;}
+.edit-section-header .icon{font-size:1.2rem;background:rgba(212,175,55,.1);width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(212,175,55,.2);}
+.edit-section-header h4{font-family:'Playfair Display',serif;font-size:.85rem;color:var(--gold);letter-spacing:.04em;}
+.edit-section-header .line{flex:1;height:1px;background:linear-gradient(90deg,rgba(212,175,55,.3),transparent);}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative;z-index:1;}
+.edit-field{position:relative;background:rgba(255,255,255,.02);border:1.5px solid rgba(255,255,255,.06);border-radius:12px;padding:16px 12px 6px;transition:all .35s cubic-bezier(.22,1,.36,1);cursor:text;}
+.edit-field:focus-within{border-color:var(--gold);background:rgba(212,175,55,.04);box-shadow:0 0 24px rgba(212,175,55,.08),inset 0 0 24px rgba(212,175,55,.02);transform:translateY(-1px);}
+.edit-field .ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:.7rem;opacity:.3;transition:all .3s;pointer-events:none;}
+.edit-field:focus-within .ico{opacity:.7;color:var(--gold);}
+.edit-field .lbl{position:absolute;left:28px;top:4px;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);transition:all .3s;pointer-events:none;}
+.edit-field:focus-within .lbl{color:var(--gold);text-shadow:0 0 12px rgba(212,175,55,.2);}
+.edit-field input{width:100%;background:transparent;border:none;color:#fff;font-size:.82rem;padding:4px 0 0 2px;outline:none;font-weight:500;}
+.edit-field input::placeholder{color:rgba(255,255,255,.12);font-weight:400;}
+.edit-field.full{grid-column:1 / -1;}
+@keyframes editSlideIn{from{opacity:0;transform:translateY(12px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.edit-actions{display:flex;gap:10px;padding:4px 14px 14px;position:relative;z-index:1;}
+.btn-super{flex:1;padding:15px;border:none;border-radius:14px;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .35s cubic-bezier(.22,1,.36,1);letter-spacing:.04em;position:relative;overflow:hidden;}
+.btn-super.primary{background:linear-gradient(135deg,#D4AF37,#B8942E,#D4AF37);background-size:200% 200%;color:#050505;animation:goldShimmer 3s ease-in-out infinite;}
+.btn-super.primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(212,175,55,.35),0 0 60px rgba(212,175,55,.1);}
+.btn-super.primary:active{transform:translateY(0);}
+.btn-super.primary::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.15),transparent);transform:translateX(-100%);transition:transform .6s;}
+.btn-super.primary:hover::after{transform:translateX(100%);}
+.btn-super.secondary{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);}
+.btn-super.secondary:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);color:#fff;transform:translateY(-1px);}
+@keyframes goldShimmer{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+.foto-edit-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.2);border-radius:999px;padding:5px 14px 5px 10px;font-size:.68rem;color:var(--gold);cursor:pointer;transition:all .3s;position:relative;z-index:1;}
+.foto-edit-btn:hover{background:rgba(212,175,55,.15);border-color:rgba(212,175,55,.4);box-shadow:0 0 20px rgba(212,175,55,.1);transform:translateY(-1px);}
+.perfil-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 18px;}
+.perfil-stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px 12px;text-align:center;transition:all .3s;}
+.perfil-stat:hover{border-color:rgba(212,175,55,.2);}
+.perfil-stat .num{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.perfil-stat .lbl{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:3px;}
+
+.retiro-box{background:linear-gradient(145deg,rgba(212,175,55,.04),rgba(255,255,255,.01));border:1px solid rgba(212,175,55,.15);border-radius:18px;margin:8px 14px;padding:16px 18px;position:relative;overflow:hidden;animation:editSlideIn .4s cubic-bezier(.22,1,.36,1);}
+.retiro-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.retiro-box::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 70% 0%, rgba(212,175,55,.04) 0%, transparent 50%);pointer-events:none;}
+.retiro-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;position:relative;z-index:1;}
+.retiro-header-left{display:flex;align-items:center;gap:10px;}
+.retiro-icon{width:36px;height:36px;border-radius:12px;background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.retiro-header-left h4{font-family:'Playfair Display',serif;font-size:.92rem;color:var(--gold);letter-spacing:.04em;}
+.retiro-balance{text-align:right;}
+.retiro-balance .lbl{font-size:.5rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);display:block;}
+.retiro-balance .num{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;display:block;}
+.retiro-pills{display:flex;gap:8px;margin-bottom:12px;position:relative;z-index:1;}
+.retiro-pill{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;border-radius:14px;background:rgba(255,255,255,.02);border:1.5px solid rgba(255,255,255,.06);color:rgba(255,255,255,.35);cursor:pointer;transition:all .35s cubic-bezier(.22,1,.36,1);position:relative;overflow:hidden;}
+.retiro-pill .pill-icon{font-size:1.3rem;transition:transform .3s;}
+.retiro-pill .pill-label{font-size:.72rem;font-weight:600;letter-spacing:.02em;}
+.retiro-pill .pill-sub{font-size:.55rem;color:rgba(255,255,255,.2);letter-spacing:.04em;}
+.retiro-pill.active{background:rgba(212,175,55,.08);border-color:rgba(212,175,55,.35);color:var(--gold);box-shadow:0 0 24px rgba(212,175,55,.06),inset 0 0 20px rgba(212,175,55,.03);}
+.retiro-pill.active .pill-sub{color:rgba(212,175,55,.5);}
+.retiro-pill.active .pill-icon{transform:translateY(-2px) scale(1.1);}
+.retiro-pill:not(.active):hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);color:rgba(255,255,255,.6);}
+.retiro-info-box{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);margin-bottom:14px;font-size:.7rem;color:rgba(255,255,255,.5);line-height:1.4;position:relative;z-index:1;animation:editSlideIn .3s ease-out;}
+.retiro-info-box .info-icon{font-size:1rem;flex-shrink:0;}
+.retiro-info-box .info-text strong{color:rgba(255,255,255,.7);}
+.retiro-monto-wrap{text-align:center;margin-bottom:16px;position:relative;z-index:1;}
+.retiro-monto-lbl{font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.25);display:block;margin-bottom:6px;}
+.retiro-monto-input-group{display:flex;align-items:center;justify-content:center;gap:4px;}
+.retiro-monto-sign{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--gold);opacity:.5;}
+.retiro-monto-input{width:160px;background:transparent;border:none;border-bottom:2.5px solid rgba(212,175,55,.15);color:#fff;font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:700;text-align:center;outline:none;padding:4px 0;transition:all .35s cubic-bezier(.22,1,.36,1);-moz-appearance:textfield;}
+.retiro-monto-input::-webkit-outer-spin-button,.retiro-monto-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.retiro-monto-input:focus{border-bottom-color:var(--gold);box-shadow:0 8px 20px -8px rgba(212,175,55,.15);}
+.retiro-monto-input::placeholder{color:rgba(255,255,255,.08);}
+.retiro-fields{position:relative;z-index:1;animation:editSlideIn .35s ease-out;}
+.retiro-field{position:relative;background:rgba(255,255,255,.02);border:1.5px solid rgba(255,255,255,.06);border-radius:12px;padding:16px 12px 6px;margin-bottom:10px;transition:all .35s cubic-bezier(.22,1,.36,1);}
+.retiro-field:focus-within{border-color:var(--gold);background:rgba(212,175,55,.04);box-shadow:0 0 24px rgba(212,175,55,.08),inset 0 0 24px rgba(212,175,55,.02);transform:translateY(-1px);}
+.retiro-field .rf-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:.7rem;opacity:.3;transition:all .3s;pointer-events:none;}
+.retiro-field:focus-within .rf-ico{opacity:.7;color:var(--gold);}
+.retiro-field .rf-lbl{position:absolute;left:28px;top:4px;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);transition:all .3s;pointer-events:none;}
+.retiro-field:focus-within .rf-lbl{color:var(--gold);text-shadow:0 0 12px rgba(212,175,55,.2);}
+.retiro-field input,.retiro-field .stripe-el{width:100%;background:transparent;border:none;color:#fff;font-size:.82rem;padding:4px 0 0 2px;outline:none;font-weight:500;}
+.retiro-field .stripe-el{padding-top:6px;}
+.retiro-field input::placeholder{color:rgba(255,255,255,.12);font-weight:400;}
+.retiro-field .rf-err{font-size:.65rem;color:var(--red);min-height:16px;margin-top:4px;padding-left:2px;}
+.retiro-btn{margin-top:6px;position:relative;z-index:1;}
+
+.viaje-card{margin:8px 14px;padding:16px 18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;transition:all .3s;}
+.viaje-card:hover{border-color:rgba(212,175,55,.15);}
+.viaje-card .head{display:flex;justify-content:space-between;margin-bottom:8px;}
+.viaje-card .head .name{font-weight:600;font-size:.85rem;}
+.viaje-card .head .price{font-family:'Playfair Display',serif;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.viaje-card .detail{font-size:.73rem;color:rgba(255,255,255,.45);display:flex;gap:14px;flex-wrap:wrap;}
+.historial-empty{text-align:center;padding:48px 20px;color:rgba(255,255,255,.25);font-size:.85rem;}
+
+.tab-content::-webkit-scrollbar{width:3px;}
+.tab-content::-webkit-scrollbar-track{background:transparent;}
+.tab-content::-webkit-scrollbar-thumb{background:rgba(212,175,55,.2);border-radius:3px;}
+
+@keyframes alertPulse{from{box-shadow:0 0 40px rgba(212,175,55,.2),0 24px 64px rgba(0,0,0,.6);}to{box-shadow:0 0 80px rgba(212,175,55,.45),0 24px 64px rgba(0,0,0,.6);}}
+@keyframes alertBounce{from{transform:translateY(0) scale(1);}to{transform:translateY(-6px) scale(1.1);}}
+
+.maplibregl-popup-content{background:transparent!important;box-shadow:none!important;padding:0!important;}
+.maplibregl-popup-tip{display:none!important;}
+
+#viaje-ruta-card{
+  background:linear-gradient(145deg,rgba(20,15,5,0.98),rgba(10,8,3,0.98));
+  border-top:1px solid rgba(212,175,55,0.25);
+  padding:0;overflow-y:auto;flex-shrink:0;
+  max-height:44vh;
+}
+.ruta-card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px 8px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+.ruta-card-title{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:700;}
+.ruta-summary{display:flex;gap:8px;padding:10px 16px 6px;flex-wrap:wrap;}
+.ruta-pill{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:999px;padding:5px 11px;font-size:.72rem;color:rgba(255,255,255,.75);
+}
+.ruta-pill.gold{border-color:rgba(212,175,55,.35);color:var(--gold);background:rgba(212,175,55,.06);}
+.ruta-origen-destino{padding:4px 16px 8px;}
+.ruta-od-row{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.ruta-od-row:last-child{border-bottom:none;}
+.ruta-od-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.ruta-od-dot.green{background:#22C55E;box-shadow:0 0 6px rgba(34,197,94,.5);}
+.ruta-od-dot.red{background:#EF4444;box-shadow:0 0 6px rgba(239,68,68,.5);}
+.ruta-od-label{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);}
+.ruta-od-val{font-size:.82rem;font-weight:500;color:#fff;line-height:1.3;}
+.ruta-instrucciones{padding:0 16px 10px;}
+.ruta-inst-toggle{
+  width:100%;padding:9px 0;background:none;border:none;border-top:1px solid rgba(255,255,255,.05);
+  color:rgba(212,175,55,.7);font-size:.7rem;font-family:'Outfit',sans-serif;
+  cursor:pointer;letter-spacing:.06em;text-align:left;
+  display:flex;align-items:center;gap:6px;
+}
+.ruta-inst-toggle:hover{color:var(--gold);}
+.ruta-inst-list{display:none;padding:6px 0;}
+.ruta-inst-list.show{display:block;}
+.ruta-inst-item{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:.74rem;
+  color:rgba(255,255,255,.55);line-height:1.4;
+}
+.ruta-inst-item:last-child{border-bottom:none;}
+.ruta-inst-num{
+  width:18px;height:18px;border-radius:50%;
+  background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.25);
+  color:var(--gold);font-size:.55rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.ruta-load{text-align:center;padding:18px;color:rgba(255,255,255,.3);font-size:.78rem;}
+.ruta-spinner{
+  width:22px;height:22px;border:2px solid rgba(212,175,55,.15);
+  border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;
+  margin:0 auto 8px;
+}
+
+.foto-picker-overlay{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:flex-end;justify-content:center;}
+.foto-picker-overlay.show{display:flex;}
+.foto-picker-sheet{background:linear-gradient(160deg,#181818,#0d0d0d);border:1px solid rgba(212,175,55,.22);border-radius:28px 28px 0 0;padding:10px 18px calc(28px + env(safe-area-inset-bottom,0));width:100%;max-width:480px;animation:slideUpSheet .32s cubic-bezier(.22,1,.36,1);}
+@keyframes slideUpSheet{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.foto-picker-drag{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:4px;margin:0 auto 16px;}
+.foto-picker-title{font-family:'Playfair Display',serif;font-size:.95rem;color:var(--gold);text-align:center;margin-bottom:18px;letter-spacing:.06em;}
+.foto-picker-opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.foto-picker-opt{display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 10px 18px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.07);border-radius:20px;cursor:pointer;transition:all .3s cubic-bezier(.22,1,.36,1);position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;}
+.foto-picker-opt::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(212,175,55,.06),transparent 70%);opacity:0;transition:opacity .3s;}
+.foto-picker-opt:active::before,.foto-picker-opt:hover::before{opacity:1;}
+.foto-picker-opt:hover,.foto-picker-opt:active{background:rgba(212,175,55,.07);border-color:rgba(212,175,55,.35);transform:translateY(-3px);box-shadow:0 8px 28px rgba(212,175,55,.1);}
+.foto-picker-opt .opt-icon{font-size:2.6rem;line-height:1;filter:drop-shadow(0 2px 8px rgba(212,175,55,.2));transition:transform .3s;}
+.foto-picker-opt:hover .opt-icon{transform:scale(1.08) translateY(-2px);}
+.foto-picker-opt .opt-label{font-size:.84rem;font-weight:700;color:#fff;letter-spacing:.02em;}
+.foto-picker-opt .opt-sub{font-size:.63rem;color:rgba(255,255,255,.35);letter-spacing:.03em;}
+.foto-picker-cancel{width:100%;padding:16px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.07);border-radius:16px;color:rgba(255,255,255,.45);font-size:.86rem;font-weight:600;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;}
+.foto-picker-cancel:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);}
+
+.foto-avatar-wrap{position:relative;cursor:pointer;margin-right:16px;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
+.foto-avatar-wrap .profile-avatar{margin-right:0;transition:transform .2s;}
+.foto-avatar-wrap:active .profile-avatar{transform:scale(.95);}
+.foto-avatar-wrap .cam-overlay{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.52);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .25s;font-size:.75rem;gap:1px;}
+.foto-avatar-wrap .cam-overlay .cam-ico{font-size:1.3rem;}
+.foto-avatar-wrap .cam-overlay .cam-lbl{font-size:.48rem;color:rgba(255,255,255,.85);letter-spacing:.06em;text-transform:uppercase;}
+.foto-avatar-wrap:hover .cam-overlay,.foto-avatar-wrap:active .cam-overlay{opacity:1;}
+.foto-avatar-wrap .cam-badge{position:absolute;bottom:2px;right:2px;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#B8942E);border:2px solid #050505;display:flex;align-items:center;justify-content:center;font-size:.65rem;}
+
+.foto-btn-grande{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(212,175,55,.1),rgba(212,175,55,.04));border:1.5px solid rgba(212,175,55,.3);border-radius:16px;padding:14px 18px;cursor:pointer;transition:all .3s cubic-bezier(.22,1,.36,1);width:100%;margin-top:12px;position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;}
+.foto-btn-grande::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(212,175,55,.08),transparent);transform:translateX(-100%);transition:transform .6s;}
+.foto-btn-grande:hover::after{transform:translateX(100%);}
+.foto-btn-grande:hover{background:linear-gradient(135deg,rgba(212,175,55,.18),rgba(212,175,55,.08));border-color:rgba(212,175,55,.6);box-shadow:0 6px 24px rgba(212,175,55,.15);transform:translateY(-1px);}
+.foto-btn-grande:active{transform:translateY(0);}
+.foto-btn-grande .fbl-icon-wrap{width:42px;height:42px;border-radius:12px;background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.25);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.foto-btn-grande .fbl-text{display:flex;flex-direction:column;gap:2px;flex:1;}
+.foto-btn-grande .fbl-main{font-size:.88rem;font-weight:700;color:var(--gold);letter-spacing:.02em;}
+.foto-btn-grande .fbl-sub{font-size:.64rem;color:rgba(212,175,55,.5);}
+.foto-btn-grande .fbl-arrow{font-size:1rem;color:rgba(212,175,55,.4);}
+</style>
+</head>
+<body>
+<div id="lock-overlay"><div class="ico">🔒</div><div class="msg" id="lock-msg">Pantalla bloqueada</div><div class="sub">Toca para reanudar</div></div>
+<div id="install-modal"><div class="card"><h3>LuxRides Choferes</h3><p>Instala nuestra app para recibir viajes incluso con la pantalla apagada.</p><button class="install-btn" onclick="installApp()">Instalar app</button><button class="close-btn" onclick="document.getElementById('install-modal').style.display='none'">Ahora no</button></div></div>
+<div id="notif-area" class="notif-area"></div>
+
+<div id="foto-picker-overlay" class="foto-picker-overlay" onclick="cerrarFotoPickerFondo(event)">
+  <div class="foto-picker-sheet">
+    <div class="foto-picker-drag"></div>
+    <div class="foto-picker-title">📸 Foto de perfil</div>
+    <div class="foto-picker-opts">
+      <button class="foto-picker-opt" onclick="elegirFotoOpc('cam')">
+        <span class="opt-icon">📷</span>
+        <span class="opt-label">Tomar foto</span>
+        <span class="opt-sub">Usar cámara</span>
+      </button>
+      <button class="foto-picker-opt" onclick="elegirFotoOpc('galeria')">
+        <span class="opt-icon">🖼️</span>
+        <span class="opt-label">Galería</span>
+        <span class="opt-sub">De tu dispositivo</span>
+      </button>
+    </div>
+    <button class="foto-picker-cancel" onclick="cerrarFotoPicker()">Cancelar</button>
+  </div>
+</div>
+
+<div id="viaje-alert-overlay" style="display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;flex-direction:column;padding:24px;">
+  <div id="viaje-alert-card" style="background:linear-gradient(145deg,#111,#0a0a0a);border:2px solid rgba(212,175,55,.6);border-radius:24px;padding:28px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 0 60px rgba(212,175,55,.25),0 24px 64px rgba(0,0,0,.6);animation:alertPulse 1.2s ease-in-out infinite alternate;">
+    <div style="font-size:2.8rem;margin-bottom:10px;animation:alertBounce .6s ease-in-out infinite alternate;">🚖</div>
+    <div style="font-family:'Playfair Display',serif;color:#D4AF37;font-size:1.15rem;font-weight:700;margin-bottom:6px;" id="va-titulo">Nuevo viaje ★</div>
+    <div style="font-size:.84rem;color:rgba(255,255,255,.6);margin-bottom:20px;line-height:1.5;" id="va-cuerpo"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="cerrarAlertaViaje()" style="flex:1;padding:14px;background:linear-gradient(135deg,#D4AF37,#B8942E);border:none;border-radius:14px;color:#050505;font-weight:800;font-size:.9rem;cursor:pointer;letter-spacing:.04em;">VER VIAJE →</button>
+      <button onclick="document.getElementById('viaje-alert-overlay').style.display='none'" style="padding:14px 16px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;color:rgba(255,255,255,.4);font-weight:600;cursor:pointer;">✕</button>
+    </div>
+  </div>
+</div>
+
+<div id="login-screen">
+  <div class="logo">LUXRIDES</div>
+  <div class="sub">Plataforma de conductores</div>
+  <input type="text" id="inp-id" placeholder="ID de chofer" autocomplete="off" inputmode="numeric"/>
+  <input type="text" id="inp-nombre" placeholder="Nombre completo" autocomplete="off"/>
+  <button id="btn-login" onclick="loginChofer()" disabled>INGRESAR</button>
+  <div id="login-error"></div>
+</div>
+
+<div id="app">
+  <div class="tab-content active" id="tab-viajes">
+    <div class="tab-header"><h2>Viajes</h2><div class="state-badge offline" id="state-badge">Desconectado</div></div>
+    <div id="viajes-list"></div>
+    <div id="searching-banner" class="searching-banner" style="display:none"><span class="spin"></span>Buscando viajes disponibles...</div>
+  </div>
+
+  <div class="tab-content" id="tab-mapa">
+    <div class="tab-header"><h2>Mapa en vivo</h2></div>
+    <div id="map-live"></div>
+    <div id="loc-banner" style="position:absolute;top:50px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);color:var(--gold);padding:6px 16px;border-radius:999px;font-size:12px;border:1px solid rgba(212,175,55,.3);pointer-events:none;transition:opacity .5s;">📍 Haz clic en el mapa para marcar tu ubicación</div>
+    <div id="online-toggle" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+      <button class="btn-sm gold" id="btn-online" onclick="setOnline(true)">🟢 En línea</button>
+      <button class="btn-sm outline" id="btn-offline" onclick="setOnline(false)">🔴 Desconectado</button>
+      <button class="btn-sm gold" onclick="obtenerUbicacionManual()" title="Obtener ubicación actual">📍</button>
+      <button class="btn-sm gold" id="btn-demo-mode" onclick="activarModoDemo()" title="Modo demo: toca el mapa para fijar posición" style="background:rgba(212,175,55,.15);border:1px solid rgba(212,175,55,.5);">🖥️ Demo</button>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-historial">
+    <div class="tab-header"><h2>Historial</h2></div>
+    <div id="historial-list"></div>
+  </div>
+
+  <div class="tab-content" id="tab-perfil">
+    <div class="tab-header"><h2>Perfil</h2></div>
+    <div id="perfil-info"></div>
+    <input type="file" id="foto-input" accept="image/*" style="display:none" onchange="subirFotoSeleccionada(event)"/>
+    <input type="file" id="foto-input-cam" accept="image/*" capture="user" style="display:none" onchange="subirFotoSeleccionada(event)"/>
+    <div class="perfil-grid" id="stats-grid"></div>
+    <div class="retiro-box" id="retiro-box">
+      <div class="retiro-header">
+        <div class="retiro-header-left">
+          <span class="retiro-icon">💰</span>
+          <h4>Solicitar retiro</h4>
+        </div>
+        <div class="retiro-balance">
+          <span class="lbl">Disponible</span>
+          <span class="num" id="retiro-balance-num">$0</span>
+        </div>
+      </div>
+      <div class="retiro-pills" id="retiro-pills">
+        <button class="retiro-pill active" data-metodo="stripe" onclick="cambiarMetodoRetiro('stripe')">
+          <span class="pill-icon">💳</span>
+          <span class="pill-label">Tarjeta</span>
+          <span class="pill-sub">Llega al minuto</span>
+        </button>
+        <button class="retiro-pill" data-metodo="transferencia" onclick="cambiarMetodoRetiro('transferencia')">
+          <span class="pill-icon">🏦</span>
+          <span class="pill-label">Transferencia</span>
+          <span class="pill-sub">1-3 días hábiles</span>
+        </button>
+      </div>
+      <div id="retiro-info-stripe" class="retiro-info-box">
+        <span class="info-icon">⚡</span>
+        <div class="info-text">Llega al minuto · <strong>Comisión 3.5% + $7 MXN</strong></div>
+      </div>
+      <div id="retiro-info-transfer" class="retiro-info-box" style="display:none">
+        <span class="info-icon">🕐</span>
+        <div class="info-text">Sin comisión · <strong>Tarda 1-3 días hábiles</strong></div>
+      </div>
+      <div class="retiro-monto-wrap">
+        <span class="retiro-monto-lbl">Monto a retirar</span>
+        <div class="retiro-monto-input-group">
+          <span class="retiro-monto-sign">$</span>
+          <input type="number" id="retiro-monto" placeholder="0" step="1" min="1" class="retiro-monto-input"/>
+        </div>
+      </div>
+      <div id="stripe-fields" class="retiro-fields">
+        <div class="retiro-field">
+          <span class="rf-ico">👤</span>
+          <span class="rf-lbl">Titular</span>
+          <input type="text" id="retiro-titular" placeholder="Nombre del titular"/>
+        </div>
+        <div class="retiro-field">
+          <span class="rf-ico">💳</span>
+          <span class="rf-lbl">Tarjeta</span>
+          <div id="stripe-card-element" class="stripe-el"></div>
+          <div id="stripe-card-error" class="rf-err"></div>
+        </div>
+      </div>
+      <div id="transfer-fields" class="retiro-fields" style="display:none">
+        <div class="retiro-field">
+          <span class="rf-ico">🏛️</span>
+          <span class="rf-lbl">Banco</span>
+          <input type="text" id="retiro-banco" placeholder="Nombre del banco"/>
+        </div>
+        <div class="retiro-field">
+          <span class="rf-ico">🔢</span>
+          <span class="rf-lbl">CLABE</span>
+          <input type="text" id="retiro-clabe" placeholder="18 dígitos" inputmode="numeric"/>
+        </div>
+      </div>
+      <button class="btn-super primary retiro-btn" onclick="solicitarRetiro()">✨ Solicitar retiro</button>
+    </div>
+
+    <div style="padding:18px 18px 32px;display:flex;flex-direction:column;gap:10px;">
+      <div style="border-top:1px solid rgba(255,255,255,0.06);margin-bottom:8px;"></div>
+
+      <button class="btn-lux-danger btn-lux-soft" onclick="confirmarCerrarSesion()">
+        <span class="btn-ld-icon">🔓</span>
+        <div class="btn-ld-text">
+          <span class="btn-ld-main" style="color:rgba(255,200,100,.9);">Cerrar sesión</span>
+          <span class="btn-ld-sub">Solo cierra tu sesión en este dispositivo</span>
+        </div>
+      </button>
+
+      <button class="btn-lux-danger" onclick="confirmarBorrarDatos()">
+        <span class="btn-ld-icon">🗑️</span>
+        <div class="btn-ld-text">
+          <span class="btn-ld-main">Borrar todos mis datos</span>
+          <span class="btn-ld-sub">Elimina saldo, vehículo y sesión guardada</span>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <div id="bottom-nav">
+    <button class="nav-btn active" data-tab="viajes" onclick="switchTab('viajes')"><span class="icon">🚗</span>Viajes</button>
+    <button class="nav-btn" data-tab="mapa" onclick="switchTab('mapa')"><span class="icon">🗺️</span>Mapa</button>
+    <button class="nav-btn" data-tab="historial" onclick="switchTab('historial')"><span class="icon">📋</span>Historial</button>
+    <button class="nav-btn" data-tab="perfil" onclick="switchTab('perfil')"><span class="icon">👤</span>Perfil</button>
+  </div>
+</div>
+
+<div id="viaje-screen">
+  <div class="top-bar"><button class="back-btn" onclick="cerrarViajeScreen()">←</button><h3 id="viaje-screen-title">Nuevo viaje</h3><div id="viaje-eta-badge" style="font-size:.62rem;letter-spacing:.07em;background:rgba(212,175,55,.12);color:var(--gold);border:1px solid rgba(212,175,55,.3);border-radius:999px;padding:3px 10px;display:none;"></div></div>
+  <div id="viaje-map-container" style="flex:0 0 46vh;position:relative;"><div id="map" style="position:absolute;inset:0;"></div></div>
+  <div id="viaje-ruta-card">
+    <div class="ruta-card-header">
+      <span class="ruta-card-title">🗺️ Ruta del cliente</span>
+      <span id="ruta-badge-km" style="font-size:.68rem;color:rgba(255,255,255,.4);"></span>
+    </div>
+    <div class="ruta-load" id="ruta-load"><div class="ruta-spinner"></div>Calculando ruta con Google Maps…</div>
+    <div id="ruta-body" style="display:none;">
+      <div class="ruta-summary" id="ruta-summary"></div>
+      <div class="ruta-origen-destino" id="ruta-od"></div>
+      <div class="ruta-instrucciones">
+        <button class="ruta-inst-toggle" onclick="toggleInstrucciones()">
+          <span id="ruta-inst-arrow">▶</span> Ver instrucciones paso a paso
+        </button>
+        <div class="ruta-inst-list" id="ruta-inst-list"></div>
+      </div>
+    </div>
+  </div>
+  <div class="viaje-info" id="viaje-info" style="padding:10px 14px;"></div>
+  <div class="viaje-actions" id="viaje-actions">
+    <button class="btn-accept" onclick="aceptarViaje()">✓ Aceptar</button>
+    <button class="btn-reject" onclick="rechazarViaje()">✕ Rechazar</button>
+  </div>
+</div>
+
+<div id="stripe-modal">
+  <div class="stripe-modal-card"><button class="close" onclick="cerrarStripeModal()">✕</button><h4>Retiro con Stripe</h4><div class="monto-box"><div class="lbl">Monto</div><div class="val" id="stripe-monto-display">$0</div></div><div id="stripe-card-element-modal"></div><div id="stripe-card-error-modal"></div><button id="btn-pagar-stripe" onclick="procesarPagoStripe()">Retirar</button></div>
+</div>
+
+<video id="no-sleep" src="" loop muted playsinline></video>
+
+<script>
+const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
+const _SUPABASE_KEY = (window.LuxCfg && LuxCfg.supabaseAnonKey()) || '';
+const GOOGLE_MAPS_KEY = (window.LuxCfg && LuxCfg.googleMapsKey()) || '';
+const GMAP_DARK_STYLE = [
+  { elementType: 'geometry',            stylers: [{ color: '#1c1c2e' }] },
+  { elementType: 'labels.text.fill',    stylers: [{ color: '#d1d5db' }] },
+  { elementType: 'labels.text.stroke',  stylers: [{ color: '#1c1c2e' }] },
+  { featureType: 'road',                elementType: 'geometry',            stylers: [{ color: '#3b3b5c' }] },
+  { featureType: 'road',                elementType: 'geometry.stroke',     stylers: [{ color: '#23234a' }] },
+  { featureType: 'road.highway',        elementType: 'geometry',            stylers: [{ color: '#5a4fcf' }] },
+  { featureType: 'road.highway',        elementType: 'geometry.stroke',     stylers: [{ color: '#3b2ea0' }] },
+  { featureType: 'road.highway',        elementType: 'labels.text.fill',    stylers: [{ color: '#e0e0e0' }] },
+  { featureType: 'water',               elementType: 'geometry',            stylers: [{ color: '#0d1b3e' }] },
+  { featureType: 'poi',                 stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.park',            elementType: 'geometry',            stylers: [{ color: '#1a3a2a' }] },
+  { featureType: 'transit',             elementType: 'geometry',            stylers: [{ color: '#2d2d4e' }] },
+  { featureType: 'administrative',      elementType: 'geometry.stroke',     stylers: [{ color: '#4a4a7a' }] }
+];
+const VAPID_PUBLIC_KEY = (window.LuxCfg && LuxCfg.vapidPublic()) || '';
+var SUPABASE = null;
+try { SUPABASE = supabase.createClient(_SUPABASE_URL, _SUPABASE_KEY); } catch(e) { console.error('Supabase init error:', e); }
+
+let choferId = null, choferData = null, viajeActual = null, currentPos = null;
+let viajeChannel = null, choferChannel = null, historialChannel = null;
+let posWatchId = null, heartbeatInt = null, searchInt = null;
+let liveMap = null, tripMap = null, driverMarker = null, tripRouteAdded = false;
+let stripeInstance = null, stripeCardElement = null, noSleep = null, wakeLockSentinel = null;
+let viajesPendientes = {};
+let _dirSvc = null;
+let _livePolylines = [];
+let _tripPolylines = [];
+let _tripMarkers = [];
+let _liveInfoWindow = null;
+
+function gLatLng(w) { return { lat: Number(w.lat), lng: Number(w.lng) }; }
+
+function adaptGoogleRoute(route) {
+  var legs = route.legs || [];
+  var lengthInMeters = 0, travelTimeInSeconds = 0;
+  var instructions = [];
+  var path = route.overview_polyline ? google.maps.geometry.encoding.decodePath(route.overview_polyline.points) : [];
+  legs.forEach(function(leg) {
+    lengthInMeters += (leg.distance && leg.distance.value) || 0;
+    travelTimeInSeconds += (leg.duration && leg.duration.value) || 0;
+    (leg.steps || []).forEach(function(step) {
+      var msg = (step.instructions || '').replace(/<[^>]+>/g, '');
+      if (msg) instructions.push({ message: msg });
+    });
+  });
+  return {
+    summary: {
+      lengthInMeters: lengthInMeters,
+      travelTimeInSeconds: travelTimeInSeconds,
+      arrivalTime: new Date(Date.now() + travelTimeInSeconds * 1000).toISOString()
+    },
+    guidance: { instructions: instructions },
+    legs: [{ points: path.map(function(p) { return { latitude: p.lat(), longitude: p.lng() }; }) }],
+    _path: path
+  };
+}
+
+function fetchGoogleRoute(waypoints, maxAlternatives) {
+  return new Promise(function(resolve, reject) {
+    if (typeof google === 'undefined' || !google.maps) { reject(new Error('Google Maps no cargado')); return; }
+    if (!_dirSvc) _dirSvc = new google.maps.DirectionsService();
+    var origin = waypoints[0];
+    var dest = waypoints[waypoints.length - 1];
+    var wps = waypoints.slice(1, -1).map(function(w) { return { location: gLatLng(w), stopover: true }; });
+    _dirSvc.route({
+      origin: gLatLng(origin),
+      destination: gLatLng(dest),
+      waypoints: wps,
+      travelMode: google.maps.TravelMode.DRIVING,
+      provideRouteAlternatives: !!(maxAlternatives && maxAlternatives > 0)
+    }, function(result, status) {
+      if (status !== 'OK' || !result) { reject(new Error(status || 'Route error')); return; }
+      resolve({ routes: result.routes.map(adaptGoogleRoute) });
+    });
+  });
+}
+
+function routePathToCoords(ruta) {
+  if (ruta._path && ruta._path.length) return ruta._path;
+  var coords = [];
+  (ruta.legs || []).forEach(function(leg) {
+    (leg.points || []).forEach(function(p) { coords.push(new google.maps.LatLng(p.latitude, p.longitude)); });
+  });
+  return coords;
+}
+
+function initLiveMap() {
+  var el = document.getElementById('map-live');
+  if (!el || liveMap) return;
+  if (typeof google === 'undefined' || !google.maps) { setTimeout(initLiveMap, 500); return; }
+  try {
+    liveMap = new google.maps.Map(el, {
+      center: { lat: 19.4326, lng: -99.1332 },
+      zoom: 12,
+      styles: GMAP_DARK_STYLE,
+      disableDefaultUI: true,
+      zoomControl: true,
+      gestureHandling: 'greedy'
+    });
+    // Forzar resize por si el tab estaba oculto al inicializar
+    setTimeout(function() { if (liveMap) google.maps.event.trigger(liveMap, 'resize'); }, 150);
+    google.maps.event.addListenerOnce(liveMap, 'idle', function() {
+      if (currentPos) updateDriverMarker(currentPos);
+      if (viajeActual) dibujarRutaLiveMap(viajeActual);
+    });
+    liveMap.addListener('click', function(e) {
+      var lat = e.latLng.lat(), lng = e.latLng.lng();
+      notify('📍 Clic en (' + lat.toFixed(4) + ', ' + lng.toFixed(4) + ') — enviando al admin...', 'ok');
+      actualizarUbicacion(lat, lng, 'click');
+    });
+  } catch(e) { console.error('Error initLiveMap:', e); }
+}
+
+function notify(msg, tipo) {
+  const a = document.getElementById('notif-area');
+  const t = document.createElement('div'); t.className = 'notif-toast ' + (tipo||'ok'); t.textContent = msg;
+  a.appendChild(t); setTimeout(() => t.remove(), 4000);
+}
+
+async function dbGet(table, id) {
+  try {
+    var res = await SUPABASE.from(table).select().eq('id', id).maybeSingle();
+    if (res.error) { console.warn('dbGet error:', res.error); return null; }
+    return res.data;
+  } catch(e) { console.warn('dbGet exception:', e); return null; }
+}
+
+async function dbGetList(table, col, val) {
+  const { data } = await SUPABASE.from(table).select().eq(col, val).order('created_at', { ascending: false });
+  return data || [];
+}
+
+function dbUpdate(table, id, data) {
+  return SUPABASE.from(table).update(data).eq('id', id).then(function(res) {
+    if (res.error) {
+      console.error('dbUpdate error:', table, id, res.error);
+      return Promise.reject(res.error);
+    }
+    return res;
+  });
+}
+
+function dbInsert(table, data) {
+  return SUPABASE.from(table).insert(data).select().single();
+}
+
+function dbDelete(table, id) {
+  return SUPABASE.from(table).delete().eq('id', id);
+}
+
+function dbSubscribe(table, filterCol, filterVal, eventType, cb) {
+  const ch = SUPABASE.channel(table + '-' + filterVal + '-' + Date.now());
+  ch.on('postgres_changes', { event: eventType, schema: 'public', table, filter: filterCol + '=eq.' + filterVal }, cb).subscribe();
+  return ch;
+}
+
+function urlBase64ToUint8Array(base64) {
+  var padding = '='.repeat((4 - base64.length % 4) % 4);
+  var b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+  var raw = window.atob(b64);
+  var output = new Uint8Array(raw.length);
+  for (var i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
+  return output;
+}
+
+async function registrarPush() {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { console.log('Push no soportado'); return; }
+    var reg = await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    var sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      await guardarSuscripcionPush(sub);
+      return;
+    }
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    await guardarSuscripcionPush(sub);
+    console.log('Push subscription OK');
+  } catch (e) { console.warn('Error registering push:', e); }
+}
+
+async function guardarSuscripcionPush(sub) {
+  if (!choferId) return;
+  try {
+    var subData = JSON.parse(JSON.stringify(sub));
+    await SUPABASE.from('push_subscriptions').upsert(
+      { chofer_id: choferId, subscription: subData, updated_at: new Date().toISOString() },
+      { onConflict: 'chofer_id' }
+    );
+    console.log('Push subscription saved');
+  } catch (e) { console.warn('Error saving push sub:', e); }
+}
+
+function crearCarMarkerElement() {
+  var wrap = document.createElement('div');
+  wrap.className = 'driver-car-wrap';
+  wrap.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 58" width="40" height="58">'
+    + '<ellipse cx="20" cy="55" rx="11" ry="3.5" fill="rgba(0,0,0,0.35)"/>'
+    + '<rect x="8" y="5" width="24" height="44" rx="10" fill="#D4AF37"/>'
+    + '<rect x="11" y="14" width="18" height="20" rx="6" fill="#B8942E"/>'
+    + '<rect x="11.5" y="11" width="17" height="8" rx="5" fill="rgba(200,235,255,0.72)"/>'
+    + '<rect x="12" y="30" width="16" height="7" rx="4" fill="rgba(200,235,255,0.52)"/>'
+    + '<ellipse cx="13" cy="7" rx="3" ry="2" fill="#FFFDE7" opacity="0.95"/>'
+    + '<ellipse cx="27" cy="7" rx="3" ry="2" fill="#FFFDE7" opacity="0.95"/>'
+    + '<ellipse cx="13" cy="46" rx="2.5" ry="1.8" fill="#EF4444" opacity="0.9"/>'
+    + '<ellipse cx="27" cy="46" rx="2.5" ry="1.8" fill="#EF4444" opacity="0.9"/>'
+    + '<line x1="20" y1="14" x2="20" y2="34" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>'
+    + '<rect x="8" y="5" width="24" height="44" rx="10" fill="none" stroke="rgba(255,240,180,0.35)" stroke-width="1.2"/>'
+    + '<rect x="2" y="10" width="7" height="11" rx="3" fill="#1a1a1a" stroke="#D4AF37" stroke-width="1.5"/>'
+    + '<rect x="31" y="10" width="7" height="11" rx="3" fill="#1a1a1a" stroke="#D4AF37" stroke-width="1.5"/>'
+    + '<rect x="2" y="31" width="7" height="11" rx="3" fill="#1a1a1a" stroke="#D4AF37" stroke-width="1.5"/>'
+    + '<rect x="31" y="31" width="7" height="11" rx="3" fill="#1a1a1a" stroke="#D4AF37" stroke-width="1.5"/>'
+    + '<circle cx="5.5" cy="15.5" r="2.5" fill="#D4AF37" opacity="0.65"/>'
+    + '<circle cx="34.5" cy="15.5" r="2.5" fill="#D4AF37" opacity="0.65"/>'
+    + '<circle cx="5.5" cy="36.5" r="2.5" fill="#D4AF37" opacity="0.65"/>'
+    + '<circle cx="34.5" cy="36.5" r="2.5" fill="#D4AF37" opacity="0.65"/>'
+    + '</svg>';
+  return wrap;
+}
+
+function fmtDist(m) {
+  if (m >= 1000) return (m/1000).toFixed(1) + ' km';
+  return Math.round(m) + ' m';
+}
+function fmtTime(s) {
+  if (s >= 3600) { var h=Math.floor(s/3600); var m=Math.round((s%3600)/60); return h+'h '+(m?m+'min':''); }
+  return Math.round(s/60) + ' min';
+}
+
+function toggleInstrucciones() {
+  var list = document.getElementById('ruta-inst-list');
+  var arrow = document.getElementById('ruta-inst-arrow');
+  if (!list) return;
+  var open = list.classList.toggle('show');
+  if (arrow) arrow.textContent = open ? '▼' : '▶';
+}
+
+function _clearLivePolylines() {
+  _livePolylines.forEach(function(pl) { if (pl) pl.setMap(null); });
+  _livePolylines = [];
+}
+
+function _dibujarRutaFallbackLive(waypoints, deLat, deLng) {
+  if (!liveMap || !waypoints || waypoints.length < 2) return;
+  var path = waypoints.map(function(w) { return new google.maps.LatLng(Number(w.lat), Number(w.lng)); });
+  _clearLivePolylines();
+  _livePolylines.push(new google.maps.Polyline({ path: path, strokeColor: '#7A5B10', strokeWeight: 8, strokeOpacity: 0.45, map: liveMap, zIndex: 1 }));
+  _livePolylines.push(new google.maps.Polyline({ path: path, strokeColor: '#D4AF37', strokeWeight: 5, strokeOpacity: 0.95, map: liveMap, zIndex: 3 }));
+  _liveRutaActiva = true;
+  if (!_liveDestinoMarker) {
+    _liveDestinoMarker = new google.maps.Marker({
+      position: { lat: Number(deLat), lng: Number(deLng) }, map: liveMap,
+      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#EF4444', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }
+    });
+  } else {
+    _liveDestinoMarker.setPosition({ lat: Number(deLat), lng: Number(deLng) });
+  }
+  var b = new google.maps.LatLngBounds();
+  path.forEach(function(p) { b.extend(p); });
+  liveMap.fitBounds(b, 72);
+}
+
+function _clearTripMapArtifacts() {
+  _tripPolylines.forEach(function(pl) { if (pl) pl.setMap(null); });
+  _tripMarkers.forEach(function(m) { if (m) m.setMap(null); });
+  _tripPolylines = [];
+  _tripMarkers = [];
+}
+
+function dibujarRutaLiveMap(vj) {
+  if (!liveMap || !currentPos) return;
+  var chLng = currentPos.lng, chLat = currentPos.lat;
+  var orLat = parseFloat(vj.lat_origen || vj.origen_lat || 0);
+  var orLng = parseFloat(vj.lng_origen || vj.origen_lng || 0);
+  var deLat = parseFloat(vj.lat_destino || vj.destino_lat || 0);
+  var deLng = parseFloat(vj.lng_destino || vj.destino_lng || 0);
+  if (!deLat || !deLng) return;
+
+  var tieneCliente = (vj.estado === 'recogido' || vj.estado === 'en_viaje');
+  var waypoints;
+  if (tieneCliente || !orLat || !orLng) {
+    waypoints = [{lat:chLat,lng:chLng},{lat:deLat,lng:deLng}];
+  } else {
+    waypoints = [{lat:chLat,lng:chLng},{lat:orLat,lng:orLng},{lat:deLat,lng:deLng}];
+  }
+
+  fetchGoogleRoute(waypoints, 0).then(function(d){
+    if (!d || !d.routes || !d.routes.length) {
+      _dibujarRutaFallbackLive(waypoints, deLat, deLng);
+      return;
+    }
+    var ruta = d.routes[0];
+    var path = routePathToCoords(ruta);
+    if (!path || !path.length) {
+      _dibujarRutaFallbackLive(waypoints, deLat, deLng);
+      return;
+    }
+    var mins = Math.round((ruta.summary.travelTimeInSeconds || 0) / 60);
+    var km   = ((ruta.summary.lengthInMeters || 0) / 1000).toFixed(1);
+    if (!liveMap) return;
+    _clearLivePolylines();
+    _livePolylines.push(new google.maps.Polyline({ path: path, strokeColor: '#7A5B10', strokeWeight: 9, strokeOpacity: 0.55, map: liveMap, zIndex: 1 }));
+    _livePolylines.push(new google.maps.Polyline({ path: path, strokeColor: '#D4AF37', strokeWeight: 20, strokeOpacity: 0.22, map: liveMap, zIndex: 2 }));
+    _livePolylines.push(new google.maps.Polyline({ path: path, strokeColor: '#D4AF37', strokeWeight: 5.5, strokeOpacity: 1, map: liveMap, zIndex: 3 }));
+    _liveRutaActiva = true;
+    if (!_liveOrigenMarker && orLat && orLng) {
+      _liveOrigenMarker = new google.maps.Marker({
+        position: { lat: orLat, lng: orLng }, map: liveMap,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#22C55E', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }
+      });
+    }
+    if (!_liveDestinoMarker) {
+      _liveDestinoMarker = new google.maps.Marker({
+        position: { lat: deLat, lng: deLng }, map: liveMap,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#EF4444', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }
+      });
+    }
+    if (path.length) {
+      var mid = path[Math.floor(path.length / 2)];
+      if (_liveInfoWindow) _liveInfoWindow.close();
+      _liveInfoWindow = new google.maps.InfoWindow({
+        content: '<div style="font-size:11px;font-family:Outfit,sans-serif;color:#fff;background:rgba(10,10,10,.92);padding:5px 10px;border-radius:8px;border:1px solid #D4AF37;font-weight:600;">🚗 ~'+mins+' min &nbsp;·&nbsp; '+km+' km</div>',
+        position: mid
+      });
+      _liveInfoWindow.open(liveMap);
+    }
+    var b = new google.maps.LatLngBounds();
+    path.forEach(function(p) { b.extend(p); });
+    liveMap.fitBounds(b, 72);
+  }).catch(function(e){
+    console.warn('Google live route error:', e);
+    _dibujarRutaFallbackLive(waypoints, deLat, deLng);
+  });
+}
+
+function _mostrarErrorRuta(msg) {
+  var loadEl = document.getElementById('ruta-load');
+  if (loadEl) loadEl.innerHTML = '<span style="color:rgba(239,68,68,.7);font-size:.8rem;">⚠️ ' + (msg || 'No se pudo calcular la ruta') + '</span>';
+}
+
+function _coordsValidas(lat, lng) {
+  return window.LuxCfg && LuxCfg.esUbicacionGPSValida(lat, lng);
+}
+
+var _ultimoEnvioUbicacion = 0;
+var _ultimaUbicacionEnviada = null;
+
+function _distMetros(a, b) {
+  if (!a || !b) return Infinity;
+  var R = 6371000;
+  var dLat = (b.lat - a.lat) * Math.PI / 180;
+  var dLng = (b.lng - a.lng) * Math.PI / 180;
+  var x = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+    + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180)
+    * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function initTripMap(origen, destino) {
+  var el = document.getElementById('map');
+  if (!el) return;
+  if (typeof google === 'undefined' || !google.maps) {
+    setTimeout(function(){ initTripMap(origen, destino); }, 500); return;
+  }
+
+  var loadEl = document.getElementById('ruta-load');
+  var bodyEl = document.getElementById('ruta-body');
+  if (loadEl) { loadEl.style.display = 'block'; loadEl.innerHTML = '<div class="ruta-spinner"></div>Calculando ruta…'; }
+  if (bodyEl) bodyEl.style.display = 'none';
+
+  _clearTripMapArtifacts();
+  tripMap = null;
+  tripMap = new google.maps.Map(el, {
+    center: { lat: 19.4326, lng: -99.1332 },
+    zoom: 11,
+    styles: GMAP_DARK_STYLE,
+    disableDefaultUI: true,
+    zoomControl: true,
+    gestureHandling: 'greedy'
+  });
+  // Forzar re-render: el contenedor estaba en display:none, Google Maps no calcula dimensiones bien
+  setTimeout(function() { google.maps.event.trigger(tripMap, 'resize'); }, 100);
+
+  var chLat = (currentPos ? currentPos.lat : origen.lat);
+  var chLng = (currentPos ? currentPos.lng : origen.lng);
+
+  // Si faltan coordenadas de destino u origen, geocodificar desde texto
+  var vj = viajeActual || {};
+  var origenTexto = vj.origen || '';
+  var destinoTexto = vj.destino || '';
+
+  var origenOk  = _coordsValidas(origen.lat, origen.lng);
+  var destinoOk = _coordsValidas(destino.lat, destino.lng);
+
+  function construirRutaConCoords(orLat, orLng, deLat, deLng) {
+    if (!_coordsValidas(deLat, deLng)) {
+      _mostrarErrorRuta('Sin coordenadas de destino. Verifica la reserva.');
+      return;
+    }
+
+    var origenFinal  = { lat: orLat, lng: orLng };
+    var destinoFinal = { lat: deLat, lng: deLng };
+
+    [{ pos: origenFinal, color: '#22C55E' }, { pos: destinoFinal, color: '#EF4444' }].forEach(function(m) {
+      _tripMarkers.push(new google.maps.Marker({
+        position: m.pos, map: tripMap,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: m.color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }
+      }));
+    });
+    _tripMarkers.push(new google.maps.Marker({
+      position: { lat: chLat, lng: chLng }, map: tripMap,
+      icon: { url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="9" fill="#D4AF37" stroke="#fff" stroke-width="2"/></svg>'), anchor: new google.maps.Point(12, 12) }
+    }));
+
+    var b = new google.maps.LatLngBounds();
+    b.extend(destinoFinal); b.extend({ lat: chLat, lng: chLng });
+
+    var tieneCliente = vj.estado === 'recogido' || vj.estado === 'en_viaje';
+    var mismoPunto   = origenFinal.lat === destinoFinal.lat && origenFinal.lng === destinoFinal.lng;
+    var waypoints;
+    if (tieneCliente || mismoPunto || !_coordsValidas(origenFinal.lat, origenFinal.lng)) {
+      waypoints = [{ lat: chLat, lng: chLng }, destinoFinal];
+    } else {
+      b.extend(origenFinal);
+      waypoints = [{ lat: chLat, lng: chLng }, origenFinal, destinoFinal];
+    }
+
+    // Timeout de seguridad: si en 12s no llega respuesta, mostrar error
+    var timedOut = false;
+    var timer = setTimeout(function() {
+      timedOut = true;
+      _mostrarErrorRuta('Tiempo agotado calculando ruta. Revisa tu conexión.');
+    }, 12000);
+
+    fetchGoogleRoute(waypoints, 2).then(function(d) {
+      if (timedOut) return;
+      clearTimeout(timer);
+      if (!d || !d.routes || !d.routes.length) {
+        _mostrarErrorRuta('Google Maps no encontró ruta entre estos puntos.');
+        return;
+      }
+      var colores = ['#D4AF37', '#60A5FA', '#A78BFA'];
+      var labels  = ['Ruta principal', 'Alternativa 1', 'Alternativa 2'];
+      d.routes.forEach(function(ruta, i) {
+        var path = routePathToCoords(ruta);
+        var mins = Math.round((ruta.summary.travelTimeInSeconds || 0) / 60);
+        var km   = ((ruta.summary.lengthInMeters || 0) / 1000).toFixed(1);
+        var principal = i === 0;
+        if (principal) _tripPolylines.push(new google.maps.Polyline({ path: path, strokeColor: '#7A5B10', strokeWeight: 9, strokeOpacity: 0.55, map: tripMap, zIndex: 1 }));
+        _tripPolylines.push(new google.maps.Polyline({ path: path, strokeColor: colores[i] || '#888', strokeWeight: principal ? 22 : 7, strokeOpacity: principal ? 0.25 : 0.1, map: tripMap, zIndex: 2 }));
+        _tripPolylines.push(new google.maps.Polyline({ path: path, strokeColor: colores[i] || '#888', strokeWeight: principal ? 7 : 2.5, strokeOpacity: principal ? 1 : 0.55, map: tripMap, zIndex: 3 }));
+        if (path.length) {
+          var mid = path[Math.floor(path.length / 2)];
+          new google.maps.InfoWindow({
+            content: '<div style="font-size:10px;font-family:Outfit,sans-serif;color:#fff;background:rgba(10,10,10,.9);padding:4px 8px;border-radius:6px;border:1px solid ' + colores[i] + ';">' + (labels[i] || 'Ruta') + '<br/>⏱ ~' + mins + ' min &nbsp;·&nbsp; ' + km + ' km</div>',
+            position: mid
+          }).open(tripMap);
+        }
+        path.forEach(function(p) { b.extend(p); });
+      });
+      tripMap.fitBounds(b, 60);
+      mostrarTarjetaRuta(d.routes[0], origenFinal, destinoFinal);
+    }).catch(function(e) {
+      clearTimeout(timer);
+      console.warn('Google trip route error:', e);
+      var code = String(e && e.message || e);
+      if (code.includes('REQUEST_DENIED') || code.includes('NOT_FOUND')) {
+        _mostrarErrorRuta('API de Google Maps denegada. Verifica la clave en config.js.');
+      } else if (code.includes('ZERO_RESULTS')) {
+        _mostrarErrorRuta('No hay ruta entre origen y destino.');
+      } else {
+        _mostrarErrorRuta('Error calculando ruta (' + code + ')');
+      }
+    });
+  }
+
+  // Geocodificar si faltan coords (con timeout de seguridad de 8s)
+  if (!destinoOk && destinoTexto) {
+    var geocoder = new google.maps.Geocoder();
+    var _geoCalled = false;
+    var _geoTimer = setTimeout(function() {
+      if (_geoCalled) return;
+      _geoCalled = true;
+      // Geocoder tardó mucho — usar posición del chofer como fallback de origen
+      var orLat = origenOk ? origen.lat : (currentPos ? currentPos.lat : 0);
+      var orLng = origenOk ? origen.lng : (currentPos ? currentPos.lng : 0);
+      construirRutaConCoords(orLat, orLng, 0, 0); // mostrará error de destino
+    }, 8000);
+    geocoder.geocode({ address: destinoTexto + ', CDMX, México' }, function(results, status) {
+      if (_geoCalled) return;
+      _geoCalled = true;
+      clearTimeout(_geoTimer);
+      var deLat = (status === 'OK' && results[0]) ? results[0].geometry.location.lat() : 0;
+      var deLng = (status === 'OK' && results[0]) ? results[0].geometry.location.lng() : 0;
+      var orLat = origenOk ? origen.lat : (currentPos ? currentPos.lat : 0);
+      var orLng = origenOk ? origen.lng : (currentPos ? currentPos.lng : 0);
+      if (!origenOk && origenTexto) {
+        geocoder.geocode({ address: origenTexto + ', CDMX, México' }, function(r2, s2) {
+          if (s2 === 'OK' && r2[0]) {
+            orLat = r2[0].geometry.location.lat();
+            orLng = r2[0].geometry.location.lng();
+          }
+          construirRutaConCoords(orLat, orLng, deLat, deLng);
+        });
+      } else {
+        construirRutaConCoords(orLat, orLng, deLat, deLng);
+      }
+    });
+  } else {
+    construirRutaConCoords(
+      origenOk ? origen.lat : chLat,
+      origenOk ? origen.lng : chLng,
+      destinoOk ? destino.lat : 0,
+      destinoOk ? destino.lng : 0
+    );
+  }
+}
+
+function mostrarTarjetaRuta(ruta, origen, destino) {
+  var loadEl  = document.getElementById('ruta-load');
+  var bodyEl  = document.getElementById('ruta-body');
+  var sumEl   = document.getElementById('ruta-summary');
+  var odEl    = document.getElementById('ruta-od');
+  var instEl  = document.getElementById('ruta-inst-list');
+  var badgeEl = document.getElementById('ruta-badge-km');
+  var etaBadge= document.getElementById('viaje-eta-badge');
+  if (!loadEl || !bodyEl) return;
+
+  var sum  = ruta.summary || {};
+  var dist = fmtDist(sum.lengthInMeters || 0);
+  var tiempo = fmtTime(sum.travelTimeInSeconds || 0);
+  var eta  = sum.arrivalTime ? new Date(sum.arrivalTime).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) : '';
+
+  if (badgeEl) badgeEl.textContent = dist;
+  if (etaBadge) { etaBadge.textContent = '~'+tiempo; etaBadge.style.display='inline'; }
+
+  sumEl.innerHTML =
+    '<div class="ruta-pill gold">🛣️ '+dist+'</div>'+
+    '<div class="ruta-pill gold">⏱ '+tiempo+'</div>'+
+    (eta ? '<div class="ruta-pill">🕐 Llega '+eta+'</div>' : '');
+
+  odEl.innerHTML =
+    '<div class="ruta-od-row"><div class="ruta-od-dot green"></div><div><div class="ruta-od-label">Origen (Recogida)</div><div class="ruta-od-val">'+escHtml(viajeActual && viajeActual.origen ? viajeActual.origen : '📍 '+origen.lat.toFixed(5)+', '+origen.lng.toFixed(5))+'</div></div></div>'+
+    '<div class="ruta-od-row"><div class="ruta-od-dot red"></div><div><div class="ruta-od-label">Destino</div><div class="ruta-od-val">'+escHtml(viajeActual && viajeActual.destino ? viajeActual.destino : '🏁 '+destino.lat.toFixed(5)+', '+destino.lng.toFixed(5))+'</div></div></div>';
+
+  var instrucciones = (ruta.guidance && ruta.guidance.instructions) || [];
+  if (instrucciones.length) {
+    var html = '';
+    instrucciones.forEach(function(inst, idx){
+      if (!inst.message) return;
+      html += '<div class="ruta-inst-item"><div class="ruta-inst-num">'+(idx+1)+'</div><div>'+escHtml(inst.message)+'</div></div>';
+    });
+    instEl.innerHTML = html || '<div style="color:rgba(255,255,255,.3);font-size:.74rem;padding:6px 0;">Sin instrucciones disponibles</div>';
+  } else {
+    instEl.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:.74rem;padding:6px 0;">Sin instrucciones disponibles</div>';
+  }
+
+  loadEl.style.display = 'none';
+  bodyEl.style.display = 'block';
+}
+
+var _liveRutaId = 'live-ruta-chofer';
+var _liveRutaActiva = false;
+var _liveOrigenMarker = null, _liveDestinoMarker = null;
+var _rutaDebTimer = null;
+
+function borrarRutaLiveMap() {
+  _clearLivePolylines();
+  if (_liveOrigenMarker) { _liveOrigenMarker.setMap(null); _liveOrigenMarker = null; }
+  if (_liveDestinoMarker) { _liveDestinoMarker.setMap(null); _liveDestinoMarker = null; }
+  if (_liveInfoWindow) { _liveInfoWindow.close(); _liveInfoWindow = null; }
+  _liveRutaActiva = false;
+}
+
+function updateDriverMarker(pos) {
+  if (!liveMap) return;
+  var latLng = { lat: pos.lat, lng: pos.lng };
+  if (driverMarker) driverMarker.setPosition(latLng);
+  else {
+    driverMarker = new google.maps.Marker({
+      position: latLng,
+      map: liveMap,
+      icon: { url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="10" fill="#D4AF37" stroke="#fff" stroke-width="2.5"/></svg>'), anchor: new google.maps.Point(14, 14) }
+    });
+  }
+  liveMap.panTo(latLng);
+}
+
+document.getElementById('inp-id').addEventListener('input', toggleLoginBtn);
+document.getElementById('inp-nombre').addEventListener('input', toggleLoginBtn);
+document.getElementById('inp-id').addEventListener('keydown', function(e) { if (e.key === 'Enter') loginChofer(); });
+document.getElementById('inp-nombre').addEventListener('keydown', function(e) { if (e.key === 'Enter') loginChofer(); });
+
+function toggleLoginBtn() {
+  var id = document.getElementById('inp-id').value.trim();
+  var nom = document.getElementById('inp-nombre').value.trim();
+  document.getElementById('btn-login').disabled = !(id && nom);
+}
+
+async function loginChofer() {
+  var id = document.getElementById('inp-id').value.trim();
+  var nom = document.getElementById('inp-nombre').value.trim();
+  if (!id || !nom) return;
+  var btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  document.getElementById('login-error').textContent = '';
+
+  if (!SUPABASE) {
+    document.getElementById('login-error').textContent = 'Error de conexión: Supabase no inicializado.';
+    btn.disabled = false; btn.textContent = 'INGRESAR'; return;
+  }
+  try {
+    var data = await dbGet('choferes', id);
+    if (!data) {
+      document.getElementById('login-error').textContent = 'Chofer no encontrado. Verifica tu ID.';
+      btn.disabled = false; btn.textContent = 'INGRESAR'; return;
+    }
+    if (data.nombre && data.nombre.toLowerCase() !== nom.toLowerCase()) {
+      document.getElementById('login-error').textContent = 'El nombre no coincide con el ID proporcionado.';
+      btn.disabled = false; btn.textContent = 'INGRESAR'; return;
+    }
+    choferId = id;
+    choferData = data;
+    try { localStorage.setItem('luxrides_chofer_id', id); localStorage.setItem('luxrides_chofer_nombre', data.nombre || nom); } catch(e) {}
+    iniciarApp();
+  } catch (e) {
+    console.error(e);
+    document.getElementById('login-error').textContent = 'Error de conexión. Intenta de nuevo.';
+    btn.disabled = false; btn.textContent = 'INGRESAR';
+  }
+}
+
+function iniciarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  var badge = document.getElementById('state-badge');
+  badge.className = 'state-badge online';
+  badge.textContent = 'En línea';
+  limpiarUbicacionFalsaEnDB();
+  iniciarGPS();
+  suscribirChofer();
+  suscribirViajes();
+  cargarViajesPendientes();
+  cargarHistorial();
+  cargarPerfil();
+  iniciarHeartbeat();
+  iniciarNoSleep();
+  iniciarWakeLock();
+  registrarPush();
+  toggleBusquedaViajes(true);
+  setOnline(true);
+  mostrarToast('Bienvenido ' + choferData.nombre);
+}
+
+function actualizarUbicacion(lat, lng, fuente, accuracy) {
+  lat = Number(lat); lng = Number(lng);
+  if (!LuxCfg.esUbicacionGPSValida(lat, lng, { fuente: fuente, accuracy: accuracy })) {
+    console.warn('📍 Coordenadas rechazadas (' + fuente + '):', lat, lng, accuracy != null ? '±' + accuracy + 'm' : '');
+    if (fuente === 'ip' || (Math.abs(lat - 19.4326) < 0.003 && Math.abs(lng + 99.1332) < 0.003)) {
+      _mostrarBannerGPS(false);
+    }
+    return;
+  }
+  console.log('📍 Ubicación [' + fuente + ']:', lat, lng, accuracy != null ? '±' + Math.round(accuracy) + 'm' : '');
+  currentPos = { lat: lat, lng: lng };
+  updateDriverMarker(currentPos);
+
+  var ahora = Date.now();
+  var movio = _ultimaUbicacionEnviada ? _distMetros(_ultimaUbicacionEnviada, currentPos) : Infinity;
+  var enviarDb = fuente === 'manual' || fuente === 'click' || movio >= 12 || (ahora - _ultimoEnvioUbicacion) >= 8000;
+
+  if (choferId && enviarDb) {
+    _ultimoEnvioUbicacion = ahora;
+    _ultimaUbicacionEnviada = { lat: lat, lng: lng };
+    var patch = { ubicacion: currentPos, ultima_conexion: new Date().toISOString(), estado: 'en linea' };
+    if (choferData) choferData.estado = 'en linea';
+    dbUpdate('choferes', choferId, patch).then(function() {
+      _mostrarEstadoSync('✓ Ubicación enviada al servidor', true);
+    }).catch(function(err) {
+      _mostrarEstadoSync('✗ Error al guardar: ' + (err.message || err), false);
+      notify('⚠️ No se guardó en Supabase. Revisa conexión.', 'err');
+    });
+  }
+
+  var banner = document.getElementById('loc-banner');
+  if (banner) banner.style.opacity = '0';
+  if (viajeActual) {
+    // Draw route immediately the first time GPS fires during a trip
+    if (!_liveRutaActiva) {
+      dibujarRutaLiveMap(viajeActual);
+    } else {
+      // After first draw, debounce updates to every 5 seconds
+      if (_rutaDebTimer) clearTimeout(_rutaDebTimer);
+      _rutaDebTimer = setTimeout(function() { _rutaDebTimer = null; if (viajeActual) dibujarRutaLiveMap(viajeActual); }, 5000);
+    }
+  }
+}
+
+function obtenerUbicacionManual() {
+  if (!navigator.geolocation) {
+    notify('⚠️ Este dispositivo no tiene GPS. Usa un teléfono con ubicación activada.', 'err');
+    return;
+  }
+  var btn = document.querySelector('#online-toggle .btn-sm.gold:last-child');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  notify('📍 Obteniendo ubicación GPS...');
+  navigator.geolocation.getCurrentPosition(
+    function(pos) { 
+      actualizarUbicacion(pos.coords.latitude, pos.coords.longitude, 'manual', pos.coords.accuracy); 
+      notify('✅ Ubicación GPS obtenida', 'ok');
+      if (btn) { btn.textContent = '📍'; btn.disabled = false; } 
+    },
+    function(err) { 
+      console.warn('📍 Manual GPS falló:', err.message);
+      _mostrarBannerGPS(false);
+      if (_esTimeoutGPS(err)) {
+        notify('⏱️ Tiempo agotado del GPS. Reintentando...', 'err');
+        _aplicarFallbackDemoPorTimeout();
+      } else {
+        notify('⚠️ No se pudo obtener GPS. Activa ubicación de alta precisión.', 'err');
+      }
+      if (btn) { btn.textContent = '📍'; btn.disabled = false; } 
+    },
+    { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+  );
+}
+
+function _mostrarBannerGPS(activo) {
+  var banner = document.getElementById('gps-warning-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'gps-warning-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#b91c1c;color:#fff;text-align:center;padding:12px 16px;font-size:.87rem;font-family:Outfit,sans-serif;font-weight:600;letter-spacing:.3px;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+    document.body.prepend(banner);
+  }
+  if (!activo) {
+    banner.innerHTML = '⚠️ <b>GPS DESACTIVADO</b> — Activa la ubicación de alta precisión en tu dispositivo. <button onclick="iniciarGPS()" style="margin-left:10px;background:#fff;color:#b91c1c;border:none;border-radius:5px;padding:4px 12px;font-weight:700;cursor:pointer;">🔄 Reintentar GPS</button>';
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function _mostrarEstadoSync(msg, ok) {
+  var el = document.getElementById('gps-sync-status');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'gps-sync-status';
+    el.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:9998;padding:8px 16px;border-radius:999px;font-size:.78rem;font-family:Outfit,sans-serif;font-weight:600;pointer-events:none;transition:opacity .3s;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = ok ? 'rgba(34,197,94,.2)' : 'rgba(239,68,68,.2)';
+  el.style.color = ok ? '#86efac' : '#fca5a5';
+  el.style.border = '1px solid ' + (ok ? 'rgba(34,197,94,.5)' : 'rgba(239,68,68,.5)');
+  el.style.opacity = '1';
+  clearTimeout(window._syncStatusTimer);
+  window._syncStatusTimer = setTimeout(function() { el.style.opacity = '0'; }, 3500);
+}
+
+function _esTimeoutGPS(err) {
+  return !!(err && (err.code === 3 || /timeout|tiempo agotado/i.test(String(err.message || ''))));
+}
+
+function _aplicarFallbackDemoPorTimeout() {
+  if (!_modoDemo || currentPos) return;
+  // En demo de PC, si el GPS tarda demasiado, usar un punto válido para no bloquear el flujo.
+  actualizarUbicacion(19.4368, -99.1851, 'manual');
+  notify('🖥️ GPS con tiempo agotado: usando ubicación demo (Polanco).', 'ok');
+}
+
+function limpiarUbicacionFalsaEnDB() {
+  if (!choferId || !choferData || !choferData.ubicacion) return;
+  var ub = choferData.ubicacion;
+  if (typeof ub === 'string') { try { ub = JSON.parse(ub); } catch(e) { return; } }
+  if (!LuxCfg.esUbicacionGPSValida(Number(ub.lat), Number(ub.lng))) {
+    console.warn('📍 Borrando ubicación falsa guardada en Supabase (Zócalo/IP)');
+    dbUpdate('choferes', choferId, { ubicacion: null });
+    choferData.ubicacion = null;
+  }
+}
+
+function iniciarGPS() {
+  if (!window.isSecureContext) {
+    _mostrarBannerGPS(false);
+    notify('⚠️ Abre ses.html con HTTPS o localhost para usar GPS.', 'err');
+    return;
+  }
+  if (!navigator.geolocation) {
+    _mostrarBannerGPS(false);
+    notify('⚠️ Este dispositivo no tiene GPS. Se requiere un teléfono.', 'err');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    function(pos) { _mostrarBannerGPS(true); actualizarUbicacion(pos.coords.latitude, pos.coords.longitude, 'rápida', pos.coords.accuracy); },
+    function(err) { 
+      console.warn('📍 Rápida falló:', err.message, '(código:', err.code + ')'); 
+      if (_esTimeoutGPS(err)) {
+        notify('⏱️ GPS tardó demasiado (tiempo agotado). Probando alta precisión...', 'err');
+        _aplicarFallbackDemoPorTimeout();
+      }
+      intentarGPSConAltaPrecision(); 
+    },
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+  );
+  if (posWatchId != null) navigator.geolocation.clearWatch(posWatchId);
+  posWatchId = navigator.geolocation.watchPosition(
+    function(pos) { _mostrarBannerGPS(true); actualizarUbicacion(pos.coords.latitude, pos.coords.longitude, 'watch', pos.coords.accuracy); },
+    function(err) {
+      console.warn('📍 Watch error:', err.code, err.message);
+      if (err.code === 1) { _mostrarBannerGPS(false); }
+      else if (err.code === 3) {
+        console.warn('📍 Timeout GPS, reintentando...');
+        notify('⏱️ GPS en tiempo agotado. Reintentando...', 'err');
+        _aplicarFallbackDemoPorTimeout();
+        intentarGPSConAltaPrecision();
+      }
+    },
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 60000 }
+  );
+}
+
+function intentarGPSConAltaPrecision() {
+  navigator.geolocation.getCurrentPosition(
+    function(pos) { _mostrarBannerGPS(true); actualizarUbicacion(pos.coords.latitude, pos.coords.longitude, 'alta precisión', pos.coords.accuracy); },
+    function(err) {
+      console.warn('📍 Alta precisión falló:', err.message);
+      _mostrarBannerGPS(false);
+      if (err.code !== 1) {
+        if (_esTimeoutGPS(err)) {
+          notify('⏱️ GPS en tiempo agotado. Toca el mapa o usa Demo.', 'err');
+          _aplicarFallbackDemoPorTimeout();
+        } else {
+          notify('⚠️ GPS no responde. Verifica señal y permisos de ubicación.', 'err');
+        }
+      }
+    },
+    { enableHighAccuracy: true, timeout: 45000, maximumAge: 0 }
+  );
+}
+
+function obtenerUbicacionPorIP() {
+  console.warn('📍 Ubicación por IP deshabilitada (imprecisa — causaba posición fija en el Zócalo).');
+  _mostrarBannerGPS(false);
+  notify('⚠️ Activa GPS de alta precisión. La ubicación por IP no se usa.', 'err');
+}
+
+var _modoDemo = false;
+function activarModoDemo() {
+  _modoDemo = true;
+  var btn = document.getElementById('btn-demo-mode');
+  if (btn) { btn.textContent = '✅ Demo activo'; btn.style.background = 'rgba(212,175,55,.35)'; }
+  switchTab('mapa');
+  setTimeout(function() {
+    if (!liveMap) {
+      initLiveMap();
+    } else {
+      // Forzar resize porque el mapa se inicializó con el tab oculto (0x0 px)
+      google.maps.event.trigger(liveMap, 'resize');
+      setTimeout(function() { liveMap.setCenter({ lat: 19.4326, lng: -99.1332 }); }, 100);
+    }
+    setOnline(true);
+    notify('🖥️ Toca el mapa para enviar tu ubicación al admin', 'ok');
+  }, 400);
+
+  // Fallback automático: si en 4 segundos no se clickeó el mapa,
+  // intentar geolocalización del navegador y si falla usar CDMX centro
+  setTimeout(function() {
+    if (currentPos) return; // ya tiene ubicación, no hace falta
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          actualizarUbicacion(pos.coords.latitude, pos.coords.longitude, 'demo-browser', pos.coords.accuracy);
+          notify('✅ Ubicación del navegador enviada al admin.', 'ok');
+        },
+        function() {
+          // Sin GPS ni click → usar CDMX Polanco como demo visible
+          actualizarUbicacion(19.4368, -99.1851, 'manual');
+          notify('🖥️ Demo: ubicación enviada (Polanco). Toca el mapa para cambiarla.', 'ok');
+        },
+        { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
+      );
+    } else {
+      actualizarUbicacion(19.4368, -99.1851, 'manual');
+      notify('🖥️ Demo: ubicación enviada. Toca el mapa para cambiarla.', 'ok');
+    }
+  }, 4000);
+
+  // Intentar geolocalización del navegador (en PC usa WiFi, más preciso que IP pura)
+  if (navigator.geolocation) {
+    notify('📍 Obteniendo ubicación del navegador...', 'ok');
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        actualizarUbicacion(pos.coords.latitude, pos.coords.longitude, 'demo-browser', pos.coords.accuracy);
+        notify('✅ Ubicación fijada. También puedes tocar el mapa.', 'ok');
+      },
+      function() {
+        notify('📍 Toca el mapa donde estás para enviar tu posición.', 'ok');
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  } else {
+    notify('📍 Demo: toca el mapa para fijar tu posición.', 'ok');
+  }
+
+  // Mostrar hint visible en el mapa durante demo
+  var banner = document.getElementById('loc-banner');
+  if (banner) {
+    banner.style.opacity = '1';
+    banner.style.background = 'rgba(212,175,55,.25)';
+    banner.style.border = '1px solid rgba(212,175,55,.6)';
+    banner.style.color = '#f0c84a';
+    banner.textContent = '🖥️ Demo: toca el mapa para enviar tu posición al admin';
+    // Se oculta cuando el usuario hace clic (en actualizarUbicacion) o tras 30s
+    setTimeout(function() { if (banner) banner.style.opacity = '0'; }, 30000);
+  }
+}
+
+function suscribirChofer() {
+  if (choferChannel) SUPABASE.removeChannel(choferChannel);
+  choferChannel = dbSubscribe('choferes', 'id', choferId, '*', function(payload) {
+    if (payload.new) { choferData = payload.new; actualizarEstadoUI(); }
+  });
+}
+
+function suscribirViajes() {
+  if (viajeChannel) { SUPABASE.removeChannel(viajeChannel); viajeChannel = null; }
+  var ch = SUPABASE.channel('viajes-chofer-' + choferId + '-' + Date.now());
+  ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'viajes', filter: 'chofer_id=eq.' + choferId }, function(payload) {
+    var v = payload.new;
+    if (v && v.estado === 'pendiente' && !viajesPendientes[v.id]) {
+      mostrarNuevoViaje(v);
+    }
+  });
+  ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'viajes', filter: 'chofer_id=eq.' + choferId }, function(payload) {
+    var v = payload.new;
+    if (!v) return;
+    if (viajesPendientes[v.id] && v.estado !== 'pendiente') {
+      delete viajesPendientes[v.id];
+      renderViajesPendientes();
+    }
+  });
+  ch.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'viajes', filter: 'chofer_id=eq.' + choferId }, function(payload) {
+    var old = payload.old;
+    if (!old || !old.id) return;
+    if (viajesPendientes[old.id]) {
+      delete viajesPendientes[old.id];
+      renderViajesPendientes();
+    }
+  });
+  ch.subscribe();
+  viajeChannel = ch;
+  var pushCh = SUPABASE.channel('push-notif-' + choferId + '-' + Date.now());
+  pushCh.on('postgres_changes', {
+    event: 'INSERT', schema: 'public', table: 'push_notifications',
+    filter: 'chofer_id=eq.' + choferId
+  }, function(payload) {
+    var n = payload.new;
+    if (!n) return;
+    if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 600]);
+    sonarAlerta();
+    mostrarAlertaViaje(n);
+  }).subscribe();
+}
+
+var _audioCtx = null;
+function sonarAlerta() {
+  try {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var ctx = _audioCtx;
+    [[880, 0, 0.15], [1100, 0.18, 0.15], [880, 0.36, 0.15], [1100, 0.54, 0.18]].forEach(function(t) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = t[0];
+      gain.gain.setValueAtTime(0.35, ctx.currentTime + t[1]);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t[1] + t[2]);
+      osc.start(ctx.currentTime + t[1]);
+      osc.stop(ctx.currentTime + t[1] + t[2] + 0.05);
+    });
+  } catch(e) {}
+}
+
+function mostrarAlertaViaje(n) {
+  var overlay = document.getElementById('viaje-alert-overlay');
+  if (!overlay) return;
+  document.getElementById('va-titulo').textContent = n.titulo || 'Nuevo viaje ★';
+  document.getElementById('va-cuerpo').textContent = n.cuerpo || '';
+  overlay.style.display = 'flex';
+  if (window._vaTimer) clearTimeout(window._vaTimer);
+  window._vaTimer = setTimeout(function() { overlay.style.display = 'none'; }, 18000);
+}
+function cerrarAlertaViaje() {
+  var overlay = document.getElementById('viaje-alert-overlay');
+  if (overlay) overlay.style.display = 'none';
+  if (window._vaTimer) { clearTimeout(window._vaTimer); window._vaTimer = null; }
+  switchTab('viajes');
+}
+
+function mostrarNuevoViaje(v) {
+  viajesPendientes[v.id] = v;
+  mostrarNotificacionNuevoViaje(v);
+  if (navigator.vibrate) navigator.vibrate([400, 150, 400]);
+  sonarAlerta();
+  var tabBtn = document.querySelector('[data-tab="viajes"] .icon');
+  if (tabBtn) tabBtn.textContent = '🚖​·';
+  renderViajesPendientes();
+}
+
+function mostrarNotificacionNuevoViaje(v) {
+  if (Notification.permission === 'granted') {
+    new Notification('Nuevo viaje disponible', { body: 'Cliente: ' + v.cliente + ' - $' + (v.total || v.precio) });
+  }
+}
+
+function renderViajesPendientes() {
+  var list = document.getElementById('viajes-list');
+  var keys = Object.keys(viajesPendientes);
+  if (!keys.length) {
+    list.innerHTML = '<div class="card" style="text-align:center;color:rgba(255,255,255,.3);padding:32px;">Esperando viajes...</div>';
+    return;
+  }
+  var html = '';
+  for (var k in viajesPendientes) {
+    var v = viajesPendientes[k];
+    html += '<div class="viaje-card" data-id="' + k + '">';
+    html += '<div class="head"><span class="name">' + escHtml(v.cliente) + '</span><span class="price">$' + formatNum(v.total || v.precio) + '</span></div>';
+    html += '<div class="detail"><span>' + escHtml(v.origen || '') + ' → ' + escHtml(v.destino || '') + '</span></div>';
+    html += '<div class="detail" style="margin-top:8px;"><span class="badge gold">' + (v.distancia_km || '—') + ' km</span><span class="badge gold">' + (v.duracion_min || '—') + ' min</span></div>';
+    html += '<div style="margin-top:8px;display:flex;gap:8px;">';
+    html += '<button class="btn-sm gold" onclick="aceptarViaje(\'' + k + '\')">✓ Aceptar</button>';
+    html += '<button class="btn-sm danger" onclick="rechazarViaje(\'' + k + '\')">✕ Rechazar</button></div></div>';
+  }
+  list.innerHTML = html;
+}
+
+function escHtml(s) { if (!s) return ''; return String(s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];}); }
+function formatNum(n) { return Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+
+function aceptarViaje(id) {
+  var v = id ? viajesPendientes[id] : viajeActual;
+  if (!v && id) v = viajesPendientes[id];
+  if (!v) return;
+  viajeActual = v;
+  if (viajesPendientes[v.id]) delete viajesPendientes[v.id];
+  renderViajesPendientes();
+  dbUpdate('viajes', v.id, { estado: 'aceptado', chofer_id: choferId, aceptado_en: new Date().toISOString() });
+  dbUpdate('choferes', choferId, { estado: 'en_viaje' });
+  toggleBusquedaViajes(false);
+  switchTab('mapa');
+  setTimeout(function() {
+    if (!liveMap) initLiveMap();
+    if (liveMap && currentPos && viajeActual) {
+      dibujarRutaLiveMap(viajeActual);
+    } else {
+      // GPS not ready yet — retry every second until position arrives (up to 30 tries)
+      var _rTries = 0;
+      var _rPoll = setInterval(function() {
+        _rTries++;
+        if ((liveMap && currentPos && viajeActual) || _rTries > 30) {
+          clearInterval(_rPoll);
+          if (liveMap && currentPos && viajeActual) dibujarRutaLiveMap(viajeActual);
+        }
+      }, 1000);
+    }
+  }, 450);
+  mostrarViajeScreen();
+}
+
+function rechazarViaje(id) {
+  var v = viajesPendientes[id];
+  if (!v) return;
+  dbUpdate('viajes', v.id, { estado: 'rechazado' });
+  delete viajesPendientes[id];
+  renderViajesPendientes();
+}
+
+function mostrarViajeScreen() {
+  if (!viajeActual) return;
+  var s = document.getElementById('viaje-screen');
+  s.classList.add('active');
+  document.getElementById('viaje-screen-title').textContent = 'Viaje a ' + (viajeActual.destino || '');
+  var info = document.getElementById('viaje-info');
+  info.innerHTML = '<div class="item"><span class="ico">👤</span><div><div class="lbl">Cliente</div><div class="val">' + escHtml(viajeActual.cliente) + '</div></div></div>';
+  info.innerHTML += '<div class="item"><span class="ico">📍</span><div><div class="lbl">Origen</div><div class="val">' + escHtml(viajeActual.origen || '') + '</div></div></div>';
+  info.innerHTML += '<div class="item"><span class="ico">🏁</span><div><div class="lbl">Destino</div><div class="val">' + escHtml(viajeActual.destino || '') + '</div></div></div>';
+  info.innerHTML += '<div class="item"><span class="ico">💰</span><div><div class="lbl">Total</div><div class="val">$' + formatNum(viajeActual.total || viajeActual.precio) + '</div></div></div>';
+  var actions = document.getElementById('viaje-actions');
+  actions.innerHTML = '<button class="btn-finalize" onclick="finalizarViaje()">✅ Finalizar viaje</button>';
+  var origLat = parseFloat(viajeActual.lat_origen || viajeActual.origen_lat);
+  var origLng = parseFloat(viajeActual.lng_origen || viajeActual.origen_lng);
+  var destLat = parseFloat(viajeActual.lat_destino || viajeActual.destino_lat);
+  var destLng = parseFloat(viajeActual.lng_destino || viajeActual.destino_lng);
+  var orig = {
+    lat: LuxCfg.esUbicacionGPSValida(origLat, origLng) ? origLat : (currentPos ? currentPos.lat : origLat),
+    lng: LuxCfg.esUbicacionGPSValida(origLat, origLng) ? origLng : (currentPos ? currentPos.lng : origLng)
+  };
+  var dest = { lat: destLat, lng: destLng };
+  setTimeout(function() { initTripMap(orig, dest); }, 300);
+}
+
+function cerrarViajeScreen() {
+  document.getElementById('viaje-screen').classList.remove('active');
+  if (tripMap) { _clearTripMapArtifacts(); tripMap = null; }
+  var loadEl = document.getElementById('ruta-load');
+  var bodyEl = document.getElementById('ruta-body');
+  var etaBadge = document.getElementById('viaje-eta-badge');
+  if (loadEl) { loadEl.style.display = 'block'; loadEl.innerHTML = '<div class="ruta-spinner"></div>Calculando ruta con Google Maps…'; }
+  if (bodyEl) bodyEl.style.display = 'none';
+  if (etaBadge) etaBadge.style.display = 'none';
+  var instList = document.getElementById('ruta-inst-list');
+  if (instList) instList.classList.remove('show');
+  viajeActual = null;
+  tripRouteAdded = false;
+  renderViajesPendientes();
+}
+
+async function finalizarViaje() {
+  if (!viajeActual) return;
+  var v = viajeActual;
+  var pagoChofer = Math.round((v.total || v.precio || 0) * 0.8);
+  try {
+    await dbUpdate('viajes', v.id, {
+      estado: 'completado',
+      completado_en: new Date().toISOString(),
+      pago_chofer: pagoChofer
+    });
+    var now = new Date();
+    await dbInsert('historial', {
+      chofer_id: choferId,
+      cliente: v.cliente,
+      origen: v.origen,
+      destino: v.destino,
+      precio: v.total || v.precio,
+      pago_chofer: pagoChofer,
+      estado: 'completado',
+      reserva_id: v.reserva_id || '',
+      fecha: now.toISOString().slice(0,10),
+      hora: now.toTimeString().slice(0,5),
+      timestamp: Date.now()
+    });
+    var chofer = await dbGet('choferes', choferId);
+    var nuevoDisp = (chofer.saldo_disponible || 0) + pagoChofer;
+    var nuevoProc = (chofer.saldo_en_proceso || 0) + Math.round(pagoChofer * 0.1);
+    await dbUpdate('choferes', choferId, { saldo_disponible: nuevoDisp, saldo_en_proceso: nuevoProc, estado: 'en linea' });
+    if (v.reserva_id) {
+      await dbUpdate('reservas', v.reserva_id, { estado: 'completado', saldo_acreditado: true });
+    }
+    notify('Viaje completado. +$' + formatNum(pagoChofer) + ' añadidos a tu saldo.', 'ok');
+    viajesPendientes = {};
+    borrarRutaLiveMap();
+    cerrarViajeScreen();
+    toggleBusquedaViajes(true);
+    cargarHistorial();
+    cargarPerfil();
+  } catch (e) { console.error(e); notify('Error al finalizar viaje', 'err'); }
+}
+
+async function cargarViajesPendientes() {
+  if (!choferId) return;
+  try {
+    var res = await SUPABASE.from('viajes').select().eq('chofer_id', choferId).eq('estado', 'pendiente').order('created_at', { ascending: false });
+    if (res.data && res.data.length) {
+      var agregados = 0;
+      res.data.forEach(function(v) { if (!viajesPendientes[v.id]) { viajesPendientes[v.id] = v; agregados++; } });
+      if (agregados) renderViajesPendientes();
+    }
+  } catch(e) { console.warn('Error cargando viajes pendientes:', e); }
+}
+
+function toggleBusquedaViajes(active) {
+  var banner = document.getElementById('searching-banner');
+  banner.style.display = active ? 'block' : 'none';
+  if (active) iniciarBusquedaViajes();
+  else detenerBusquedaViajes();
+}
+
+function iniciarBusquedaViajes() {
+  detenerBusquedaViajes();
+  searchInt = setInterval(function() {
+    if (!choferId) return;
+    dbGet('choferes', choferId).then(function(d) {
+      choferData = d;
+      actualizarEstadoUI();
+    });
+  }, 30000);
+}
+
+function detenerBusquedaViajes() { if (searchInt) { clearInterval(searchInt); searchInt = null; } }
+
+var editandoPerfil = false;
+
+async function cargarPerfil() {
+  if (!choferId) return;
+  try {
+    var d = await dbGet('choferes', choferId);
+    if (!d) return;
+    choferData = d;
+    if (editandoPerfil) { renderEditarPerfil(d); return; }
+    var info = document.getElementById('perfil-info');
+    var fotoUrl = d.foto_url || '';
+    info.innerHTML = '<div class="card card-row" style="position:relative;align-items:flex-start"><div class="foto-avatar-wrap" onclick="abrirFotoPicker()"><div class="profile-avatar foto-perfil"' + (fotoUrl ? ' style="background-image:url(' + fotoUrl + ')"' : '') + '><div class="profile-avatar-letter">' + (d.nombre ? d.nombre.charAt(0).toUpperCase() : '?') + '</div></div><div class="cam-overlay"><span class="cam-ico">📷</span><span class="cam-lbl">Editar</span></div><div class="cam-badge">✏️</div></div><div style="flex:1"><div class="card-title">' + escHtml(d.nombre || d.id) + '</div><div class="card-sub">ID: ' + escHtml(d.id) + '</div><button class="foto-btn-grande" onclick="abrirFotoPicker()"><div class="fbl-icon-wrap">📷</div><div class="fbl-text"><span class="fbl-main">Cambiar foto</span><span class="fbl-sub">Cámara o galería</span></div><span class="fbl-arrow">›</span></button></div></div>';
+    info.innerHTML += '<div class="card card-row"><div><div class="card-sub">Vehículo</div><div class="card-title">' + escHtml(d.vehiculo || '') + ' — ' + escHtml(d.marca || '') + ' ' + escHtml(d.modelo || '') + '</div></div><div style="text-align:right"><div class="card-sub">Placa</div><div class="card-title" style="font-size:.82rem;">' + escHtml(d.placa || '') + '</div></div></div>';
+    info.innerHTML += '<div class="card card-row"><div><div class="card-sub">Hotel asignado</div><div class="card-title">' + escHtml(d.hotel || 'Sin asignar') + '</div></div><div style="text-align:right"><div class="card-sub">Color</div><div class="card-title">' + escHtml(d.color || '—') + '</div></div></div>';
+    var grid = document.getElementById('stats-grid');
+    grid.innerHTML = '<div class="perfil-stat"><div class="num">$' + formatNum(d.saldo_disponible || 0) + '</div><div class="lbl">Disponible</div></div>';
+    grid.innerHTML += '<div class="perfil-stat"><div class="num">$' + formatNum(d.saldo_en_proceso || 0) + '</div><div class="lbl">En proceso</div></div>';
+    grid.innerHTML += '<div class="perfil-stat"><div class="num" style="color:' + (d.estado === 'online' ? 'var(--green)' : 'var(--red)') + '">' + (d.estado || 'offline') + '</div><div class="lbl">Estado</div></div>';
+    var viajesCount = 0;
+    try { var hist = await dbGetList('historial', 'chofer_id', choferId); viajesCount = hist.length; } catch(e) {}
+    grid.innerHTML += '<div class="perfil-stat"><div class="num">' + viajesCount + '</div><div class="lbl">Viajes</div></div>';
+    var balNum = document.getElementById('retiro-balance-num');
+    if (balNum) balNum.textContent = '$' + formatNum(d.saldo_disponible || 0);
+    info.innerHTML += '<div style="padding:0 18px 10px;"><button class="foto-edit-btn" onclick="editarPerfil()">⚡ Editar información</button></div>';
+  } catch (e) { console.error(e); }
+}
+
+function editarPerfil() {
+  editandoPerfil = true;
+  renderEditarPerfil(choferData);
+}
+
+function renderEditarPerfil(d) {
+  var info = document.getElementById('perfil-info');
+  var fotoUrl = d.foto_url || '';
+  info.innerHTML = '<div class="card card-row" style="position:relative;align-items:flex-start"><div class="foto-avatar-wrap" onclick="abrirFotoPicker()"><div class="profile-avatar foto-perfil"' + (fotoUrl ? ' style="background-image:url(' + fotoUrl + ')"' : '') + '><div class="profile-avatar-letter">' + (d.nombre ? d.nombre.charAt(0).toUpperCase() : '?') + '</div></div><div class="cam-overlay"><span class="cam-ico">📷</span><span class="cam-lbl">Editar</span></div><div class="cam-badge">✏️</div></div><div style="flex:1"><div class="card-title" style="font-size:.95rem;">' + escHtml(d.nombre || d.id) + '</div><div class="card-sub">ID: ' + escHtml(d.id) + '</div><button class="foto-btn-grande" onclick="abrirFotoPicker()"><div class="fbl-icon-wrap">📷</div><div class="fbl-text"><span class="fbl-main">Cambiar foto</span><span class="fbl-sub">Cámara o galería</span></div><span class="fbl-arrow">›</span></button></div></div>';
+  info.innerHTML += '<div class="edit-section"><div class="edit-section-header"><span class="icon">🚘</span><h4>Vehículo</h4><span class="line"></span></div><div class="edit-grid">';
+  info.innerHTML += '<div class="edit-field"><span class="ico">🚙</span><span class="lbl">Tipo</span><input id="edit-vehiculo" value="' + escAttr(d.vehiculo || '') + '" placeholder="Sedán, Camioneta..."/></div>';
+  info.innerHTML += '<div class="edit-field"><span class="ico">🏷️</span><span class="lbl">Marca</span><input id="edit-marca" value="' + escAttr(d.marca || '') + '" placeholder="Ej: Toyota"/></div>';
+  info.innerHTML += '<div class="edit-field"><span class="ico">📅</span><span class="lbl">Modelo</span><input id="edit-modelo" value="' + escAttr(d.modelo || '') + '" placeholder="Ej: 2024"/></div>';
+  info.innerHTML += '<div class="edit-field"><span class="ico">🎨</span><span class="lbl">Color</span><input id="edit-color" value="' + escAttr(d.color || '') + '" placeholder="Ej: Negro"/></div>';
+  info.innerHTML += '<div class="edit-field full"><span class="ico">🔖</span><span class="lbl">Placa</span><input id="edit-placa" value="' + escAttr(d.placa || '') + '" placeholder="Ej: ABC-1234"/></div>';
+  info.innerHTML += '</div></div>';
+  info.innerHTML += '<div class="edit-section"><div class="edit-section-header"><span class="icon">🏨</span><h4>Hotel y Asignación</h4><span class="line"></span></div><div class="edit-grid">';
+  info.innerHTML += '<div class="edit-field full"><span class="ico">📍</span><span class="lbl">Hotel asignado</span><input id="edit-hotel" value="' + escAttr(d.hotel || '') + '" placeholder="Nombre del hotel"/></div>';
+  info.innerHTML += '</div></div>';
+  info.innerHTML += '<div class="edit-actions"><button class="btn-super primary" onclick="guardarPerfil()">✨ Guardar cambios</button><button class="btn-super secondary" onclick="cancelarEditarPerfil()">Cancelar</button></div>';
+  document.getElementById('stats-grid').innerHTML = '';
+}
+
+function escAttr(s) { if (!s) return ''; return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function guardarPerfil() {
+  var data = {
+    vehiculo: document.getElementById('edit-vehiculo').value.trim(),
+    marca: document.getElementById('edit-marca').value.trim(),
+    modelo: document.getElementById('edit-modelo').value.trim(),
+    color: document.getElementById('edit-color').value.trim(),
+    placa: document.getElementById('edit-placa').value.trim(),
+    hotel: document.getElementById('edit-hotel').value.trim()
+  };
+  try {
+    await SUPABASE.from('choferes').update(data).eq('id', choferId);
+    notify('Información actualizada', 'ok');
+    editandoPerfil = false;
+    cargarPerfil();
+  } catch(e) { console.error(e); notify('Error al guardar', 'err'); }
+}
+
+function cancelarEditarPerfil() {
+  editandoPerfil = false;
+  cargarPerfil();
+}
+
+function abrirFotoPicker() {
+  document.getElementById('foto-picker-overlay').classList.add('show');
+}
+function cerrarFotoPicker() {
+  document.getElementById('foto-picker-overlay').classList.remove('show');
+}
+function cerrarFotoPickerFondo(e) {
+  if (e.target === document.getElementById('foto-picker-overlay')) cerrarFotoPicker();
+}
+function elegirFotoOpc(opc) {
+  cerrarFotoPicker();
+  setTimeout(function() {
+    if (opc === 'cam') document.getElementById('foto-input-cam').click();
+    else document.getElementById('foto-input').click();
+  }, 220);
+}
+
+function subirFotoSeleccionada(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var max = 400;
+      var w = img.width, h = img.height;
+      if (w > h) { if (w > max) { h = h * max / w; w = max; } }
+      else { if (h > max) { w = w * max / h; h = max; } }
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      var dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      guardarFotoPerfil(dataUrl);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+async function guardarFotoPerfil(dataUrl) {
+  if (!choferId) return;
+  try {
+    var fotoUrl = dataUrl;
+    if (SUPABASE && SUPABASE.storage) {
+      try {
+        var blob = await (await fetch(dataUrl)).blob();
+        var ext = 'jpg';
+        var fileName = 'chofer_' + choferId + '_' + Date.now() + '.' + ext;
+        var res = await SUPABASE.storage.from('choferes').upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+        if (!res.error) {
+          var publicUrl = SUPABASE.storage.from('choferes').getPublicUrl(fileName);
+          if (publicUrl && publicUrl.data && publicUrl.data.publicUrl) fotoUrl = publicUrl.data.publicUrl;
+        }
+      } catch(e) { console.warn('Storage fallback, usando base64:', e); }
+    }
+    await SUPABASE.from('choferes').update({ foto_url: fotoUrl }).eq('id', choferId);
+    choferData.foto_url = fotoUrl;
+    notify('Foto de perfil actualizada', 'ok');
+    cargarPerfil();
+  } catch(e) { console.error('Error guardar foto:', e); notify('Error al guardar la foto', 'err'); }
+}
+
+function actualizarEstadoUI() {
+  var badge = document.getElementById('state-badge');
+  if (choferData) {
+    var st = choferData.estado || 'offline';
+    badge.className = 'state-badge ' + st;
+    badge.textContent = st === 'online' ? 'En línea' : st === 'en_viaje' ? 'En viaje' : 'Desconectado';
+  }
+  cargarPerfil();
+}
+
+function initStripeRetiro() {
+  if (stripeInstance) return;
+  var pk = (window.LuxCfg && LuxCfg.stripePk()) || '';
+  if (!pk) return;
+  stripeInstance = Stripe(pk);
+  var elements = stripeInstance.elements();
+  stripeCardElement = elements.create('card', { style: { base: { fontSize: '16px', color: '#fff', '::placeholder': { color: 'rgba(255,255,255,.3)' } } } });
+  stripeCardElement.mount('#stripe-card-element');
+  stripeCardElement.addEventListener('change', function(e) {
+    document.getElementById('stripe-card-error').textContent = e.error ? e.error.message : '';
+  });
+}
+
+function cambiarMetodoRetiro(metodo) {
+  document.querySelectorAll('.retiro-pill').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelector('.retiro-pill[data-metodo="' + metodo + '"]').classList.add('active');
+  document.getElementById('stripe-fields').style.display = metodo === 'stripe' ? 'block' : 'none';
+  document.getElementById('transfer-fields').style.display = metodo === 'transferencia' ? 'block' : 'none';
+  document.getElementById('retiro-info-stripe').style.display = metodo === 'stripe' ? 'block' : 'none';
+  document.getElementById('retiro-info-transfer').style.display = metodo === 'transferencia' ? 'block' : 'none';
+  if (metodo === 'stripe' && !stripeInstance) initStripeRetiro();
+}
+
+async function solicitarRetiro() {
+  if (!choferId || !choferData) { notify('Inicia sesión primero', 'err'); return; }
+  var metodo = document.querySelector('.retiro-pill.active').getAttribute('data-metodo');
+  var monto = parseFloat(document.getElementById('retiro-monto').value);
+  if (!monto || monto <= 0) { notify('Ingresa un monto válido', 'err'); return; }
+  var disp = choferData.saldo_disponible || 0;
+  if (monto > disp) { notify('Saldo insuficiente. Disponible: $' + formatNum(disp), 'err'); return; }
+  if (metodo === 'stripe') {
+    if (!stripeCardElement) initStripeRetiro();
+    openStripeRetiro(monto);
+  } else {
+    var banco = document.getElementById('retiro-banco').value.trim();
+    var clabe = document.getElementById('retiro-clabe').value.trim();
+    if (!banco || !clabe) { notify('Completa los datos bancarios', 'err'); return; }
+    if (clabe.length !== 18) { notify('La CLABE debe tener 18 dígitos', 'err'); return; }
+    try {
+      await dbInsert('solicitudes_retiro', { chofer_id: choferId, chofer_nombre: choferData.nombre, monto: monto, metodo: 'transferencia', banco: banco, clabe: clabe, status: 'pendiente' });
+      await dbUpdate('choferes', choferId, { saldo_disponible: disp - monto });
+      notify('Solicitud de retiro enviada', 'ok');
+      cargarPerfil();
+    } catch(e) { console.error(e); notify('Error al solicitar retiro', 'err'); }
+  }
+}
+
+function openStripeRetiro(monto) {
+  document.getElementById('stripe-monto-display').textContent = '$' + formatNum(monto);
+  document.getElementById('stripe-modal').style.display = 'flex';
+  if (!stripeCardElement) initStripeRetiro();
+  setTimeout(function() { stripeCardElement && stripeCardElement.mount('#stripe-card-element-modal'); }, 100);
+  document.getElementById('btn-pagar-stripe').onclick = function() { procesarPagoStripe(monto); };
+}
+
+function cerrarStripeModal() { document.getElementById('stripe-modal').style.display = 'none'; }
+
+async function procesarPagoStripe(monto) {
+  if (!stripeInstance || !stripeCardElement) { notify('Error con Stripe', 'err'); return; }
+  if (!monto) monto = parseFloat(document.getElementById('retiro-monto').value);
+  var btn = document.getElementById('btn-pagar-stripe');
+  btn.disabled = true; btn.textContent = 'Procesando...';
+  try {
+    var result = await stripeInstance.createToken(stripeCardElement, { name: document.getElementById('retiro-titular').value || choferData.nombre });
+    if (result.error) { document.getElementById('stripe-card-error-modal').textContent = result.error.message; btn.disabled = false; btn.textContent = 'Retirar'; return; }
+    var token = result.token;
+    var disp = choferData.saldo_disponible || 0;
+    await dbInsert('solicitudes_retiro', { chofer_id: choferId, chofer_nombre: choferData.nombre, monto: monto, metodo: 'stripe', stripe_card_id: token.card.id, card_last4: token.card.last4, titular: token.card.name, status: 'procesado' });
+    await dbUpdate('choferes', choferId, { saldo_disponible: disp - monto });
+    notify('Retiro procesado con éxito. Se acreditará a tu tarjeta terminada en ' + token.card.last4, 'ok');
+    cerrarStripeModal();
+    cargarPerfil();
+  } catch(e) { console.error(e); notify('Error al procesar pago', 'err'); }
+  btn.disabled = false; btn.textContent = 'Retirar';
+}
+
+function confirmarCerrarSesion() {
+  if (!confirm('¿Cerrar sesión?\n\nTu ID de chofer se eliminará de este dispositivo. Tus datos (saldo y vehículo) permanecen en el servidor.')) return;
+  try {
+    if (typeof choferId !== 'undefined' && choferId && typeof SUPABASE !== 'undefined') {
+      SUPABASE.from('choferes').update({ estado: 'offline', ultima_conexion: new Date().toISOString() }).eq('id', choferId).then(function(){}).catch(function(){});
+    }
+  } catch(e) {}
+  setTimeout(function() {
+    try { localStorage.removeItem('luxrides_chofer_id'); } catch(e) {}
+    try { localStorage.removeItem('luxrides_chofer_nombre'); } catch(e) {}
+    try { sessionStorage.clear(); } catch(e) {}
+    location.reload();
+  }, 500);
+}
+
+function confirmarBorrarDatos() {
+  if (!confirm('⚠️ BORRAR TODOS LOS DATOS\n\nEsto eliminará:\n• Tu sesión en este dispositivo\n• Datos del vehículo (tipo, marca, modelo, placa)\n• Saldo disponible y en proceso\n\nNo se puede deshacer. ¿Continuar?')) return;
+  try {
+    if (typeof choferId !== 'undefined' && choferId && typeof SUPABASE !== 'undefined') {
+      SUPABASE.from('choferes').update({
+        estado: 'offline',
+        vehiculo: '',
+        marca: '',
+        modelo: '',
+        placa: '',
+        color: '',
+        saldo_disponible: 0,
+        saldo_en_proceso: 0,
+        ultima_conexion: new Date().toISOString()
+      }).eq('id', choferId).then(function(){}).catch(function(){});
+    }
+  } catch(e) {}
+  setTimeout(function() {
+    try { localStorage.removeItem('luxrides_chofer_id'); } catch(e) {}
+    try { localStorage.removeItem('luxrides_chofer_nombre'); } catch(e) {}
+    try { sessionStorage.clear(); } catch(e) {}
+    location.reload();
+  }, 700);
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(function(e) { e.classList.remove('active'); });
+  document.querySelectorAll('.nav-btn').forEach(function(e) { e.classList.remove('active'); });
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
+  if (tab === 'mapa') {
+    if (!liveMap) { setTimeout(initLiveMap, 500); }
+    else { setTimeout(function(){ google.maps.event.trigger(liveMap, 'resize'); if (currentPos) liveMap.panTo(currentPos); }, 200); }
+  }
+  if (tab === 'historial') cargarHistorial();
+  if (tab === 'perfil') cargarPerfil();
+}
+
+function iniciarHeartbeat() {
+  if (heartbeatInt) clearInterval(heartbeatInt);
+  heartbeatInt = setInterval(function() {
+    if (!choferId || !currentPos || !LuxCfg.esUbicacionGPSValida(currentPos.lat, currentPos.lng)) return;
+    dbUpdate('choferes', choferId, { ultima_conexion: new Date().toISOString(), ubicacion: currentPos });
+  }, 30000);
+}
+
+function iniciarNoSleep() {
+  noSleep = new NoSleep();
+  document.addEventListener('click', function enableNoSleep() {
+    noSleep.enable();
+    document.removeEventListener('click', enableNoSleep);
+  }, { once: true });
+}
+
+function NoSleep() {
+  var video = document.getElementById('no-sleep');
+  this.enable = function() {
+    if (video) { video.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhtZGF0AAAAMgAAACh3cnZrbG9uZwAAAAAAAAAA'; video.play(); }
+  };
+  this.disable = function() { if (video) { video.pause(); video.src = ''; } };
+}
+
+async function iniciarWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLockSentinel = await navigator.wakeLock.request('screen');
+      document.addEventListener('visibilitychange', async function() {
+        if (document.visibilityState === 'visible' && !wakeLockSentinel) {
+          try { wakeLockSentinel = await navigator.wakeLock.request('screen'); } catch(e) {}
+        }
+      });
+    }
+  } catch(e) { console.warn('WakeLock no disponible'); }
+}
+
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+var pwaDeferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  pwaDeferredPrompt = e;
+  var pwaShown = localStorage.getItem('pwa_shown_choferes');
+  if (!pwaShown) {
+    document.getElementById('install-modal').style.display = 'flex';
+  }
+});
+
+function installApp() {
+  if (!pwaDeferredPrompt) return;
+  pwaDeferredPrompt.prompt();
+  pwaDeferredPrompt.userChoice.then(function() {
+    pwaDeferredPrompt = null;
+    document.getElementById('install-modal').style.display = 'none';
+    localStorage.setItem('pwa_shown_choferes', '1');
+  });
+}
+
+document.getElementById('lock-overlay').addEventListener('click', function() {
+  this.style.display = 'none';
+});
+
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'hidden' && choferId) {
+    document.getElementById('lock-overlay').style.display = 'flex';
+    document.getElementById('lock-msg').textContent = 'Viajando con LuxRides';
+  }
+  if (document.visibilityState === 'visible' && choferId) {
+    iniciarGPS();
+  }
+});
+
+function mostrarToast(msg, tipo) { notify(msg, tipo); }
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(e) { console.warn('SW registration failed:', e); });
+}
+(function() {
+  var storedId = localStorage.getItem('luxrides_chofer_id');
+  var storedNom = localStorage.getItem('luxrides_chofer_nombre');
+  if (storedId && storedNom) {
+    document.getElementById('inp-id').value = storedId;
+    document.getElementById('inp-nombre').value = storedNom;
+    toggleLoginBtn();
+  }
+  var installed = localStorage.getItem('pwa_shown_choferes');
+  if (installed) document.getElementById('install-modal').style.display = 'none';
+})();
+
+var origIniciarApp = iniciarApp;
+iniciarApp = function() {
+  if (choferId) {
+    localStorage.setItem('luxrides_chofer_id', choferId);
+    if (choferData && choferData.nombre) localStorage.setItem('luxrides_chofer_nombre', choferData.nombre);
+  }
+  origIniciarApp.call(this);
+};
+
+var origCerrarStripeModal = cerrarStripeModal;
+cerrarStripeModal = function() {
+  origCerrarStripeModal.call(this);
+  if (stripeCardElement) stripeCardElement.mount('#stripe-card-element');
+};
+
+async function setOnline(state) {
+  if (!choferId) return;
+  try {
+    await dbUpdate('choferes', choferId, { estado: state ? 'en linea' : 'offline', ultima_conexion: new Date().toISOString() });
+    if (choferData) choferData.estado = state ? 'en linea' : 'offline';
+    var badge = document.getElementById('state-badge');
+    badge.className = 'state-badge ' + (state ? 'online' : 'offline');
+    badge.textContent = state ? 'En línea' : 'Desconectado';
+    toggleBusquedaViajes(state);
+    if (state) {
+      cargarViajesPendientes();
+      notify('Ahora estás en línea', 'ok');
+      if (!currentPos) notify('📍 Toca 🖥️ Demo y haz clic en el mapa para mandar tu ubicación', 'ok');
+    } else {
+      viajesPendientes = {};
+      renderViajesPendientes();
+      notify('Te has desconectado', 'err');
+    }
+  } catch (e) {
+    console.error(e);
+    notify('⚠️ Error al cambiar estado: ' + (e.message || e), 'err');
+  }
+}
+
+async function cargarHistorial() {
+  if (!choferId) return;
+  try {
+    var lista = await dbGetList('historial', 'chofer_id', choferId);
+    var el = document.getElementById('historial-list');
+    if (!lista.length) {
+      el.innerHTML = '<div class="historial-empty">Aún no tienes viajes completados.</div>'; return;
+    }
+    var html = '';
+    for (var i = 0; i < lista.length; i++) {
+      var h = lista[i];
+      html += '<div class="viaje-card">';
+      html += '<div class="head"><span class="name">' + escHtml(h.cliente) + '</span><span class="price">$' + formatNum(h.precio) + '</span></div>';
+      html += '<div class="detail"><span>' + escHtml(h.origen || '') + ' → ' + escHtml(h.destino || '') + '</span></div>';
+      html += '<div class="detail" style="margin-top:4px;"><span>' + (h.fecha || '') + ' ' + (h.hora || '') + '</span><span class="badge ok">Pagado: $' + formatNum(h.pago_chofer) + '</span></div>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch (e) { console.error(e); }
+}
+</script>
+<script>
+function initLuxChoferMaps() {
+  try { if (typeof initLiveMap === 'function') initLiveMap(); } catch(e) { console.warn('Chofer map init:', e); }
+}
+if (window.LuxCfg) LuxCfg.loadGoogleMaps('initLuxChoferMaps');
+</script>
+</body>
+</html>
