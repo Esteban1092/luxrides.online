@@ -669,7 +669,6 @@ function initLiveMap() {
       zoomControl: true,
       gestureHandling: 'greedy'
     });
-    // Forzar resize por si el tab estaba oculto al inicializar
     setTimeout(function() { if (liveMap) google.maps.event.trigger(liveMap, 'resize'); }, 150);
     google.maps.event.addListenerOnce(liveMap, 'idle', function() {
       if (currentPos) updateDriverMarker(currentPos);
@@ -737,21 +736,34 @@ function urlBase64ToUint8Array(base64) {
 
 async function registrarPush() {
   try {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { console.log('Push no soportado'); return; }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      notify('⚠️ Push no soportado en este navegador', 'err'); return;
+    }
+    if (Notification.permission === 'denied') {
+      notify('🔕 Notificaciones bloqueadas — actívalas en ajustes del navegador', 'err'); return;
+    }
     var reg = await navigator.serviceWorker.register('/sw.js');
     await navigator.serviceWorker.ready;
     var sub = await reg.pushManager.getSubscription();
     if (sub) {
       await guardarSuscripcionPush(sub);
+      notify('🔔 Notificaciones en segundo plano activas', 'ok');
       return;
+    }
+    var permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      notify('🔕 Permiso de notificaciones denegado', 'err'); return;
     }
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
     await guardarSuscripcionPush(sub);
-    console.log('Push subscription OK');
-  } catch (e) { console.warn('Error registering push:', e); }
+    notify('✅ Notificaciones en segundo plano activadas', 'ok');
+  } catch (e) {
+    console.warn('Error registering push:', e);
+    notify('⚠️ No se pudo activar push: ' + (e.message || e), 'err');
+  }
 }
 
 async function guardarSuscripcionPush(sub) {
@@ -953,13 +965,11 @@ function initTripMap(origen, destino) {
     zoomControl: true,
     gestureHandling: 'greedy'
   });
-  // Forzar re-render: el contenedor estaba en display:none, Google Maps no calcula dimensiones bien
   setTimeout(function() { google.maps.event.trigger(tripMap, 'resize'); }, 100);
 
   var chLat = (currentPos ? currentPos.lat : origen.lat);
   var chLng = (currentPos ? currentPos.lng : origen.lng);
 
-  // Si faltan coordenadas de destino u origen, geocodificar desde texto
   var vj = viajeActual || {};
   var origenTexto = vj.origen || '';
   var destinoTexto = vj.destino || '';
@@ -1000,7 +1010,6 @@ function initTripMap(origen, destino) {
       waypoints = [{ lat: chLat, lng: chLng }, origenFinal, destinoFinal];
     }
 
-    // Timeout de seguridad: si en 12s no llega respuesta, mostrar error
     var timedOut = false;
     var timer = setTimeout(function() {
       timedOut = true;
@@ -1049,14 +1058,12 @@ function initTripMap(origen, destino) {
     });
   }
 
-  // Geocodificar si faltan coords (con timeout de seguridad de 8s)
   if (!destinoOk && destinoTexto) {
     var geocoder = new google.maps.Geocoder();
     var _geoCalled = false;
     var _geoTimer = setTimeout(function() {
       if (_geoCalled) return;
       _geoCalled = true;
-      // Geocoder tardó mucho — usar posición del chofer como fallback de origen
       var orLat = origenOk ? origen.lat : (currentPos ? currentPos.lat : 0);
       var orLng = origenOk ? origen.lng : (currentPos ? currentPos.lng : 0);
       construirRutaConCoords(orLat, orLng, 0, 0); // mostrará error de destino
@@ -1260,11 +1267,9 @@ function actualizarUbicacion(lat, lng, fuente, accuracy) {
   var banner = document.getElementById('loc-banner');
   if (banner) banner.style.opacity = '0';
   if (viajeActual) {
-    // Draw route immediately the first time GPS fires during a trip
     if (!_liveRutaActiva) {
       dibujarRutaLiveMap(viajeActual);
     } else {
-      // After first draw, debounce updates to every 5 seconds
       if (_rutaDebTimer) clearTimeout(_rutaDebTimer);
       _rutaDebTimer = setTimeout(function() { _rutaDebTimer = null; if (viajeActual) dibujarRutaLiveMap(viajeActual); }, 5000);
     }
@@ -1339,7 +1344,6 @@ function _esTimeoutGPS(err) {
 
 function _aplicarFallbackDemoPorTimeout() {
   if (!_modoDemo || currentPos) return;
-  // En demo de PC, si el GPS tarda demasiado, usar un punto válido para no bloquear el flujo.
   actualizarUbicacion(19.4368, -99.1851, 'manual');
   notify('🖥️ GPS con tiempo agotado: usando ubicación demo (Polanco).', 'ok');
 }
@@ -1430,7 +1434,6 @@ function activarModoDemo() {
     if (!liveMap) {
       initLiveMap();
     } else {
-      // Forzar resize porque el mapa se inicializó con el tab oculto (0x0 px)
       google.maps.event.trigger(liveMap, 'resize');
       setTimeout(function() { liveMap.setCenter({ lat: 19.4326, lng: -99.1332 }); }, 100);
     }
@@ -1438,10 +1441,8 @@ function activarModoDemo() {
     notify('🖥️ Toca el mapa para enviar tu ubicación al admin', 'ok');
   }, 400);
 
-  // Fallback automático: si en 4 segundos no se clickeó el mapa,
-  // intentar geolocalización del navegador y si falla usar CDMX centro
   setTimeout(function() {
-    if (currentPos) return; // ya tiene ubicación, no hace falta
+    if (currentPos) return;
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         function(pos) {
@@ -1449,7 +1450,6 @@ function activarModoDemo() {
           notify('✅ Ubicación del navegador enviada al admin.', 'ok');
         },
         function() {
-          // Sin GPS ni click → usar CDMX Polanco como demo visible
           actualizarUbicacion(19.4368, -99.1851, 'manual');
           notify('🖥️ Demo: ubicación enviada (Polanco). Toca el mapa para cambiarla.', 'ok');
         },
@@ -1461,7 +1461,6 @@ function activarModoDemo() {
     }
   }, 4000);
 
-  // Intentar geolocalización del navegador (en PC usa WiFi, más preciso que IP pura)
   if (navigator.geolocation) {
     notify('📍 Obteniendo ubicación del navegador...', 'ok');
     navigator.geolocation.getCurrentPosition(
@@ -1478,7 +1477,6 @@ function activarModoDemo() {
     notify('📍 Demo: toca el mapa para fijar tu posición.', 'ok');
   }
 
-  // Mostrar hint visible en el mapa durante demo
   var banner = document.getElementById('loc-banner');
   if (banner) {
     banner.style.opacity = '1';
@@ -1486,7 +1484,6 @@ function activarModoDemo() {
     banner.style.border = '1px solid rgba(212,175,55,.6)';
     banner.style.color = '#f0c84a';
     banner.textContent = '🖥️ Demo: toca el mapa para enviar tu posición al admin';
-    // Se oculta cuando el usuario hace clic (en actualizarUbicacion) o tras 30s
     setTimeout(function() { if (banner) banner.style.opacity = '0'; }, 30000);
   }
 }
@@ -1628,7 +1625,6 @@ function aceptarViaje(id) {
     if (liveMap && currentPos && viajeActual) {
       dibujarRutaLiveMap(viajeActual);
     } else {
-      // GPS not ready yet — retry every second until position arrives (up to 30 tries)
       var _rTries = 0;
       var _rPoll = setInterval(function() {
         _rTries++;

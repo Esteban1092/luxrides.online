@@ -3,16 +3,71 @@
       <head>
       <meta charset="UTF-8"/>
       <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-      <title>LuxRides reservas</title>
-      <meta name="description" content="Servicio de transporte ejecutivo de lujo en CDMX. Sedán y SUV para hasta 6 pasajeros, choferes profesionales y guías certificados. Pagos 100% seguros con protección antifraude."/>
-      <meta property="og:title" content="LuxRides reservas"/>
-      <meta property="og:description" content="Servicio de transporte ejecutivo de lujo en CDMX. Sedán y SUV para hasta 6 pasajeros, choferes profesionales y guías certificados. Pagos 100% seguros con protección antifraude."/>
-      <meta property="og:image" content="/logo-luxrides.png"/>
+      <title>LuxRides — Transporte Ejecutivo VIP en CDMX | Reserva en línea</title>
+      <meta name="description" content="LuxRides: servicio de transporte ejecutivo de lujo en CDMX. Sedán VIP y SUV para hasta 6 pasajeros. Choferes profesionales, rutas al aeropuerto, tours y traslados. Reserva en línea en luxrides.online."/>
+      <meta name="keywords" content="LuxRides, transporte ejecutivo CDMX, chofer privado Ciudad de México, traslado aeropuerto CDMX, servicio VIP México, SUV ejecutivo, sedán de lujo, luxrides.online, transporte de lujo"/>
+      <meta name="google-site-verification" content="ZPdY-rvw6s4BwFWAk7nkv0w3nVqYDOj7oMGTFUX_R08"/>
+      <meta name="robots" content="index, follow"/>
+      <link rel="canonical" href="https://luxrides.online/sas.html"/>
+
+      <meta property="og:type" content="website"/>
+      <meta property="og:url" content="https://luxrides.online/"/>
+      <meta property="og:site_name" content="LuxRides"/>
+      <meta property="og:title" content="LuxRides — Transporte Ejecutivo VIP en CDMX"/>
+      <meta property="og:description" content="Reserva tu chofer privado en CDMX. Sedán VIP y SUV de lujo, traslados al aeropuerto, tours y más. Pagos seguros con Stripe."/>
+      <meta property="og:image" content="https://luxrides.online/logo-luxrides.png"/>
+      <meta property="og:image:width" content="1200"/>
+      <meta property="og:image:height" content="630"/>
+      <meta property="og:locale" content="es_MX"/>
+
+      <meta name="twitter:card" content="summary_large_image"/>
+      <meta name="twitter:title" content="LuxRides — Transporte Ejecutivo VIP en CDMX"/>
+      <meta name="twitter:description" content="Chofer privado en CDMX. Sedán VIP y SUV de lujo. Reserva en línea en luxrides.online"/>
+      <meta name="twitter:image" content="https://luxrides.online/logo-luxrides.png"/>
+
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "LuxRides",
+        "description": "Servicio de transporte ejecutivo de lujo en Ciudad de México. Sedán VIP y SUV para hasta 6 pasajeros. Choferes profesionales y traslados al aeropuerto.",
+        "url": "https://luxrides.online",
+        "logo": "https://luxrides.online/logo-luxrides.png",
+        "image": "https://luxrides.online/logo-luxrides.png",
+        "telephone": "+525527729551",
+        "email": "luxrides@luxrides.online",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Ciudad de México",
+          "addressRegion": "CDMX",
+          "addressCountry": "MX"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": "19.4326",
+          "longitude": "-99.1332"
+        },
+        "areaServed": ["Ciudad de México", "CDMX", "Estado de México", "EDOMEX"],
+        "priceRange": "$$",
+        "openingHours": "Mo-Su 00:00-24:00",
+        "sameAs": [
+          "https://luxrides.online"
+        ],
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Servicios de transporte ejecutivo",
+          "itemListElement": [
+            { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Traslado por kilometraje CDMX" } },
+            { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Chofer por horas CDMX" } },
+            { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Traslado aeropuerto Ciudad de México" } },
+            { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Tours privados CDMX en SUV VIP" } }
+          ]
+        }
+      }
+      </script>
       <link rel="icon" type="image/png" href="/logo-luxrides.png"/>
       <link rel="apple-touch-icon" href="/logo-luxrides.png"/>
       <script src="config.js"></script>
-      <script src="js/lux-core.js"></script>
-      <script src="js/lux-sas-map.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script>
       window._tycToggleBtn = window._tycToggleBtn || function(cb){
@@ -1815,30 +1870,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       function resolverEndpointsCorreo() {
         const endpoints = [];
-        const configured = (window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || '';
-        const hostingerOrigin = ((window.LuxCfg && LuxCfg.get && LuxCfg.get('HOSTINGER_ORIGIN')) || '').replace(/\/+$/, '');
+        const backend = (window.LuxCfg && LuxCfg.backendUrl && LuxCfg.backendUrl()) || (window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || '';
         const h = (location.hostname || '').toLowerCase();
         const isLocal = (h === 'localhost' || h === '127.0.0.1' || h === '::1');
-
-        // 1) API configurada (Node/Worker/etc.)
-        if (configured) {
-          endpoints.push({ url: configured + '/api/enviar-reserva', tipo: 'vercel-config' });
-          endpoints.push({ url: configured + '/api/email/reserva-confirmacion', tipo: 'node-config' });
+        if (backend) {
+          endpoints.push({ url: backend + '/api/enviar-reserva', tipo: 'node-backend' });
+          endpoints.push({ url: backend + '/api/email/reserva-confirmacion', tipo: 'node-backend' });
         }
-
-        // 2) Si estamos en dominio web, probar primero endpoint JS y luego PHP del mismo hosting
-        if (!isLocal && location.protocol !== 'file:') {
-          endpoints.push({ url: location.origin + '/api/enviar-reserva', tipo: 'vercel-origin' });
-          endpoints.push({ url: location.origin + '/api/enviar-reserva.php', tipo: 'php-origin' });
+        if (isLocal) {
+          endpoints.push({ url: 'http://localhost:8787/api/enviar-reserva', tipo: 'node-local' });
+          endpoints.push({ url: 'http://localhost:8787/api/email/reserva-confirmacion', tipo: 'node-local' });
         }
-
-        // 3) Si estás en localhost, probar Hostinger si se configuró explícitamente
-        if (isLocal && hostingerOrigin) {
-          endpoints.push({ url: hostingerOrigin + '/api/enviar-reserva', tipo: 'vercel-hostinger' });
-          endpoints.push({ url: hostingerOrigin + '/api/enviar-reserva.php', tipo: 'php-hostinger' });
-        }
-
-        // Evitar repetidos
         return endpoints.filter(function(ep, idx, arr) {
           return arr.findIndex(function(x) { return x.url === ep.url; }) === idx;
         });
@@ -3120,25 +3162,25 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const trasladoTexto = tipoTraslado==='P' ? 'Pick Up' : (tipoTraslado==='D' ? 'Drop Off' : 'Normal');
 
         const lines=[
-          '*ðŸš— RESERVA LUXRIDES VIP*',
-          'â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”',
-          'ðŸ‘¤ *Cliente:* '+nombre,
-          'ðŸš˜ *Vehículo:* '+vehiculo,
-          'ðŸ” *Traslado:* '+trasladoTexto,
-          'ðŸ“ *Origen:* '+(coordOrigen?.display||''),
-          servicio==='I'?'ðŸ *Destino:* '+(coordDestino?.display||''):'â±ï¸ *Servicio:* '+hSel+' horas',
-          (tipoTraslado==='P' || tipoTraslado==='D')?'âœˆï¸ *Aerolínea:* '+aerolinea:'',
-          (tipoTraslado==='P' || tipoTraslado==='D')?'ðŸ§¾ *Vuelo:* '+vuelo:'',
-          (tipoTraslado==='P' || tipoTraslado==='D')?'ðŸŒ *Salida vuelo:* '+salida:'',
-          (tipoTraslado==='P' || tipoTraslado==='D')?'ðŸ“± *Número cliente:* '+numeroCliente:'',
-          servicio==='I'?'ðŸ“ *Distancia:* '+resultado.distanciaKm+' km':'',
-          servicio==='I'?'â³ *Tiempo:* '+resultado.duracionMin+' minutos':'',
-          'ðŸ“ *Fecha:* '+fecha,
-          'â° *Hora de recogida:* '+hora+':'+min+' '+ampm,
-          servicio==='I'?'ðŸ *Hora estimada llegada:* '+horaLleg:'',
-          'ðŸ‘¥ *Pasajeros:* '+pasajeros,
-          'â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”',
-          'ðŸ’° *TOTAL: $'+resultado.totalPrecio.toLocaleString()+' MXN*',
+          '🚗 *RESERVA LUXRIDES VIP*',
+          '─────────────────────────',
+          '👤 *Cliente:* '+nombre,
+          '🚘 *Vehiculo:* '+vehiculo,
+          '📌 *Traslado:* '+trasladoTexto,
+          '📍 *Origen:* '+(coordOrigen?.display||''),
+          servicio==='I'?'🏁 *Destino:* '+(coordDestino?.display||''):'⏱ *Servicio:* '+hSel+' horas',
+          (tipoTraslado==='P'||tipoTraslado==='D')?'✈ *Aerolinea:* '+aerolinea:'',
+          (tipoTraslado==='P'||tipoTraslado==='D')?'🔢 *Vuelo:* '+vuelo:'',
+          (tipoTraslado==='P'||tipoTraslado==='D')?'🌐 *Salida vuelo:* '+salida:'',
+          (tipoTraslado==='P'||tipoTraslado==='D')?'📞 *Numero cliente:* '+numeroCliente:'',
+          servicio==='I'?'📏 *Distancia:* '+resultado.distanciaKm+' km':'',
+          servicio==='I'?'⌛ *Tiempo:* '+resultado.duracionMin+' minutos':'',
+          '📅 *Fecha:* '+fecha,
+          '⏰ *Hora de recogida:* '+hora+':'+min+' '+ampm,
+          servicio==='I'?'🏁 *Hora est. llegada:* '+horaLleg:'',
+          '👥 *Pasajeros:* '+pasajeros,
+          '─────────────────────────',
+          '💰 *TOTAL: $'+resultado.totalPrecio.toLocaleString()+' MXN*',
         ].filter(l=>l!=='').join('\n');
 
         const numeroCentral = normalizarNumeroWhatsApp(WHATSAPP_CENTRAL);
@@ -3325,8 +3367,57 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             errEl.textContent = error.message || 'Error en los datos de la tarjeta.';
             return;
           }
-          mostrarToast('✅ Tarjeta validada. Procesando pago...');
-          cerrarPagoStripe();
+
+          // Llamar al backend para cobrar
+          const base = (window.LuxCfg && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
+          const nombre = (document.getElementById('inp-nombre').value || '').trim() || nombreTitular;
+          const origen  = coordOrigen  ? coordOrigen.display  : '—';
+          const destino = coordDestino ? coordDestino.display : '—';
+
+          const pagoRes = await fetch(base + '/api/stripe/pagar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              paymentMethodId: paymentMethod.id,
+              monto: stripeMontoActual,
+              nombre: nombreTitular,
+              email: emailCliente,
+              descripcion: 'LuxRides: ' + origen + ' → ' + destino
+            })
+          });
+          const pagoData = await pagoRes.json().catch(() => ({}));
+
+          if (pagoData.ok && pagoData.status === 'succeeded') {
+            cerrarPagoStripe();
+            mostrarToast('✅ ¡Pago exitoso! Tu reserva está confirmada.');
+            guardarViajeEnServidor({
+              reserva_id: 'LUX-' + Date.now(),
+              cliente: nombre,
+              email_cliente: emailCliente,
+              origen, destino,
+              fecha: document.getElementById('inp-fecha').value,
+              hora_recogida: document.getElementById('inp-hora').value + ':' + (document.getElementById('inp-min').value||'00').toString().padStart(2,'0') + ' ' + ampm,
+              total: stripeMontoActual,
+              estado: 'pagado',
+              servicio,
+              vehiculo: pasajeros <= 3 ? 'Sedán VIP Diamond' : 'SUV Platinum Diamond',
+              timestamp: new Date().toISOString()
+            });
+            return;
+          }
+
+          if (pagoData.requiresAction && pagoData.clientSecret) {
+            const { error: actionError } = await stripeInstance.handleCardAction(pagoData.clientSecret);
+            if (actionError) {
+              errEl.textContent = actionError.message || 'Verificación fallida. Intenta con otra tarjeta.';
+              return;
+            }
+            mostrarToast('✅ ¡Verificación completada! Pago confirmado.');
+            cerrarPagoStripe();
+            return;
+          }
+
+          errEl.textContent = pagoData.error || 'No se pudo procesar el pago. Intenta de nuevo.';
         } catch(err) {
           errEl.textContent = err.message || 'Error al procesar el pago. Intenta de nuevo.';
         } finally {
@@ -5170,12 +5261,29 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               ${chofer ? `<div class="trip-meta-item">🧑✈️ <b>${chofer}</b></div>` : ''}
               ${veh    ? `<div class="trip-meta-item">🚘 ${veh}</div>` : ''}
             </div>
+            ${rawEstado === 'pendiente' && t.total ? `
+            <button onclick="abrirStripeDesdeViaje(${t.total},'${(t.cliente||'').replace(/'/g,'')}')" style="width:100%;margin-top:10px;padding:11px;background:#635bff;border:none;border-radius:8px;color:#fff;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+              💳 Pagar con Stripe &nbsp;<span style="background:rgba(255,255,255,.2);border-radius:5px;padding:1px 7px;">${precio}</span>
+            </button>` : ''}
           </div>`;
       }).join('');
     }
 
+    window.abrirStripeDesdeViaje = function(monto, cliente) {
+      // Pre-llenar el modal de Stripe con el monto del viaje
+      const montoEl = document.getElementById('stripe-monto-display');
+      if (montoEl) montoEl.textContent = '$' + Number(monto).toLocaleString('es-MX');
+      const nombreEl = document.getElementById('stripe-nombre-titular');
+      if (nombreEl && cliente) nombreEl.value = cliente;
+      window._stripeMonto = Number(monto);
+      // Abrir modal
+      const modal = document.getElementById('stripe-modal');
+      if (modal) modal.style.display = 'flex';
+      // Ir a pestaña inicio para ver el modal
+      switchTab('inicio');
+    };
+
     function _fmtFecha(f) {
-      if (!f) return '—';
       const [y,m,d] = f.split('-');
       const ms = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
       return `${parseInt(d)} ${ms[parseInt(m)-1]} ${y}`;
@@ -5490,6 +5598,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
           if (!(cfgIsLocal && !currentIsLocal)) candidateBases.push(configuredBase);
         }
         if (!currentIsLocal && location.protocol !== 'file:') candidateBases.push(location.origin);
+        if (currentIsLocal) candidateBases.push('http://localhost:8787');
         candidateBases = candidateBases.filter(function(b, i, arr){ return arr.indexOf(b) === i; });
 
         for (var i = 0; i < candidateBases.length; i++) {
@@ -5534,7 +5643,18 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
       }
 
       async function _buildPrompt(){
-        return 'Eres Iovox, la inteligencia artificial de LuxRides. Responde con tono elegante, breve y útil para usuarios de transporte ejecutivo en CDMX.';
+        var user = window._getUser && window._getUser();
+        var nombre = (user && user.user_metadata && (user.user_metadata.nombre||user.user_metadata.full_name)) || (user && user.email) || '';
+        var fechaHoy = new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+        var horaAhora = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+
+        return 'Eres Iovox, el asistente de LuxRides. Eres elegante, cercano y util. '+
+          'LuxRides ofrece transporte ejecutivo de lujo en CDMX: sedan VIP y SUV para hasta 6 pasajeros. '+
+          'Servicios: traslados por kilometraje, por tiempo (min 2h), aeropuerto, tours. '+
+          'Pagos via WhatsApp, Stripe o Clip. ' +
+          'Fecha y hora actual: '+fechaHoy+', '+horaAhora+'.' +
+          (nombre ? ' Cliente: '+nombre+'.' : '') +
+          ' Responde siempre en el idioma del usuario. Maximo 3 parrafos por respuesta.';
       }
 
       window.abrirAsistente = async function(){

@@ -534,7 +534,6 @@ function dbUpdateReserva(reservaId, data) {
   return SUPABASE.from('reservas').update(data).eq('reserva_id', reservaId);
 }
 async function dbDeleteReserva(reservaId) {
-  // Borrar viajes asociados primero para que el chofer no los siga viendo
   try {
     await SUPABASE.from('viajes').delete().eq('reserva_id', reservaId);
   } catch(e) { console.warn('dbDeleteReserva viajes:', e); }
@@ -1323,6 +1322,20 @@ async function despachar(reservaID) {
       datos: { cliente: r.cliente, origen: r.origen, destino: r.destino, reservaId: reservaID }
     });
 
+    try {
+      await fetch((window.LuxCfg && LuxCfg.backendUrl ? LuxCfg.backendUrl() : '') + '/api/push/enviar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chofer_id: choferID,
+          titulo: '🚖 Nuevo viaje — LuxRides',
+          cuerpo: r.cliente + ' · $' + (r.total || 0) + ' · ' + (r.origen || '') + ' → ' + (r.destino || '')
+        })
+      });
+    } catch (pushErr) {
+      console.warn('Push web no enviado (backend no disponible):', pushErr.message);
+    }
+
     if (reservasActivas[reservaID]) {
       reservasActivas[reservaID].estado = 'Asignado';
       reservasActivas[reservaID].chofer_id = choferID;
@@ -1557,7 +1570,6 @@ async function borrarReservaForzada(reservaId) {
   if (!window.confirm(msg)) return;
 
   try {
-    // 1) Liberar chofer asociado si existe.
     var choferId = r ? (r.chofer_id || r.chofer_asignado || null) : null;
     if (choferId) {
       try {
@@ -1566,8 +1578,6 @@ async function borrarReservaForzada(reservaId) {
         console.warn('borrarReservaForzada: no se pudo liberar chofer', e1);
       }
     }
-
-    // 2) Quitar referencias en la propia reserva para evitar bloqueos por FK/lógica.
     try {
       await dbUpdateReserva(reservaId, {
         chofer_id: null,
@@ -1579,8 +1589,6 @@ async function borrarReservaForzada(reservaId) {
     } catch (e2) {
       console.warn('borrarReservaForzada: no se pudo limpiar referencia en reserva', e2);
     }
-
-    // 3) Borrar posibles dependencias por reserva_id (si existen en tu proyecto).
     var tablasDependientes = ['viajes', 'calificaciones', 'notificaciones'];
     for (var i = 0; i < tablasDependientes.length; i++) {
       try {
@@ -1589,8 +1597,6 @@ async function borrarReservaForzada(reservaId) {
         console.warn('borrarReservaForzada: tabla dependiente', tablasDependientes[i], e3);
       }
     }
-
-    // 4) Borrar reserva (paso final).
     var del = await SUPABASE.from('reservas').delete().eq('reserva_id', reservaId);
     if (del && del.error) throw del.error;
 

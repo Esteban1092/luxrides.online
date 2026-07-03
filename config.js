@@ -12,12 +12,17 @@
     HERE_API_KEY:           'LIn8K-l1u4qiSUI7VGcRDJ__79o=',
     STRIPE_PUBLISHABLE_KEY: 'pk_live_51TSJFbRsMQje2ZkMG6tpwzSwf8HsmPkQmP45tH2wXb6CVEsa3sSJMPrFyDyPu4vVQH4OBOVDeMYYqitKLy3DJhfU00Fqd0xLIC',
     WHATSAPP_CENTRAL:       '+525527729551',
-    VAPID_PUBLIC_KEY:       'BPirkqzos1LTThbMmK1qCGH7M7qR2h1pilBOXMroC7z9Zt2lSgOfKgFhM-7IDur998kXFmpG6pJR6pgRBOjEqN8',
-    HOSTINGER_ORIGIN:       'https://luxrides.online'
+    VAPID_PUBLIC_KEY:       'BLX6MhsrRUOf_m5So0bt1RtQeyQtsvq_UQpokto6XL8frM66o-kIW-AVQbcnT1PWOOIo_-yU7pOok6L2BmPpsnY',
+    HOSTINGER_ORIGIN:       'https://luxrides.online',
+    BACKEND_URL:            'https://congenial-space-goldfish-g4944pp4vj6hv5wr-8787.app.github.dev'
   };
 
   function get(k) {
     return CFG[k];
+  }
+
+  function backendUrl() {
+    return (CFG.BACKEND_URL || CFG.HOSTINGER_ORIGIN || '').replace(/\/+$/, '');
   }
 
   function apiBaseUrl() {

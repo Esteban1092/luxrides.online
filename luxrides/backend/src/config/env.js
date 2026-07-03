@@ -16,14 +16,15 @@ function optional(name, fallback = '') {
 export const env = {
   port: Number(optional('PORT', '8787')),
   frontendOrigin: optional('FRONTEND_ORIGIN', 'https://luxrides.online'),
-  groqApiKey: required('GROQ_API_KEY'),
-  adminId: required('ADMIN_ID'),
-  adminPass: required('ADMIN_PASS'),
+  groqApiKey: optional('GROQ_API_KEY', ''),
+  adminId: optional('ADMIN_ID', ''),
+  adminPass: optional('ADMIN_PASS', ''),
+  stripeSecretKey: optional('STRIPE_SECRET_KEY', ''),
   smtp: {
-    host: required('SMTP_HOST'),
+    host: optional('SMTP_HOST', 'smtp.hostinger.com'),
     port: Number(optional('SMTP_PORT', '465')),
-    user: required('SMTP_USER'),
-    pass: required('SMTP_PASS'),
-    from: required('SMTP_FROM')
+    user: optional('SMTP_USER', ''),
+    pass: optional('SMTP_PASS', ''),
+    from: optional('SMTP_FROM', 'LuxRides <luxrides@luxrides.online>')
   }
 };
