@@ -15,6 +15,14 @@ function optional(name, fallback = '') {
   return value && value.trim() ? value.trim() : fallback;
 }
 
+function optionalFirst(names, fallback = '') {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value && value.trim()) return value.trim();
+  }
+  return fallback;
+}
+
 export const env = {
   port: Number(optional('PORT', '8787')),
   nodeEnv: optional('NODE_ENV', 'development'),
@@ -37,5 +45,10 @@ export const env = {
     user: required('SMTP_USER'),
     pass: required('SMTP_PASS'),
     from: required('SMTP_FROM')
+  },
+
+  admin: {
+    id: optionalFirst(['ADMIN_ID', 'ADMIN_USER', 'DESPACHO_ADMIN_ID'], 'admin12343'),
+    pass: optionalFirst(['ADMIN_PASS', 'ADMIN_PASSWORD', 'DESPACHO_ADMIN_PASS'], optionalFirst(['ADMIN_ID', 'ADMIN_USER', 'DESPACHO_ADMIN_ID'], 'admin12343'))
   }
 };

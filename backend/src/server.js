@@ -8,6 +8,7 @@ import healthRoutes from './routes/health.routes.js';
 import emailRoutes from './routes/email.routes.js';
 import groqRoutes from './routes/groq.routes.js';
 import pushRoutes from './routes/push.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import { errorHandler, notFound } from './middleware/error.js';
 
 const app = express();
@@ -31,6 +32,7 @@ app.use('/api', healthRoutes);
 app.use('/api', emailRoutes);
 app.use('/api', groqRoutes);
 app.use('/api', pushRoutes);
+app.use('/api', adminRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

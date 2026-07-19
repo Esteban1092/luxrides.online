@@ -5167,6 +5167,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
     function aplicarIdioma(code) {
       _idiomaActual = code;
+      window._luxLang = code;
       localStorage.setItem('lux_idioma', code);
       const lang = I18N[code] || I18N.en;
       const t = k => lang[k] || (I18N.en[k] || k);
@@ -5231,6 +5232,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       if (document.getElementById('idioma-modal').classList.contains('show')) {
         renderizarIdiomas(document.getElementById('idioma-search-inp').value || '');
       }
+
+      document.dispatchEvent(new CustomEvent('lux:langchange', { detail: { code: code } }));
     }
 
     function abrirAjustes() {
@@ -5274,7 +5277,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         </div>
       `).join('');
       if (!filtered.length) {
-        list.innerHTML = '<div style="padding:18px 20px;color:rgba(0,0,0,0.4);font-size:.88rem;">Sin resultados</div>';
+        var noRes = (_luxLangNow() === 'en') ? 'No results' : 'Sin resultados';
+        list.innerHTML = '<div style="padding:18px 20px;color:rgba(0,0,0,0.4);font-size:.88rem;">' + noRes + '</div>';
       }
     }
 
@@ -5311,13 +5315,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         </div>
         <div id="tpc-dropdown">
           <div class="tpc-dd-item" onclick="closeTpcDropdown();switchTab('viajes')">
-            <span class="tpc-dd-icon">🗺️</span> Pestañas de Historial
+            <span class="tpc-dd-icon">🗺️</span> <span id="tpc-hist-label">Pestañas de Historial</span>
           </div>
           <div class="tpc-dd-item" onclick="closeTpcDropdown();abrirPerfilFiscal()">
-            <span class="tpc-dd-icon">📊</span> Mi Perfil Fiscal
+            <span class="tpc-dd-icon">📊</span> <span id="tpc-tax-label">Mi Perfil Fiscal</span>
           </div>
           <div class="tpc-dd-item" onclick="closeTpcDropdown();switchTab('facturas')">
-            <span class="tpc-dd-icon">📄</span> Descargar Factura CFDI
+            <span class="tpc-dd-icon">📄</span> <span id="tpc-cfdi-label">Descargar Factura CFDI</span>
           </div>
         </div>
       </div>
@@ -5604,7 +5608,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       const perfil = window._getPerfil ? window._getPerfil() : window._perfilDatos;
       card.classList.add('show');
       if (!user) {
-        document.getElementById('tpc-name').textContent = 'Entrar';
+        document.getElementById('tpc-name').textContent = _luxMsg('signIn');
         const ico = document.getElementById('tpc-avatar-ico');
         const img = document.getElementById('tpc-avatar-img');
         ico.textContent = '👤'; ico.style.display = 'inline'; img.style.display = 'none';
@@ -5642,7 +5646,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
     });
 
     function abrirPerfilFiscal() {
-      mostrarToast('📊 Perfil Fiscal — próximamente disponible');
+      mostrarToast(_luxMsg('profileSoon'));
     }
 
     (function() {
@@ -5676,8 +5680,15 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       closeTpcDropdown();
       if (tab === 'viajes')   cargarViajes();
       if (tab === 'facturas') cargarFacturas();
+      if (tab === 'guias')    reiniciarAnimacionGuias();
       if (tab === 'iovox')    abrirAsistente();
     }
+
+    document.addEventListener('lux:langchange', function() {
+      actualizarTopProfileCard();
+      if (_activeTab === 'viajes') cargarViajes();
+      if (_activeTab === 'facturas') cargarFacturas();
+    });
 
     function reiniciarAnimacionGuias() {
       const wrap = document.getElementById('guias-anim-wrap');
@@ -5709,7 +5720,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           en:{i:'Home',v:'Trips',f:'Invoices'},fr:{i:'Accueil',v:'Trajets',f:'Factures'},
           pt:{i:'Início',v:'Viagens',f:'Faturas'},de:{i:'Start',v:'Fahrten',f:'Rechnungen'},
           it:{i:'Home',v:'Viaggi',f:'Fatture'},zh:{i:'主页',v:'行程',f:'发票'},
-          ja:{i:'ホーム',v:'旅行',f:'請求書'},ko:{i:'토',v:'여행',f:'청구서'},
+          ja:{i:'ホーム',v:'旅行',f:'請求書'},ko:{i:'홈',v:'여행',f:'청구서'},
           ar:{i:'الرئيسية',v:'الرحلات',f:'الفواتير'},
           ru:{i:'Главная',v:'Поездки',f:'Счета'}};
         var nt=navT[lang]||navT.es;
@@ -5744,6 +5755,16 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         var pt2=panT[lang]||panT.es;
         q('#viajes-panel .vf-header-title',pt2.v);
         q('#facturas-panel .vf-header-title',pt2.f);
+
+        var uiT={
+          es:{h:'Pestañas de Historial',p:'Mi Perfil Fiscal',f:'Descargar Factura CFDI',ph:'Pregúntame lo que necesites…'},
+          en:{h:'History Tabs',p:'My Tax Profile',f:'Download CFDI Invoice',ph:'Ask me anything you need…'}
+        };
+        var ut=uiT[lang]||uiT.es;
+        q('#tpc-hist-label',ut.h);
+        q('#tpc-tax-label',ut.p);
+        q('#tpc-cfdi-label',ut.f);
+        sp('iovox-inp',ut.ph);
 
         // Placeholders de inputs
         var phs={
@@ -5808,192 +5829,59 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       } else { applyAll(); }
       setTimeout(applyAll,400);
     })();
-      es:{
-        'nav.inicio':'Inicio','nav.viajes':'Viajes','nav.facturas':'Facturas',
-        'form.nombre':'Nombre del Cliente','form.tipo_svc':'Tipo de Servicio',
-        'form.tipo_traslado':'Tipo de Traslado',
-        'form.vuelo_lbl':'Datos de Vuelo (solo Pick Up / Drop Off)',
-        'form.horas':'Horas de Servicio (Mínimo 2h)',
-        'form.origen':'Origen (Recogida)','form.destino':'Destino Principal',
-        'form.pasajeros':'Pasajeros',
-        'form.svc_km':'🧭 Por Kilometraje','form.svc_t':'⏱️ Por Tiempo',
-        'form.trip_n':'🚘 Normal','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
-        'form.nombre_ph':'Ej: Estebanquito',
-        'form.origen_ph':'Ej: Club de Golf Bosques','form.destino_ph':'Ej: Pujol',
-        'form.aerolinea_ph':'Aerolínea (ej: Aeroméxico)',
-        'form.vuelo_ph':'No. de vuelo (ej: AM123)',
-        'form.vuelo_salida_ph':'Lugar de salida del vuelo',
-        'form.cliente_num_ph':'Teléfono del cliente',
-        'form.calcular':'🔍 Calcular Precio y Ruta',
-        'form.add_stop':'+ Agregar parada','form.del_stop':'− Eliminar parada',
-        'form.importante':'La asignación de su conductor se realizará durante el proceso de pago. Agradecemos incluir el nombre del usuario en el concepto del pago.',
-        'form.imp_bold':'IMPORTANTE:',
-        'form.ubicacion':'📍 Usar mi ubicación',
-        'viajes.titulo':'Mis Viajes','facturas.titulo':'Mis Facturas',
-        'viajes.cargando':'Cargando tus viajes…','facturas.cargando':'Cargando facturas…',
-        'viajes.login':'Inicia sesión para ver tus viajes.',
-        'viajes.empty':'Aún no tienes viajes registrados.\n¡Haz tu primera reserva!',
-        'viajes.error':'Error al cargar. Toca ↻ para reintentar.',
-        'rating.ph':'Escribe tu opinión (opcional)...',
-        'iovox.greeting':'¡Hola! 👋 Soy Iovox, tu asistente de LuxRides. ¿En qué puedo ayudarte hoy?',
-        'iovox.c1':'¿Hay tráfico ahorita?','iovox.c2':'Quiero ayuda con mi reserva',
-        'iovox.c3':'Opciones de traslado','iovox.c4':'Soporte de pago',
-      },
-      en:{
-        'nav.inicio':'Home','nav.viajes':'Trips','nav.facturas':'Invoices',
-        'form.nombre':'Client Name','form.tipo_svc':'Service Type',
-        'form.tipo_traslado':'Transfer Type',
-        'form.vuelo_lbl':'Flight Details (Pick Up / Drop Off only)',
-        'form.horas':'Service Hours (Minimum 2h)',
-        'form.origen':'Pickup Location','form.destino':'Main Destination',
-        'form.pasajeros':'Passengers',
-        'form.svc_km':'🧭 By Distance','form.svc_t':'⏱️ By Time',
-        'form.trip_n':'🚘 Standard','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
-        'form.nombre_ph':'e.g. John Smith',
-        'form.origen_ph':'e.g. Bosques Golf Club','form.destino_ph':'e.g. Downtown Hotel',
-        'form.aerolinea_ph':'Airline (e.g. American Airlines)',
-        'form.vuelo_ph':'Flight No. (e.g. AA123)',
-        'form.vuelo_salida_ph':'Flight departure location',
-        'form.cliente_num_ph':'Client phone number',
-        'form.calcular':'🔍 Calculate Price & Route',
-        'form.add_stop':'+ Add stop','form.del_stop':'− Remove stop',
-        'form.importante':'Your driver will be assigned during the payment process. Please include the user’s name in the payment reference.',
-        'form.imp_bold':'IMPORTANT:',
-        'form.ubicacion':'📍 Use my location',
-        'viajes.titulo':'My Trips','facturas.titulo':'My Invoices',
-        'viajes.cargando':'Loading your trips…','facturas.cargando':'Loading invoices…',
-        'viajes.login':'Sign in to view your trips.',
-        'viajes.empty':'No trips yet.\nMake your first booking!',
-        'viajes.error':'Failed to load. Tap ↻ to retry.',
-        'rating.ph':'Write your review (optional)...',
-        'iovox.greeting':'Hello! 👋 I’m Iovox, your LuxRides assistant. How can I help you today?',
-        'iovox.c1':'Is there traffic right now?','iovox.c2':'Help with my booking',
-        'iovox.c3':'Transfer options','iovox.c4':'Payment support',
-      },
-      fr:{
-        'nav.inicio':'Accueil','nav.viajes':'Trajets','nav.facturas':'Factures',
-        'form.nombre':'Nom du client','form.tipo_svc':'Type de service',
-        'form.tipo_traslado':'Type de transfert',
-        'form.vuelo_lbl':'Détails du vol (Pick Up / Drop Off uniquement)',
-        'form.horas':'Heures de service (Minimum 2h)',
-        'form.origen':'Lieu de prise en charge','form.destino':'Destination principale',
-        'form.pasajeros':'Passagers',
-        'form.svc_km':'🧭 Par distance','form.svc_t':'⏱️ À l’heure',
-        'form.trip_n':'🚘 Standard','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
-        'form.nombre_ph':'ex. Pierre Dupont',
-        'form.origen_ph':'ex. Hôtel du Centre','form.destino_ph':'ex. Aéroport',
-        'form.aerolinea_ph':'Compagnie aérienne','form.vuelo_ph':'N° de vol',
-        'form.vuelo_salida_ph':'Lieu de départ du vol',
-        'form.cliente_num_ph':'Téléphone du client',
-        'form.calcular':'🔍 Calculer prix et itinéraire',
-        'form.add_stop':'+ Ajouter arrêt','form.del_stop':'− Supprimer arrêt',
-        'form.importante':'Votre chauffeur sera assigné lors du paiement. Merci d’inclure votre nom dans la référence.',
-        'form.imp_bold':'IMPORTANT:',
-        'form.ubicacion':'📍 Utiliser ma position',
-        'viajes.titulo':'Mes Trajets','facturas.titulo':'Mes Factures',
-        'viajes.cargando':'Chargement…','facturas.cargando':'Chargement…',
-        'viajes.login':'Connectez-vous pour voir vos trajets.',
-        'viajes.empty':'Pas encore de trajets.\nFaites votre première réservation!',
-        'viajes.error':'Erreur. Touchez ↻ pour réessayer.',
-        'rating.ph':'Votre avis (optionnel)...',
-        'iovox.greeting':'Bonjour ! 👋 Je suis Iovox, votre assistant LuxRides. Comment puis-je vous aider ?',
-        'iovox.c1':'Y a-t-il du trafic ?','iovox.c2':'Aide avec ma réservation',
-        'iovox.c3':'Options de transfert','iovox.c4':'Support paiement',
-      },
-      pt:{
-        'nav.inicio':'Início','nav.viajes':'Viagens','nav.facturas':'Faturas',
-        'form.nombre':'Nome do cliente','form.tipo_svc':'Tipo de serviço',
-        'form.tipo_traslado':'Tipo de transferência',
-        'form.vuelo_lbl':'Dados do voo (somente Pick Up / Drop Off)',
-        'form.horas':'Horas de serviço (Mínimo 2h)',
-        'form.origen':'Local de coleta','form.destino':'Destino principal',
-        'form.pasajeros':'Passageiros',
-        'form.svc_km':'🧭 Por distância','form.svc_t':'⏱️ Por hora',
-        'form.trip_n':'🚘 Normal','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
-        'form.nombre_ph':'ex. João Silva',
-        'form.origen_ph':'ex. Hotel Marriott','form.destino_ph':'ex. Aeroporto',
-        'form.aerolinea_ph':'Companhia aérea (ex. LATAM)',
-        'form.vuelo_ph':'Nº do voo (ex. LA123)',
-        'form.vuelo_salida_ph':'Local de partida do voo',
-        'form.cliente_num_ph':'Telefone do cliente',
-        'form.calcular':'🔍 Calcular preço e rota',
-        'form.add_stop':'+ Adicionar parada','form.del_stop':'− Remover parada',
-        'form.importante':'Seu motorista será designado durante o pagamento. Por favor inclua seu nome na referência.',
-        'form.imp_bold':'IMPORTANTE:',
-        'form.ubicacion':'📍 Usar minha localização',
-        'viajes.titulo':'Minhas Viagens','facturas.titulo':'Minhas Faturas',
-        'viajes.cargando':'Carregando…','facturas.cargando':'Carregando…',
-        'viajes.login':'Faça login para ver suas viagens.',
-        'viajes.empty':'Nenhuma viagem ainda.\nFaça sua primeira reserva!',
-        'viajes.error':'Erro. Toque ↻ para tentar novamente.',
-        'rating.ph':'Escreva sua opinião (opcional)...',
-        'iovox.greeting':'Olá! 👋 Sou Iovox, seu assistente LuxRides. Como posso ajudar?',
-        'iovox.c1':'Há trânsito agora?','iovox.c2':'Ajuda com minha reserva',
-        'iovox.c3':'Opções de traslado','iovox.c4':'Suporte de pagamento',
-      },
-      de:{
-        'nav.inicio':'Start','nav.viajes':'Fahrten','nav.facturas':'Rechnungen',
-        'form.nombre':'Kundenname','form.tipo_svc':'Servicetyp',
-        'form.tipo_traslado':'Transfertyp',
-        'form.vuelo_lbl':'Flugdaten (nur Pick Up / Drop Off)',
-        'form.horas':'Servicestunden (Mindestens 2h)',
-        'form.origen':'Abholort','form.destino':'Hauptziel',
-        'form.pasajeros':'Passagiere',
-        'form.svc_km':'🧭 Nach Kilometer','form.svc_t':'⏱️ Nach Zeit',
-        'form.trip_n':'🚘 Standard','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
-        'form.nombre_ph':'z.B. Hans Müller',
-        'form.origen_ph':'z.B. Hotel Plaza','form.destino_ph':'z.B. Flughafen',
-        'form.aerolinea_ph':'Fluggesellschaft',
-        'form.vuelo_ph':'Flugnummer','form.vuelo_salida_ph':'Abflugort',
-        'form.cliente_num_ph':'Kundennummer',
-        'form.calcular':'🔍 Preis & Route berechnen',
-        'form.add_stop':'+ Stopp hinzufügen','form.del_stop':'− Stopp entfernen',
-        'form.importante':'Ihr Fahrer wird während des Zahlungsvorgangs zugewiesen. Bitte geben Sie Ihren Namen im Zahlungsbetreff an.',
-        'form.imp_bold':'WICHTIG:',
-        'form.ubicacion':'📍 Meinen Standort verwenden',
-        'viajes.titulo':'Meine Fahrten','facturas.titulo':'Meine Rechnungen',
-        'viajes.cargando':'Laden…','facturas.cargando':'Laden…',
-        'viajes.login':'Melden Sie sich an, um Ihre Fahrten anzuzeigen.',
-        'viajes.empty':'Noch keine Fahrten.\nMachen Sie Ihre erste Buchung!',
-        'viajes.error':'Fehler. Tippen Sie auf ↻ zum Wiederholen.',
-        'rating.ph':'Bewertung schreiben (optional)...',
-        'iovox.greeting':'Hallo! 👋 Ich bin Iovox, Ihr LuxRides-Assistent. Wie kann ich Ihnen helfen?',
-        'iovox.c1':'Gibt es Stau?','iovox.c2':'Hilfe bei meiner Buchung',
-        'iovox.c3':'Transferoptionen','iovox.c4':'Zahlungssupport',
-      },
-      it:{
-        'nav.inicio':'Home','nav.viajes':'Viaggi','nav.facturas':'Fatture',
-        'form.nombre':'Nome del cliente','form.tipo_svc':'Tipo di servizio',
-        'form.tipo_traslado':'Tipo di trasferimento',
-        'form.vuelo_lbl':'Dati volo (solo Pick Up / Drop Off)',
-        'form.horas':'Ore di servizio (Minimo 2h)',
-        'form.origen':'Luogo di ritiro','form.destino':'Destinazione principale',
-        'form.pasajeros':'Passeggeri',
-        'form.svc_km':'🧭 A chilometro','form.svc_t':'⏱️ A ora',
-        'form.trip_n':'🚘 Normale','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
-        'form.nombre_ph':'es. Mario Rossi',
-        'form.origen_ph':'es. Hotel Borghese','form.destino_ph':'es. Aeroporto',
-        'form.aerolinea_ph':'Compagnia aerea','form.vuelo_ph':'N. volo',
-        'form.vuelo_salida_ph':'Luogo di partenza del volo',
-        'form.cliente_num_ph':'Telefono del cliente',
-        'form.calcular':'🔍 Calcola prezzo e percorso',
-        'form.add_stop':'+ Aggiungi tappa','form.del_stop':'− Rimuovi tappa',
-        'form.importante':'Il tuo autista verrà assegnato durante il pagamento. Includi il nome utente nella causale.',
-        'form.imp_bold':'IMPORTANTE:',
-        'form.ubicacion':'📍 Usa la mia posizione',
-        'viajes.titulo':'I Miei Viaggi','facturas.titulo':'Le Mie Fatture',
-        'viajes.cargando':'Caricamento…','facturas.cargando':'Caricamento…',
-        'viajes.login':'Accedi per vedere i tuoi viaggi.',
-        'viajes.empty':'Nessun viaggio ancora.\nFai la tua prima prenotazione!',
-        'viajes.error':'Errore. Tocca ↻ per riprovare.',
-        'rating.ph':'Scrivi la tua opinione (opzionale)...',
-        'iovox.greeting':'Ciao! 👋 Sono Iovox, il tuo assistente LuxRides. Come posso aiutarti?',
-        'iovox.c1':'C’è traffico adesso?','iovox.c2':'Aiuto con la prenotazione',
-        'iovox.c3':'Opzioni di trasferimento','iovox.c4':'Supporto pagamento',
-      },
-    };
-
     function luxT(k){return k;} // stub
+
+    function _luxLangNow() {
+      return (window._luxLang || (typeof _idiomaActual !== 'undefined' && _idiomaActual) || localStorage.getItem('lux_idioma') || 'es');
+    }
+
+    function _luxMsg(key) {
+      var lang = _luxLangNow();
+      var M = {
+        es: {
+          loginViajes: 'Inicia sesión para ver tus viajes.',
+          loadingViajes: 'Cargando tus viajes…',
+          errorLoad: 'Error al cargar. Toca ↻ para reintentar.',
+          emptyViajes: 'Aún no tienes viajes registrados.<br/>¡Haz tu primera reserva!',
+          loginFacturas: 'Inicia sesión para ver tus facturas.',
+          loadingFacturas: 'Cargando facturas…',
+          emptyFacturas: 'No hay viajes completados aún.<br/>Las facturas aparecen aquí al finalizar un viaje.',
+          badgeCompleted: 'Completado',
+          downloadPdf: '📥 Descargar Factura PDF',
+          notFoundFactura: '⚠️ Factura no encontrada',
+          downloadingFactura: '📥 Descargando factura…',
+          signIn: 'Entrar',
+          profileSoon: '📊 Perfil Fiscal — próximamente disponible',
+          svcTime: 'Por Tiempo',
+          svcDistance: 'Por Kilometraje',
+          iovoxWaiting: 'esperando',
+          iovoxOffline: 'sin conexión',
+          iovoxPlaceholder: 'Pregúntame lo que necesites…'
+        },
+        en: {
+          loginViajes: 'Sign in to view your trips.',
+          loadingViajes: 'Loading your trips…',
+          errorLoad: 'Failed to load. Tap ↻ to retry.',
+          emptyViajes: 'No trips yet.<br/>Make your first booking!',
+          loginFacturas: 'Sign in to view your invoices.',
+          loadingFacturas: 'Loading invoices…',
+          emptyFacturas: 'No completed trips yet.<br/>Invoices will appear here after a trip ends.',
+          badgeCompleted: 'Completed',
+          downloadPdf: '📥 Download Invoice PDF',
+          notFoundFactura: '⚠️ Invoice not found',
+          downloadingFactura: '📥 Downloading invoice…',
+          signIn: 'Sign in',
+          profileSoon: '📊 Tax Profile — coming soon',
+          svcTime: 'By Time',
+          svcDistance: 'By Distance',
+          iovoxWaiting: 'waiting',
+          iovoxOffline: 'offline',
+          iovoxPlaceholder: 'Ask me anything you need…'
+        }
+      };
+      var pack = M[lang] || M.es;
+      return pack[key] || M.es[key] || key;
+    }
 
     // Interacción sombrero — 3 hovers/toques = cae el sombrero y el chico lo recoge
     (function() {
@@ -6033,15 +5921,15 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       if (!el) return;
       const client = window._luxClient || window._luxAuth;
       if (!client) {
-        el.innerHTML = '<div class="trip-empty"><div class="trip-empty-icon">🔒</div><div class="trip-empty-txt">Inicia sesión para ver tus viajes.</div></div>';
+        el.innerHTML = '<div class="trip-empty"><div class="trip-empty-icon">🔒</div><div class="trip-empty-txt">' + _luxMsg('loginViajes') + '</div></div>';
         return;
       }
       const user = window._getUser ? window._getUser() : null;
       if (!user) {
-        el.innerHTML = '<div class="trip-empty"><div class="trip-empty-icon">🔒</div><div class="trip-empty-txt">Inicia sesión para ver tus viajes.</div></div>';
+        el.innerHTML = '<div class="trip-empty"><div class="trip-empty-icon">🔒</div><div class="trip-empty-txt">' + _luxMsg('loginViajes') + '</div></div>';
         return;
       }
-      el.innerHTML = '<div class="panel-loading"><div class="panel-spinner"></div><div>Cargando tus viajes…</div></div>';
+      el.innerHTML = '<div class="panel-loading"><div class="panel-spinner"></div><div>' + _luxMsg('loadingViajes') + '</div></div>';
       try {
         const user = window._getUser ? window._getUser() : null;
         let query = client.from('reservas').select('*').order('timestamp', { ascending: false }).limit(60);
@@ -6050,7 +5938,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         if (error) throw error;
         renderViajes(data || []);
       } catch(e) {
-        el.innerHTML = '<div class="trip-empty"><div class="trip-empty-icon">⚠️</div><div class="trip-empty-txt">Error al cargar. Toca ↻ para reintentar.</div></div>';
+        el.innerHTML = '<div class="trip-empty"><div class="trip-empty-icon">⚠️</div><div class="trip-empty-txt">' + _luxMsg('errorLoad') + '</div></div>';
       }
     }
 
@@ -6058,20 +5946,23 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       const el = document.getElementById('viajes-content');
       if (!el) return;
       if (!trips.length) {
-        el.innerHTML = '<div class="trip-empty"><div class="trip-empty-icon">🛣️</div><div class="trip-empty-txt">Aún no tienes viajes registrados.<br/>¡Haz tu primera reserva!</div></div>';
+        el.innerHTML = '<div class="trip-empty"><div class="trip-empty-icon">🛣️</div><div class="trip-empty-txt">' + _luxMsg('emptyViajes') + '</div></div>';
         return;
       }
       el.innerHTML = trips.map(t => {
         const rawEstado = (t.estado || 'pendiente').toLowerCase();
-        const estadoLabel = {
-          completado:'Completado', completada:'Completado', finalizado:'Completado',
-          pendiente:'Pendiente', en_camino:'En camino',
-          cancelado:'Cancelado', cancelada:'Cancelado'
-        }[rawEstado] || 'Pendiente';
-        const estadoClass = {
-          'Completado':'completado','Pendiente':'pendiente',
-          'En camino':'en_camino','Cancelado':'cancelado'
-        }[estadoLabel] || 'pendiente';
+        const estadoMap = {
+          completado: {key:'viajes.estado.completado', cls:'completado'},
+          completada: {key:'viajes.estado.completado', cls:'completado'},
+          finalizado: {key:'viajes.estado.completado', cls:'completado'},
+          pendiente: {key:'viajes.estado.pendiente', cls:'pendiente'},
+          en_camino: {key:'viajes.estado.encamino', cls:'en_camino'},
+          cancelado: {key:'viajes.estado.cancelado', cls:'cancelado'},
+          cancelada: {key:'viajes.estado.cancelado', cls:'cancelado'}
+        };
+        const estadoConf = estadoMap[rawEstado] || estadoMap.pendiente;
+        const estadoLabel = (typeof window._i18n === 'function') ? window._i18n(estadoConf.key) : rawEstado;
+        const estadoClass = estadoConf.cls;
         const fecha  = t.fecha ? _fmtFecha(t.fecha) : (t.timestamp ? _fmtISO(t.timestamp) : '—');
         const hora   = t.hora_recogida || '';
         const precio = t.total ? '$' + Number(t.total).toLocaleString('es-MX') + ' MXN' : '—';
@@ -6141,15 +6032,15 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       if (!el) return;
       const client = window._luxClient || window._luxAuth;
       if (!client) {
-        el.innerHTML = '<div class="fact-empty"><div class="fact-empty-icon">🔒</div><div class="fact-empty-txt">Inicia sesión para ver tus facturas.</div></div>';
+        el.innerHTML = '<div class="fact-empty"><div class="fact-empty-icon">🔒</div><div class="fact-empty-txt">' + _luxMsg('loginFacturas') + '</div></div>';
         return;
       }
       const user = window._getUser ? window._getUser() : null;
       if (!user) {
-        el.innerHTML = '<div class="fact-empty"><div class="fact-empty-icon">🔒</div><div class="fact-empty-txt">Inicia sesión para ver tus facturas.</div></div>';
+        el.innerHTML = '<div class="fact-empty"><div class="fact-empty-icon">🔒</div><div class="fact-empty-txt">' + _luxMsg('loginFacturas') + '</div></div>';
         return;
       }
-      el.innerHTML = '<div class="panel-loading"><div class="panel-spinner"></div><div>Cargando facturas…</div></div>';
+      el.innerHTML = '<div class="panel-loading"><div class="panel-spinner"></div><div>' + _luxMsg('loadingFacturas') + '</div></div>';
       try {
         const user2 = window._getUser ? window._getUser() : null;
         let q2 = client.from('reservas').select('*').order('timestamp', { ascending: false }).limit(60);
@@ -6161,7 +6052,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         );
         renderFacturas(completados);
       } catch(e) {
-        el.innerHTML = '<div class="fact-empty"><div class="fact-empty-icon">⚠️</div><div class="fact-empty-txt">Error al cargar. Toca ↻ para reintentar.</div></div>';
+        el.innerHTML = '<div class="fact-empty"><div class="fact-empty-icon">⚠️</div><div class="fact-empty-txt">' + _luxMsg('errorLoad') + '</div></div>';
       }
     }
 
@@ -6170,7 +6061,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       if (!el) return;
       window._factStore = {};
       if (!trips.length) {
-        el.innerHTML = '<div class="fact-empty"><div class="fact-empty-icon">🧾</div><div class="fact-empty-txt">No hay viajes completados aún.<br/>Las facturas aparecen aquí al finalizar un viaje.</div></div>';
+        el.innerHTML = '<div class="fact-empty"><div class="fact-empty-icon">🧾</div><div class="fact-empty-txt">' + _luxMsg('emptyFacturas') + '</div></div>';
         return;
       }
       el.innerHTML = trips.map((t, i) => {
@@ -6187,12 +6078,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             <div class="fact-id">Folio: ${folio}</div>
             <div class="fact-main">
               <span class="fact-monto">${precio} <small style="font-size:.6rem;color:rgba(0,0,0,.4);font-family:'Outfit',sans-serif;font-weight:400">MXN</small></span>
-              <span class="trip-badge completado">Completado</span>
+              <span class="trip-badge completado">${_luxMsg('badgeCompleted')}</span>
             </div>
             <div class="fact-route">📍 ${ruta}</div>
             <div class="fact-meta">📅 ${fecha}&nbsp;&nbsp;🧑✈️ ${chofer}${veh ? '&nbsp;&nbsp;🚘 '+veh : ''}</div>
             <button class="btn-dl-fact" onclick="descargarFactura('${String(key).replace(/'/g,'\\'+'\'')}')" >
-              📥 Descargar Factura PDF
+              ${_luxMsg('downloadPdf')}
             </button>
           </div>`;
       }).join('');
@@ -6200,13 +6091,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
     function descargarFactura(key) {
       const t = window._factStore[key];
-      if (!t) { mostrarToast('⚠️ Factura no encontrada', 'err'); return; }
+      if (!t) { mostrarToast(_luxMsg('notFoundFactura'), 'err'); return; }
       const folio  = t.reserva_id || 'LUX-' + (t.id || Date.now());
       const fecha  = t.fecha ? _fmtFecha(t.fecha) : (t.timestamp ? _fmtISO(t.timestamp) : '—');
       const chofer = t.chofer_nombre || t.driver_name || t.chofer || 'N/D';
       const veh    = t.vehiculo || 'N/D';
       const precio = t.total ? '$' + Number(t.total).toLocaleString('es-MX') : '—';
-      const svcTipo = t.servicio === 'T' ? 'Por Tiempo' : 'Por Kilometraje';
+      const svcTipo = t.servicio === 'T' ? _luxMsg('svcTime') : _luxMsg('svcDistance');
 
       const html = `<!DOCTYPE html>
 <html lang="es">
@@ -6291,7 +6182,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
       a.download = 'LuxRides-Factura-' + folio + '.html';
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 3000);
-      mostrarToast('📥 Descargando factura…');
+      mostrarToast(_luxMsg('downloadingFactura'));
     }
     </script>
     <style>
@@ -6380,7 +6271,11 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
       var _iovoxHistory = [];
       var _iovoxBusy = false;
 
-      function _hora(){ return new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); }
+      function _hora(){
+        var l = _luxLangNow();
+        var locale = (l === 'es') ? 'es-MX' : l;
+        return new Date().toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});
+      }
 
       function _scroll(){ var m=document.getElementById('iovox-messages'); if(m) setTimeout(function(){ m.scrollTop=m.scrollHeight; },60); }
 
@@ -6422,8 +6317,8 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
         if (txt === 'local') el.textContent = 'local';
         else if (txt === 'hosting') el.textContent = 'hosting';
         else if (txt === 'groq') el.textContent = 'groq';
-        else if (txt === 'sin conexión') el.textContent = 'sin conexión';
-        else el.textContent = 'esperando';
+        else if (txt === 'sin conexión' || txt === 'offline') el.textContent = _luxMsg('iovoxOffline');
+        else el.textContent = _luxMsg('iovoxWaiting');
       }
 
       async function _callIA(messages){
@@ -6488,9 +6383,10 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
       async function _buildPrompt(){
         var user = window._getUser && window._getUser();
         var nombre = (user && user.user_metadata && (user.user_metadata.nombre||user.user_metadata.full_name)) || (user && user.email) || '';
-        var fechaHoy = new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-        var horaAhora = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
         var idioma = (typeof _idiomaActual !== 'undefined' && _idiomaActual) || localStorage.getItem('lux_idioma') || 'es';
+        var locale = idioma === 'es' ? 'es-MX' : idioma;
+        var fechaHoy = new Date().toLocaleDateString(locale,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+        var horaAhora = new Date().toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});
         var IDIOMA_NOMBRES = {es:'español',en:'English',fr:'français',pt:'português',de:'Deutsch',it:'italiano',zh:'中文',ja:'日本語',ko:'한국어',ar:'العربية',ru:'русский'};
         var idiomaTexto = IDIOMA_NOMBRES[idioma] || idioma;
 
