@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /sas.html
+
+Disallow: /ses.html
+Disallow: /sis.html
+Disallow: /api/
+
+Sitemap: https://luxrides.online/sitemap.xml

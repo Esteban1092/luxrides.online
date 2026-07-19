@@ -22,6 +22,15 @@ export const env = {
 
   groqApiKey: required('GROQ_API_KEY'),
 
+  supabaseUrl: required('SUPABASE_URL'),
+  supabaseServiceKey: required('SUPABASE_SERVICE_KEY'),
+
+  vapid: {
+    publicKey: required('VAPID_PUBLIC_KEY'),
+    privateKey: required('VAPID_PRIVATE_KEY'),
+    email: optional('VAPID_EMAIL', 'luxrides@luxrides.online')
+  },
+
   smtp: {
     host: required('SMTP_HOST'),
     port: Number(optional('SMTP_PORT', '465')),

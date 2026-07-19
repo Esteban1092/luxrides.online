@@ -6,6 +6,26 @@
   <title>Despacho LuxRides</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"/>
   <script src="config.js"></script>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "3b1b174b-aa37-4ce6-b3f1-2dab7accc4e2",
+        serviceWorkerPath: "/OneSignalSDKWorker.js",
+        notifyButton: { enable: false },
+        promptOptions: {
+          slidedown: {
+            enabled: true,
+            actionMessage: "LuxRides necesita permiso para notificarte de tus viajes.",
+            acceptButtonText: "Permitir",
+            cancelButtonText: "No gracias"
+          }
+        }
+      });
+      window._oneSignalReady = true;
+    });
+  </script>
   <script src="js/lux-core.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -1349,6 +1369,7 @@ async function despachar(reservaID) {
     }
     renderizarClientes();
     showToast('✅ Viaje enviado a ' + choferNombre);
+    enviarPushChofer(choferID, r.cliente, r.origen, r.destino, reservaID);
   } catch (err) {
     console.error(err);
     showToast('❌ Error: ' + (err.message || err), true);
@@ -1646,6 +1667,24 @@ function refrescarSelectPagos() {
     opt.value = ch.id; opt.textContent = ch.nombre + ' (' + ch.id + ') · ' + (ch.hotel || 'Sin hotel'); sel.appendChild(opt);
   });
   if (actual) sel.value = actual;
+}
+
+async function enviarPushChofer(choferId, cliente, origen, destino, reservaId) {
+  try {
+    const base = window.LuxCfg ? LuxCfg.apiBaseUrl() : 'https://luxrides.online';
+    await fetch(base + '/api/push/notificar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        external_user_ids: [choferId],
+        titulo: 'Nuevo viaje asignado',
+        cuerpo: (cliente || 'Cliente') + ' · ' + (origen || '') + ' → ' + (destino || ''),
+        datos: { reservaId, tipo: 'viaje_asignado' }
+      })
+    });
+  } catch(e) {
+    console.warn('[Push]', e);
+  }
 }
 
 function mostrarFlota(filtro) {

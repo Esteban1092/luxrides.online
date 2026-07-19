@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Perfil Concierge · LuxRides</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:linear-gradient(135deg,#0a0a0a 0%,#1a1208 50%,#0d0d00 100%);min-height:100vh;font-family:'Outfit',sans-serif;color:#f0f0f0;display:flex;align-items:center;justify-content:center;padding:20px;}
+    :root{--gold:#D4AF37;--gold-h:#F3E5AB;}
+    .card{background:rgba(20,18,10,0.95);border:2px solid var(--gold);border-radius:24px;padding:36px 28px;width:100%;max-width:380px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 60px rgba(212,175,55,.08);}
+    .logo{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;letter-spacing:.25em;color:var(--gold);margin-bottom:4px;}
+    .logo-sub{font-size:.6rem;letter-spacing:.35em;text-transform:uppercase;color:rgba(212,175,55,.55);margin-bottom:28px;}
+    .avatar{width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,rgba(212,175,55,.3),rgba(212,175,55,.08));border:3px solid var(--gold);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:2.5rem;box-shadow:0 0 30px rgba(212,175,55,.25);}
+    .nombre{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--gold);margin-bottom:4px;}
+    .cargo{font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:24px;}
+    .badge-nfc{display:inline-flex;align-items:center;gap:7px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);border-radius:999px;padding:6px 14px;font-size:.72rem;font-weight:700;color:#86efac;letter-spacing:.05em;margin-bottom:24px;}
+    .nfc-dot{width:7px;height:7px;border-radius:50%;background:#22C55E;animation:pulse 1.5s ease-in-out infinite;}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.6);}}
+    .divider{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:20px auto;}
+    .cta{font-size:.85rem;color:rgba(255,255,255,.55);margin-bottom:18px;line-height:1.6;}
+    .btn-reservar{display:block;width:100%;padding:15px;background:var(--gold);color:#050505;border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;letter-spacing:.04em;text-decoration:none;transition:background .2s,transform .2s;margin-bottom:10px;}
+    .btn-reservar:hover{background:var(--gold-h);transform:translateY(-1px);}
+    .btn-wa{display:block;width:100%;padding:14px;background:#25D366;color:#fff;border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;text-decoration:none;transition:background .2s;margin-bottom:10px;}
+    .btn-wa:hover{background:#1da851;}
+    .id-tag{font-size:.65rem;letter-spacing:.1em;color:rgba(212,175,55,.35);margin-top:20px;font-family:monospace;}
+    .loading{opacity:.5;font-size:.9rem;}
+    .error-box{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);border-radius:12px;padding:16px;margin-top:16px;font-size:.85rem;color:#fca5a5;}
+  </style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="logo">LUXRIDES</div>
+  <div class="logo-sub">Transporte Ejecutivo VIP</div>
+  <div id="content" class="loading">⏳ Cargando perfil…</div>
+</div>
+
+<script>
+const SB_URL = window.LuxCfg ? LuxCfg.supabaseUrl() : '';
+const SB_KEY = window.LuxCfg ? LuxCfg.supabaseAnonKey() : '';
+let SB = null;
+try { SB = supabase.createClient(SB_URL, SB_KEY); } catch(e) {}
+
+const WA_CENTRAL = window.LuxCfg ? LuxCfg.whatsapp() : '+525527729551';
+
+(async function() {
+  const params = new URLSearchParams(location.search);
+  const slug   = (params.get('c') || '').trim();
+  const content = document.getElementById('content');
+
+  if (!slug) {
+    content.innerHTML = '<div class="error-box">❌ Perfil no especificado. Escanea el tag NFC correctamente.</div>';
+    return;
+  }
+
+  if (!SB) {
+    content.innerHTML = '<div class="error-box">❌ Error de conexión.</div>';
+    return;
+  }
+
+  const { data, error } = await SB
+    .from('hoteles_concierge')
+    .select('nombre_concierge, nombre_hotel, url_unica_slug, nfc_tag_id, foto_url, created_at')
+    .eq('url_unica_slug', slug)
+    .maybeSingle();
+
+  if (error || !data) {
+    content.innerHTML = '<div class="error-box">❌ Concierge no encontrado o enlace inválido.</div>';
+    return;
+  }
+
+  const waNum = WA_CENTRAL.replace(/\D/g,'');
+  const waMsg = encodeURIComponent(`Hola, me contacta el concierge ${data.nombre_concierge} del ${data.nombre_hotel}. ¿Podrían ayudarme con una reserva?`);
+
+  content.innerHTML = `
+    <div class="avatar">🤵</div>
+    <div class="nombre">${escHtml(data.nombre_concierge)}</div>
+    <div class="cargo">${escHtml(data.nombre_hotel)}</div>
+    <div class="badge-nfc"><span class="nfc-dot"></span> Verificado · NFC LuxRides</div>
+    <div class="divider"></div>
+    <div class="cta">Tu concierge personal está listo para gestionar tu traslado ejecutivo en CDMX.</div>
+    <a class="btn-reservar" href="https://luxrides.online/sas.html">🚗 Hacer una reserva</a>
+    <a class="btn-wa" href="https://wa.me/${waNum}?text=${waMsg}" target="_blank">💬 Contactar por WhatsApp</a>
+    <div class="id-tag">NFC: ${escHtml(data.nfc_tag_id || '—')}</div>
+  `;
+
+  document.title = data.nombre_concierge + ' · Concierge LuxRides';
+})();
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

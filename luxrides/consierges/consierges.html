@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mi Cuenta Concierge · LuxRides</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    :root{--gold:#D4AF37;--gold-h:#F3E5AB;--green:#22C55E;--red:#EF4444;
+      --bg:#0a0a0a;--card:#141414;--card2:#1a1a1a;--border:rgba(255,255,255,.10);
+      --fg:#f0f0f0;--muted:rgba(255,255,255,.45);}
+    body{background:var(--bg);color:var(--fg);font-family:"Outfit",sans-serif;min-height:100vh;padding:0;}
+
+    #login-screen{display:flex;justify-content:center;align-items:center;min-height:100vh;background:radial-gradient(circle at top,#141414,#070707 60%);padding:20px;}
+    #login-screen.hidden{display:none;}
+    .login-card{background:var(--card);padding:36px;border-radius:20px;border:2px solid var(--gold);width:100%;max-width:340px;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+    .login-logo{font-family:"Playfair Display",serif;font-size:1.5rem;font-weight:700;letter-spacing:.25em;color:var(--gold);text-align:center;margin-bottom:4px;}
+    .login-sub{font-size:.65rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:22px;}
+    .login-card input{width:100%;padding:12px 14px;margin:7px 0;border-radius:10px;border:1px solid #303030;background:#0d0d0d;color:#fff;font-size:.95rem;font-family:"Outfit",sans-serif;outline:none;transition:border-color .2s;}
+    .login-card input:focus{border-color:var(--gold);}
+    .login-card button{width:100%;padding:13px;background:var(--gold);color:#050505;border:none;border-radius:10px;font-weight:700;cursor:pointer;margin-top:10px;font-family:"Outfit",sans-serif;font-size:1rem;transition:background .2s;}
+    .login-card button:hover{background:var(--gold-h);}
+    .login-error{color:#fca5a5;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);padding:8px 12px;border-radius:8px;font-size:.82rem;margin-top:10px;display:none;text-align:center;}
+
+    /* APP */
+    #app{display:none;}
+    .app-header{background:linear-gradient(135deg,#0d0b05,#1a1408);border-bottom:1px solid rgba(212,175,55,.2);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .app-header-left{display:flex;align-items:center;gap:12px;}
+    .avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,rgba(212,175,55,.3),rgba(212,175,55,.08));border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;overflow:hidden;cursor:pointer;position:relative;transition:opacity .2s;}
+    .avatar:hover{opacity:.8;}
+    .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+    .avatar-cam{position:absolute;bottom:0;right:0;background:var(--gold);width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.55rem;border:2px solid #0d0b05;}
+    .header-name{font-family:"Playfair Display",serif;font-size:1.1rem;font-weight:700;color:var(--gold);}
+    .header-hotel{font-size:.72rem;color:var(--muted);}
+    .btn-logout{background:none;border:1px solid rgba(255,255,255,.15);color:var(--muted);padding:7px 12px;border-radius:8px;font-family:"Outfit",sans-serif;font-size:.78rem;cursor:pointer;transition:all .2s;}
+    .btn-logout:hover{border-color:var(--red);color:#fca5a5;}
+
+    .main{padding:20px;max-width:600px;margin:0 auto;}
+
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+    .stat-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center;}
+    .stat-box.gold{border-color:rgba(212,175,55,.35);background:rgba(212,175,55,.06);}
+    .stat-lbl{font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+    .stat-num{font-family:"Playfair Display",serif;font-size:1.6rem;font-weight:700;color:var(--gold);}
+    .stat-num.green{color:#86efac;}
+
+    .nfc-card{background:linear-gradient(135deg,rgba(212,175,55,.12),rgba(212,175,55,.04));border:1.5px solid rgba(212,175,55,.4);border-radius:16px;padding:18px;margin-bottom:20px;}
+    .nfc-card-title{font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(212,175,55,.7);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+    .nfc-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.4s ease-in-out infinite;flex-shrink:0;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+    .nfc-url{font-size:.8rem;color:var(--fg);background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;padding:10px 13px;word-break:break-all;cursor:pointer;transition:background .2s;margin-bottom:10px;}
+    .nfc-url:hover{background:rgba(212,175,55,.08);}
+    .nfc-actions{display:flex;gap:9px;}
+    .btn{padding:10px 16px;border-radius:8px;font-family:"Outfit",sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+    .btn-gold{background:var(--gold);color:#050505;flex:1;justify-content:center;}.btn-gold:hover{background:var(--gold-h);}
+    .btn-outline{background:rgba(212,175,55,.1);color:var(--gold);border:1px solid rgba(212,175,55,.35);flex:1;justify-content:center;}.btn-outline:hover{background:rgba(212,175,55,.2);}
+    .btn-wa{background:#25D366;color:#fff;flex:1;justify-content:center;}.btn-wa:hover{background:#1da851;}
+
+    .section-title{font-family:"Playfair Display",serif;font-size:1rem;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+    .viaje-card{background:var(--card2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:13px;margin-bottom:10px;}
+    .viaje-estado{display:inline-block;font-size:.65rem;font-weight:700;letter-spacing:.05em;padding:3px 8px;border-radius:999px;margin-bottom:8px;}
+    .v-finalizado{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.3);}
+    .v-pendiente{background:rgba(212,175,55,.12);color:#f5d57b;border:1px solid rgba(212,175,55,.3);}
+    .v-cancelado{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.25);}
+    .viaje-ruta{font-size:.88rem;font-weight:600;color:var(--fg);margin-bottom:4px;}
+    .viaje-meta{font-size:.75rem;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;}
+    .viaje-comision{font-family:"Playfair Display",serif;font-size:1rem;font-weight:700;color:#86efac;float:right;}
+    .empty{text-align:center;padding:28px;color:var(--muted);font-size:.88rem;}
+
+    #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(40px);background:#1e1e1e;border:1px solid var(--gold);color:var(--gold);padding:12px 22px;border-radius:8px;font-size:.9rem;font-weight:600;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:9999;white-space:nowrap;}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">LUXRIDES</div>
+    <div class="login-sub">Portal Concierge</div>
+    <input id="l-slug" type="text" placeholder="Tu usuario (slug)" autocomplete="username"/>
+    <input id="l-pass" type="password" placeholder="Contrasena" autocomplete="current-password"/>
+    <button onclick="hacerLogin()">ENTRAR</button>
+    <div class="login-error" id="l-err"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="app-header">
+    <div class="app-header-left">
+      <div class="avatar" id="avatar-btn" onclick="document.getElementById('foto-input').click()" title="Cambiar foto">
+        <span id="avatar-ico">&#x1F575;</span>
+        <img id="avatar-img" src="" alt="" style="display:none;"/>
+        <span class="avatar-cam">📷</span>
+      </div>
+      <div>
+        <div class="header-name" id="h-nombre">-</div>
+        <div class="header-hotel" id="h-hotel">-</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+  </div>
+  <input type="file" id="foto-input" accept="image/*" style="display:none" onchange="subirFoto(event)"/>
+
+  <div class="main">
+
+    <div class="stats-grid">
+      <div class="stat-box gold">
+        <div class="stat-lbl">Comisiones acumuladas</div>
+        <div class="stat-num green" id="st-comisiones">$-</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">Viajes generados</div>
+        <div class="stat-num" id="st-viajes">-</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">% Comision</div>
+        <div class="stat-num" id="st-pct">10%</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">NFC Tag</div>
+        <div class="stat-num" style="font-size:1rem;" id="st-nfc">-</div>
+      </div>
+    </div>
+
+    <div class="nfc-card">
+      <div class="nfc-card-title"><span class="nfc-dot"></span>Mi perfil NFC activo</div>
+      <div class="nfc-url" id="mi-url" onclick="copiarEnlace()">-</div>
+      <div class="nfc-actions">
+        <button class="btn btn-gold" onclick="copiarEnlace()">Copiar enlace</button>
+        <button class="btn btn-outline" onclick="abrirPerfil()">Ver perfil</button>
+        <a class="btn btn-wa" id="btn-wa-share" href="#" target="_blank">Compartir</a>
+      </div>
+    </div>
+
+    <div class="section-title">
+      Mis viajes y comisiones
+      <button style="background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.3);color:var(--gold);padding:5px 11px;border-radius:7px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;" onclick="cargarViajes()">Actualizar</button>
+    </div>
+    <div id="lista-viajes"><div class="empty">Cargando viajes...</div></div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const BASE_URL = "https://luxrides.online/consierges/perfil.html?c=";
+const SESSION  = "lux_cg_session";
+const SB_URL   = window.LuxCfg ? LuxCfg.supabaseUrl() : "";
+const SB_KEY   = window.LuxCfg ? LuxCfg.supabaseAnonKey() : "";
+let SB = null;
+try { SB = supabase.createClient(SB_URL, SB_KEY); } catch(e) {}
+
+let _perfil = null;
+
+document.getElementById("l-pass").addEventListener("keydown", e => { if(e.key==="Enter") hacerLogin(); });
+document.getElementById("l-slug").addEventListener("keydown", e => { if(e.key==="Enter") document.getElementById("l-pass").focus(); });
+
+async function hacerLogin() {
+  const slug = (document.getElementById("l-slug").value||"").trim().toLowerCase();
+  const pass = (document.getElementById("l-pass").value||"").trim();
+  const errEl = document.getElementById("l-err");
+  if(!slug||!pass){ errEl.textContent="Completa tus datos"; errEl.style.display="block"; return; }
+  if(!SB){ errEl.textContent="Error de conexion"; errEl.style.display="block"; return; }
+
+  const { data, error } = await SB.from("hoteles_concierge")
+    .select("*")
+    .eq("url_unica_slug", slug)
+    .maybeSingle();
+
+  if(error||!data){ errEl.textContent="Usuario no encontrado"; errEl.style.display="block"; return; }
+
+  let passOk = false;
+  try { passOk = atob(data.password_hash) === pass; } catch(e) { passOk = data.password_hash === pass; }
+  if(!passOk){ errEl.textContent="Contrasena incorrecta"; errEl.style.display="block"; return; }
+
+  _perfil = data;
+  sessionStorage.setItem(SESSION, JSON.stringify({id: data.id, slug: data.url_unica_slug}));
+  errEl.style.display="none";
+  mostrarApp();
+}
+
+async function restaurarSesion() {
+  const saved = sessionStorage.getItem(SESSION);
+  if(!saved||!SB) return false;
+  try {
+    const { slug } = JSON.parse(saved);
+    const { data } = await SB.from("hoteles_concierge").select("*").eq("url_unica_slug", slug).maybeSingle();
+    if(!data) return false;
+    _perfil = data;
+    return true;
+  } catch(e) { return false; }
+}
+
+function mostrarApp() {
+  document.getElementById("login-screen").classList.add("hidden");
+  document.getElementById("app").style.display = "block";
+  const url = BASE_URL + _perfil.url_unica_slug;
+  document.getElementById("h-nombre").textContent = _perfil.nombre_concierge;
+  document.getElementById("h-hotel").textContent = _perfil.nombre_hotel;
+  document.getElementById("st-comisiones").textContent = fmt$(_perfil.comisiones_acumuladas);
+  document.getElementById("st-pct").textContent = (Number(_perfil.porcentaje_comision||0.1)*100) + "%";
+  document.getElementById("st-nfc").textContent = _perfil.nfc_tag_id || "-";
+  document.getElementById("mi-url").textContent = url;
+  const waNum = (window.LuxCfg ? LuxCfg.whatsapp() : "+525527729551").replace(/\D/g,"");
+  const waMsg = encodeURIComponent("Hola, soy " + _perfil.nombre_concierge + " del " + _perfil.nombre_hotel + ". Puedo gestionar tu traslado ejecutivo con LuxRides. Reserva aqui: " + url);
+  document.getElementById("btn-wa-share").href = "https://wa.me/?text=" + waMsg;
+  actualizarAvatarUI();
+  cargarViajes();
+}
+
+function actualizarAvatarUI() {
+  const ico = document.getElementById("avatar-ico");
+  const img = document.getElementById("avatar-img");
+  if (!ico || !img) return;
+  if (_perfil && _perfil.foto_url) {
+    img.src = _perfil.foto_url;
+    img.style.display = "block";
+    ico.style.display = "none";
+  } else {
+    img.style.display = "none";
+    ico.style.display = "block";
+  }
+}
+
+async function subirFoto(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file || !SB || !_perfil) return;
+
+  if (file.size > 3 * 1024 * 1024) { toast("Foto demasiado grande (max 3MB)", true); return; }
+  toast("Subiendo foto...");
+
+  const ext = file.name.split(".").pop().toLowerCase();
+  const path = "concierges/" + _perfil.id + "." + ext;
+
+  const { error: upErr } = await SB.storage.from("fotos").upload(path, file, { upsert: true, contentType: file.type });
+  if (upErr) {
+    toast("Error al subir: " + upErr.message, true);
+    return;
+  }
+
+  const { data: urlData } = SB.storage.from("fotos").getPublicUrl(path);
+  const fotoUrl = urlData.publicUrl + "?t=" + Date.now();
+
+  const { error: updErr } = await SB.from("hoteles_concierge").update({ foto_url: fotoUrl }).eq("id", _perfil.id);
+  if (updErr) { toast("Error al guardar URL: " + updErr.message, true); return; }
+
+  _perfil.foto_url = fotoUrl;
+  actualizarAvatarUI();
+  toast("Foto actualizada");
+  event.target.value = "";
+}
+
+async function cargarViajes() {
+  if(!SB||!_perfil) return;
+  const { data } = await SB.from("viajes").select("*").eq("hotel_origen_id", _perfil.id).order("created_at",{ascending:false}).limit(50);
+  const viajes = data || [];
+  document.getElementById("st-viajes").textContent = viajes.length;
+  const div = document.getElementById("lista-viajes");
+  if(!viajes.length){ div.innerHTML = '<div class="empty">Sin viajes registrados aun</div>'; return; }
+  div.innerHTML = viajes.map(v => {
+    const cls = v.estado==="finalizado" ? "v-finalizado" : v.estado==="cancelado" ? "v-cancelado" : "v-pendiente";
+    const comision = v.comision_concierge > 0 ? '<span class="viaje-comision">+' + fmt$(v.comision_concierge) + ' MXN</span>' : "";
+    return '<div class="viaje-card">' +
+      comision +
+      '<span class="viaje-estado ' + cls + '">' + (v.estado||"pendiente").toUpperCase() + '</span>' +
+      '<div class="viaje-ruta">' + esc(v.origen) + ' &rarr; ' + esc(v.destino) + '</div>' +
+      '<div class="viaje-meta">' +
+        '<span>Cliente: ' + esc(v.cliente||"-") + '</span>' +
+        '<span>Total: ' + fmt$(v.precio_total) + ' MXN</span>' +
+        '<span>' + fmtFecha(v.created_at) + '</span>' +
+      '</div></div>';
+  }).join("");
+}
+
+function cerrarSesion(){
+  sessionStorage.removeItem(SESSION);
+  _perfil = null;
+  document.getElementById("login-screen").classList.remove("hidden");
+  document.getElementById("app").style.display = "none";
+}
+
+function copiarEnlace(){
+  if(!_perfil) return;
+  navigator.clipboard.writeText(BASE_URL+_perfil.url_unica_slug).then(()=>toast("Enlace copiado")).catch(()=>toast("No se pudo copiar",true));
+}
+function abrirPerfil(){
+  if(!_perfil) return;
+  window.open(BASE_URL+_perfil.url_unica_slug,"_blank");
+}
+
+function fmt$(n){ return "$"+Number(n||0).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function fmtFecha(iso){ if(!iso) return "-"; const d=new Date(iso); return d.toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"}); }
+function toast(msg,isErr){
+  const t=document.getElementById("toast"); t.textContent=msg; t.className="toast show"+(isErr?" error":"");
+  clearTimeout(window._t); window._t=setTimeout(()=>t.className="toast",3000);
+}
+
+(async function init() {
+  const ok = await restaurarSesion();
+  if(ok) mostrarApp();
+})();
+</script>
+</body>
+</html>

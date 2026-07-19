@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Despacho Concierges · LuxRides</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    :root{--gold:#D4AF37;--gold-h:#F3E5AB;--green:#22C55E;--red:#EF4444;--blue:#3B82F6;
+      --bg:#0a0a0a;--card:#141414;--card2:#1a1a1a;--border:rgba(255,255,255,.10);
+      --fg:#f0f0f0;--muted:rgba(255,255,255,.45);}
+    body{background:var(--bg);color:var(--fg);font-family:'Outfit',sans-serif;min-height:100vh;padding:24px 16px;}
+    header{text-align:center;padding-bottom:18px;border-bottom:2px solid var(--gold);margin-bottom:28px;}
+    header h1{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;letter-spacing:.18em;color:var(--gold);}
+    header p{font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+    #login-screen{display:flex;justify-content:center;align-items:center;height:100vh;position:fixed;inset:0;z-index:9999;background:radial-gradient(circle at top,#141414,#070707 60%);}
+    #login-screen.hidden{display:none;}
+    .login-card{background:var(--card);padding:36px;border-radius:20px;border:2px solid var(--gold);width:340px;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+    .login-card h2{color:var(--gold);font-size:1.6rem;letter-spacing:2px;text-align:center;font-family:'Playfair Display',serif;margin-bottom:4px;}
+    .login-card p{text-align:center;color:var(--muted);font-size:.72rem;margin-bottom:20px;letter-spacing:.18em;text-transform:uppercase;}
+    .login-card input{width:100%;padding:12px 14px;margin:7px 0;border-radius:10px;border:1px solid #303030;background:#0d0d0d;color:#fff;font-size:.95rem;font-family:'Outfit',sans-serif;outline:none;transition:border-color .2s;}
+    .login-card input:focus{border-color:var(--gold);}
+    .login-card button{width:100%;padding:13px;background:var(--gold);color:#050505;border:none;border-radius:10px;font-weight:700;cursor:pointer;margin-top:10px;font-family:'Outfit',sans-serif;font-size:1rem;transition:background .2s;}
+    .login-card button:hover{background:var(--gold-h);}
+    .login-error{color:#fca5a5;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);padding:8px 12px;border-radius:8px;font-size:.82rem;margin-top:10px;display:none;text-align:center;}
+    .max-w{max-width:1000px;margin:0 auto;}
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:22px;}
+    .panel-title{font-family:'Playfair Display',serif;color:var(--gold);font-size:1.05rem;font-weight:700;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .count{background:var(--gold);color:#050505;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:999px;}
+    .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px;}
+    .stat-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+    .stat-label{font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+    .stat-val{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--gold);}
+    .stat-val.green{color:#86efac;}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    @media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+    .form-field{display:flex;flex-direction:column;gap:5px;}
+    .form-field label{font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+    .form-field input{padding:10px 13px;background:#0f0f0f;border:1px solid var(--border);color:var(--fg);border-radius:8px;font-family:'Outfit',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s;}
+    .form-field input:focus{border-color:var(--gold);}
+    .form-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+    .btn{padding:10px 18px;border-radius:8px;font-family:'Outfit',sans-serif;font-size:.875rem;font-weight:700;cursor:pointer;transition:all .2s;border:none;}
+    .btn-gold{background:var(--gold);color:#050505;}.btn-gold:hover{background:var(--gold-h);}
+    .btn-outline{background:rgba(212,175,55,.12);color:var(--gold);border:1px solid rgba(212,175,55,.4);}.btn-outline:hover{background:rgba(212,175,55,.22);}
+    .btn-danger{background:rgba(239,68,68,.14);color:#fecaca;border:1px solid rgba(239,68,68,.4);}.btn-danger:hover{background:rgba(239,68,68,.28);}
+    .btn-blue{background:rgba(59,130,246,.14);color:#bfdbfe;border:1px solid rgba(59,130,246,.4);}.btn-blue:hover{background:rgba(59,130,246,.28);}
+    .btn-green{background:rgba(34,197,94,.14);color:#86efac;border:1px solid rgba(34,197,94,.4);}.btn-green:hover{background:rgba(34,197,94,.28);}
+    .btn-sm{padding:7px 12px;font-size:.78rem;}
+    .cg-table{width:100%;border-collapse:collapse;}
+    .cg-table th{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+    .cg-table td{padding:12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:.85rem;vertical-align:middle;}
+    .cg-table tr:hover td{background:rgba(212,175,55,.04);}
+    .comision-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:999px;padding:3px 10px;font-size:.72rem;font-weight:700;color:#86efac;}
+    .badge-nfc{display:inline-flex;align-items:center;gap:4px;background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.3);border-radius:999px;padding:3px 8px;font-size:.65rem;font-weight:700;color:var(--gold);margin-bottom:4px;}
+    .nfc-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.4s ease-in-out infinite;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+    .td-actions{display:flex;gap:6px;flex-wrap:wrap;}
+    .url-chip{font-size:.7rem;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.2);border-radius:6px;padding:3px 7px;cursor:pointer;color:rgba(212,175,55,.8);transition:background .15s;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
+    .url-chip:hover{background:rgba(212,175,55,.16);}
+    #modal{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px);}
+    #modal.open{display:flex;}
+    .modal-card{background:#1a1a1a;border:1.5px solid var(--gold);border-radius:18px;padding:28px 24px;width:100%;max-width:460px;position:relative;max-height:90vh;overflow-y:auto;}
+    .modal-card h3{font-family:'Playfair Display',serif;color:var(--gold);font-size:1.15rem;margin-bottom:18px;}
+    .modal-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;}
+    .detail-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.84rem;gap:12px;}
+    .detail-row:last-child{border-bottom:none;}
+    .detail-label{color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;flex-shrink:0;}
+    .detail-val{color:var(--fg);font-weight:600;text-align:right;word-break:break-all;}
+    .comision-total{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;color:#86efac;text-align:center;padding:14px 0;}
+    .comision-label{text-align:center;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+    .empty{text-align:center;padding:36px;color:var(--muted);}
+    .empty span{font-size:2.5rem;display:block;margin-bottom:10px;}
+    #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(40px);background:#1e1e1e;border:1px solid var(--gold);color:var(--gold);padding:12px 22px;border-radius:8px;font-size:.9rem;font-weight:600;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:9999;white-space:nowrap;}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    #toast.error{border-color:var(--red);color:#fca5a5;}
+    .slug-hint{font-size:.7rem;color:rgba(212,175,55,.6);margin-top:3px;}
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <h2>🏨 CONCIERGES</h2>
+    <p>Panel Admin · LuxRides</p>
+    <input id="l-id" type="text" placeholder="ID administrador" autocomplete="off"/>
+    <input id="l-pass" type="password" placeholder="Contrasena"/>
+    <button onclick="hacerLogin()">INGRESAR</button>
+    <div class="login-error" id="l-err"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+<div class="max-w">
+  <header>
+    <h1>🏨 CONCIERGES COMISIONES</h1>
+    <p>LuxRides - Gestion de perfiles NFC y comisiones de hotel</p>
+  </header>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Total concierges</div><div class="stat-val" id="st-total">-</div></div>
+    <div class="stat-card"><div class="stat-label">Comisiones totales</div><div class="stat-val green" id="st-comisiones">$-</div></div>
+    <div class="stat-card"><div class="stat-label">Comision por viaje</div><div class="stat-val">10%</div></div>
+    <div class="stat-card"><div class="stat-label">Viajes finalizados</div><div class="stat-val" id="st-viajes">-</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">+ Registrar concierge / hotel</div>
+    <div class="form-grid">
+      <div class="form-field"><label>Nombre del hotel</label><input type="text" id="f-hotel" placeholder="Ej: Hotel Camino Real"/></div>
+      <div class="form-field"><label>Nombre del concierge</label><input type="text" id="f-nombre" placeholder="Ej: Carlos Mendoza"/></div>
+      <div class="form-field"><label>NFC Tag ID</label><input type="text" id="f-nfc" placeholder="Ej: NFC-0042"/></div>
+      <div class="form-field">
+        <label>URL slug unico</label>
+        <input type="text" id="f-slug" placeholder="Ej: carlos-camino-real" oninput="actualizarHint()"/>
+        <div class="slug-hint" id="slug-hint">luxrides.online/consierges/perfil.html?c=</div>
+      </div>
+      <div class="form-field"><label>Contrasena del concierge</label><input type="text" id="f-pass" placeholder="Contrasena para su acceso"/></div>
+      <div class="form-field"><label>% comision (default 10%)</label><input type="number" id="f-comision" value="10" min="0" max="100" step="0.5"/></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-gold" onclick="agregarConcierge()">Guardar</button>
+      <button class="btn btn-outline" onclick="generarSlug()">Auto-slug</button>
+      <button class="btn btn-outline" onclick="limpiarForm()">Limpiar</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">
+      Concierges registrados
+      <span class="count" id="cnt">0</span>
+      <button class="btn btn-outline btn-sm" style="margin-left:auto;" onclick="cargar()">Refrescar</button>
+      <button class="btn btn-danger btn-sm" onclick="borrarTodos()">Borrar todos</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="cg-table">
+        <thead><tr><th>Hotel</th><th>Concierge</th><th>NFC / URL</th><th>Comision</th><th>Acumulado</th><th>Acciones</th></tr></thead>
+        <tbody id="tabla-body"><tr><td colspan="6"><div class="empty"><span>loading</span>Cargando...</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="modal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="cerrarModal()">X</button>
+    <h3>Perfil NFC - <span id="m-nombre">-</span></h3>
+    <div class="comision-label">Comisiones acumuladas</div>
+    <div class="comision-total" id="m-comision-total">$0.00 MXN</div>
+    <div class="detail-row"><span class="detail-label">Hotel</span><span class="detail-val" id="m-hotel">-</span></div>
+    <div class="detail-row"><span class="detail-label">Concierge</span><span class="detail-val" id="m-cg">-</span></div>
+    <div class="detail-row"><span class="detail-label">NFC Tag ID</span><span class="detail-val" id="m-nfc">-</span></div>
+    <div class="detail-row"><span class="detail-label">% comision</span><span class="detail-val" id="m-pct">-</span></div>
+    <div class="detail-row"><span class="detail-label">URL perfil</span><span class="detail-val" id="m-url" style="color:var(--gold);cursor:pointer;" onclick="copiarUrl()">-</span></div>
+    <div class="detail-row"><span class="detail-label">Creado</span><span class="detail-val" id="m-fecha">-</span></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-gold" style="flex:1;" onclick="copiarUrl()">Copiar enlace</button>
+      <button class="btn btn-blue" style="flex:1;" onclick="abrirPerfil()">Ver perfil</button>
+      <button class="btn btn-green" style="flex:1;" onclick="resetComisiones()">Reset $</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SESSION_KEY = 'lux_cg_admin';
+const BASE_URL = 'https://luxrides.online/consierges/perfil.html?c=';
+const SB_URL = window.LuxCfg ? LuxCfg.supabaseUrl() : '';
+const SB_KEY = window.LuxCfg ? LuxCfg.supabaseAnonKey() : '';
+let SB = null;
+try { SB = supabase.createClient(SB_URL, SB_KEY); } catch(e) {}
+let _data = [];
+let _modal = null;
+
+document.getElementById('l-pass').addEventListener('keydown', e => { if(e.key==='Enter') hacerLogin(); });
+document.getElementById('l-id').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('l-pass').focus(); });
+
+async function hacerLogin() {
+  const id = (document.getElementById('l-id').value||'').trim();
+  const pass = (document.getElementById('l-pass').value||'').trim();
+  const errEl = document.getElementById('l-err');
+  if (!id||!pass) { errEl.textContent='Completa los campos'; errEl.style.display='block'; return; }
+  try {
+    const base = window.LuxCfg ? LuxCfg.apiBaseUrl() : 'https://luxrides.online';
+    const res = await fetch(base+'/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,pass})});
+    const d = await res.json().catch(()=>({}));
+    if (res.ok && d.ok) { errEl.style.display='none'; sessionStorage.setItem(SESSION_KEY,'ok'); mostrarApp(); }
+    else { errEl.textContent=(d.error||'Credenciales incorrectas'); errEl.style.display='block'; }
+  } catch(e) { errEl.textContent='Sin conexion al servidor'; errEl.style.display='block'; }
+}
+
+function mostrarApp() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').style.display='block';
+  cargar();
+}
+if (sessionStorage.getItem(SESSION_KEY)==='ok') mostrarApp();
+
+function toast(msg,isErr) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'+(isErr?' error':'');
+  clearTimeout(window._t); window._t=setTimeout(()=>t.className='toast',3500);
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt$(n){ return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtFecha(iso){ if(!iso) return '-'; const d=new Date(iso); return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}); }
+
+function actualizarHint() {
+  const slug=(document.getElementById('f-slug').value||'').trim();
+  document.getElementById('slug-hint').textContent='luxrides.online/consierges/perfil.html?c='+(slug||'...');
+}
+function generarSlug() {
+  const hotel=(document.getElementById('f-hotel').value||'').trim();
+  const cg=(document.getElementById('f-nombre').value||'').trim();
+  const texto=(cg||hotel||'concierge').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  document.getElementById('f-slug').value=texto+'-'+Math.random().toString(36).slice(2,5);
+  actualizarHint();
+}
+function limpiarForm() {
+  ['f-hotel','f-nombre','f-nfc','f-slug','f-pass'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-comision').value='10';
+  actualizarHint();
+}
+
+async function cargar() {
+  if(!SB) return;
+  const { data, error } = await SB.from('hoteles_concierge').select('*').order('created_at',{ascending:false});
+  if(error){ toast('Error al cargar',true); return; }
+  _data=data||[];
+  renderTabla();
+  actualizarStats();
+}
+
+async function actualizarStats() {
+  document.getElementById('st-total').textContent=_data.length;
+  const totalCom=_data.reduce((a,c)=>a+Number(c.comisiones_acumuladas||0),0);
+  document.getElementById('st-comisiones').textContent=fmt$(totalCom);
+  if(!SB) return;
+  const { count } = await SB.from('viajes').select('*',{count:'exact',head:true}).eq('estado','finalizado');
+  document.getElementById('st-viajes').textContent=count||0;
+}
+
+function renderTabla() {
+  const tbody=document.getElementById('tabla-body');
+  document.getElementById('cnt').textContent=_data.length;
+  if(!_data.length) { tbody.innerHTML='<tr><td colspan="6"><div class="empty"><span>-</span>Sin concierges registrados</div></td></tr>'; return; }
+  tbody.innerHTML=_data.map(c=>`
+    <tr>
+      <td><div style="font-weight:700;font-size:.9rem;">${esc(c.nombre_hotel)}</div></td>
+      <td><div style="font-weight:600;">${esc(c.nombre_concierge)}</div></td>
+      <td>
+        <div class="badge-nfc"><span class="nfc-dot"></span>${esc(c.nfc_tag_id||'-')}</div>
+        ${c.url_unica_slug?'<div class="url-chip" onclick="copiarTexto(\''+BASE_URL+esc(c.url_unica_slug)+'\',\'Enlace copiado\')" title="Clic para copiar">'+esc(c.url_unica_slug)+'</div>':''}
+      </td>
+      <td><span class="comision-chip">${Number(c.porcentaje_comision||0.1)*100}%</span></td>
+      <td style="font-family:'Playfair Display',serif;font-size:1rem;color:#86efac;">${fmt$(c.comisiones_acumuladas)}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-outline btn-sm" onclick="abrirModal('${esc(c.id)}')">NFC</button>
+          ${c.url_unica_slug?'<button class="btn btn-blue btn-sm" onclick="window.open(\''+BASE_URL+esc(c.url_unica_slug)+'\',\'_blank\')">Perfil</button>':''}
+          <button class="btn btn-danger btn-sm" onclick="borrar('${esc(c.id)}','${esc(c.nombre_concierge)}')">Borrar</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function agregarConcierge() {
+  const hotel=(document.getElementById('f-hotel').value||'').trim();
+  const nombre=(document.getElementById('f-nombre').value||'').trim();
+  const nfc=(document.getElementById('f-nfc').value||'').trim();
+  const slug=(document.getElementById('f-slug').value||'').trim().toLowerCase();
+  const pass=(document.getElementById('f-pass').value||'').trim();
+  const pct=Number(document.getElementById('f-comision').value||10)/100;
+  if(!hotel||!nombre||!nfc||!slug||!pass){ toast('Completa todos los campos',true); return; }
+  if(!/^[a-z0-9-]+$/.test(slug)){ toast('Slug: solo letras, numeros y guiones',true); return; }
+  const row={nombre_hotel:hotel,nombre_concierge:nombre,nfc_tag_id:nfc,url_unica_slug:slug,password_hash:btoa(pass),porcentaje_comision:pct,comisiones_acumuladas:0,created_at:new Date().toISOString()};
+  const { error } = await SB.from('hoteles_concierge').insert([row]);
+  if(error){ toast(error.message||'Error al guardar',true); return; }
+  toast('Concierge '+nombre+' registrado');
+  limpiarForm(); cargar();
+}
+
+async function borrar(id,nombre) {
+  if(!confirm('Eliminar a '+nombre+'?')) return;
+  const { error } = await SB.from('hoteles_concierge').delete().eq('id',id);
+  if(error){ toast(error.message,true); return; }
+  toast(nombre+' eliminado'); cargar();
+}
+
+async function borrarTodos() {
+  if(!confirm('Eliminar TODOS los concierges?')) return;
+  await SB.from('hoteles_concierge').delete().gt('comisiones_acumuladas',-999999);
+  toast('Todos eliminados'); cargar();
+}
+
+function abrirModal(id) {
+  const c=_data.find(x=>x.id===id); if(!c) return; _modal=c;
+  const url=BASE_URL+(c.url_unica_slug||'');
+  document.getElementById('m-nombre').textContent=c.nombre_concierge;
+  document.getElementById('m-hotel').textContent=c.nombre_hotel;
+  document.getElementById('m-cg').textContent=c.nombre_concierge;
+  document.getElementById('m-nfc').textContent=c.nfc_tag_id||'-';
+  document.getElementById('m-pct').textContent=(Number(c.porcentaje_comision||0.1)*100)+'%';
+  document.getElementById('m-url').textContent=url;
+  document.getElementById('m-fecha').textContent=fmtFecha(c.created_at);
+  document.getElementById('m-comision-total').textContent=fmt$(c.comisiones_acumuladas)+' MXN';
+  document.getElementById('modal').classList.add('open');
+}
+function cerrarModal(){ document.getElementById('modal').classList.remove('open'); _modal=null; }
+function copiarUrl(){ if(!_modal) return; copiarTexto(BASE_URL+(_modal.url_unica_slug||''),'Enlace NFC copiado'); }
+function abrirPerfil(){ if(!_modal) return; window.open(BASE_URL+(_modal.url_unica_slug||''),'_blank'); }
+async function resetComisiones() {
+  if(!_modal) return;
+  if(!confirm('Poner comisiones a $0 para '+_modal.nombre_concierge+'?')) return;
+  const { error } = await SB.from('hoteles_concierge').update({comisiones_acumuladas:0}).eq('id',_modal.id);
+  if(error){ toast(error.message,true); return; }
+  toast('Comisiones reiniciadas'); cerrarModal(); cargar();
+}
+document.getElementById('modal').addEventListener('click',function(e){ if(e.target===this) cerrarModal(); });
+function copiarTexto(texto,msg){ navigator.clipboard.writeText(texto).then(()=>toast(msg||'Copiado')).catch(()=>toast('No se pudo copiar',true)); }
+</script>
+</body>
+</html>
