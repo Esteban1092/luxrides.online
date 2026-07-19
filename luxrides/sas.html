@@ -1361,12 +1361,11 @@
           </div>
 
           <div class="service-note" style="background:rgba(239,68,68,0.10);border:1.5px solid #EF4444;color:#991b1b;font-weight:600;margin-bottom:18px;">
-            <b>IMPORTANTE:</b> La asignación de su conductor se realizará durante el proceso de pago.<br>
-            Agradecemos incluir el nombre del usuario en el concepto del pago.
+            <b id="lux-imp-bold">IMPORTANTE:</b> <span id="lux-importante-txt">La asignación de su conductor se realizará durante el proceso de pago. Agradecemos incluir el nombre del usuario en el concepto del pago.</span>
           </div>
 
           <div class="field">
-            <label class="lbl">Nombre del Cliente</label>
+            <label class="lbl" data-i18n="form.nombre">Nombre del Cliente</label>
             <div class="icon-wrap">
               <span class="ico">👤</span>
               <input type="text" id="inp-nombre" placeholder="Ej: Estebanquito"/>
@@ -1386,7 +1385,7 @@
           </div>
 
           <div class="field">
-            <label class="lbl">Tipo de Servicio</label>
+            <label class="lbl" data-i18n="form.tipo_svc">Tipo de Servicio</label>
             <div class="btn-row">
               <button class="btn-toggle active" data-svc="I" onclick="setServicio('I')">🧭 Por Kilometraje</button>
               <button class="btn-toggle" data-svc="T" onclick="setServicio('T')">⏱️ Por Tiempo</button>
@@ -1394,7 +1393,7 @@
           </div>
 
           <div class="field">
-            <label class="lbl">Tipo de Traslado</label>
+            <label class="lbl" data-i18n="form.tipo_traslado">Tipo de Traslado</label>
             <div class="btn-row" id="trip-row">
               <button class="btn-toggle active" data-trip="N" onclick="setTraslado('N')">🚘 Normal</button>
               <button class="btn-toggle" data-trip="P" onclick="setTraslado('P')">🛬 Pick Up</button>
@@ -1403,7 +1402,7 @@
           </div>
 
           <div class="hours-box" id="flight-box" style="display:none;">
-            <label class="lbl">Datos de Vuelo (solo Pick Up / Drop Off)</label>
+            <label class="lbl" data-i18n="form.vuelo_lbl">Datos de Vuelo (solo Pick Up / Drop Off)</label>
             <div class="field">
               <div class="icon-wrap">
                 <span class="ico">✈️</span>
@@ -1431,7 +1430,7 @@
           </div>
 
           <div class="hours-box" id="hours-box" style="display:none;">
-            <label class="lbl">Horas de Servicio (Mínimo 2h)</label>
+            <label class="lbl" data-i18n="form.horas">Horas de Servicio (Mínimo 2h)</label>
             <div class="hours-grid" id="hours-grid"></div>
             <div class="service-note" style="background:rgba(239,68,68,0.10);border:1.5px solid #EF4444;color:#991b1b;margin-top:8px;">
               <b>⚠️ Solo Ciudad de México:</b> El servicio por tiempo únicamente opera dentro de CDMX. No aplica para rutas interurbanas ni estado.
@@ -1439,7 +1438,7 @@
           </div>
 
           <div class="field" id="field-origen">
-            <label class="lbl">Origen (Recogida)</label>
+            <label class="lbl" data-i18n="form.origen">Origen (Recogida)</label>
             <div class="icon-wrap">
               <span class="ico">📍</span>
               <input type="text" id="inp-origen" placeholder="Ej: Club de Golf Bosques"/>
@@ -1447,7 +1446,7 @@
           </div>
 
           <div class="field" id="field-destino">
-            <label class="lbl">Destino Principal</label>
+            <label class="lbl" data-i18n="form.destino">Destino Principal</label>
             <div class="icon-wrap">
               <span class="ico">🏁</span>
               <input type="text" id="inp-destino" placeholder="Ej: Pujol"/>
@@ -1490,7 +1489,7 @@
           <button onclick="usarUbicacion()" style="width:100%;padding:11px;margin-bottom:12px;background:rgba(212,175,55,0.15);border:1px solid var(--gold);color:var(--gold);font-family:'Outfit',sans-serif;font-size:0.875rem;cursor:pointer;border-radius:8px;">📍 Usar mi ubicación</button>
 
           <div class="field">
-            <label class="lbl">Pasajeros</label>
+            <label class="lbl" data-i18n="form.pasajeros">Pasajeros</label>
             <div class="pax-row" id="pax-row"></div>
             <div class="vehicle-hint" id="vehicle-hint">Sedán VIP Diamond</div>
           </div>
@@ -5358,11 +5357,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         <div class="nav-tab-label">Iovox</div>
         <div class="nav-tab-dot"></div>
       </div>
-      <div class="nav-tab" id="nav-guias" onclick="switchTab('guias')">
-        <div class="nav-tab-icon">🗺️</div>
-        <div class="nav-tab-label">Guías</div>
-        <div class="nav-tab-dot"></div>
-      </div>
     </nav>
 
     <div id="viajes-panel">
@@ -5674,7 +5668,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       if (facturasEl) facturasEl.classList.toggle('show', tab === 'facturas');
       if (guiasEl)    guiasEl.classList.toggle('show',    tab === 'guias');
 
-      ['inicio','viajes','facturas','iovox','guias'].forEach(t => {
+      ['inicio','viajes','facturas','iovox'].forEach(t => {
         const el = document.getElementById('nav-' + t);
         if (el) el.classList.toggle('active', t === tab);
       });
@@ -5683,7 +5677,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       if (tab === 'viajes')   cargarViajes();
       if (tab === 'facturas') cargarFacturas();
       if (tab === 'iovox')    abrirAsistente();
-      if (tab === 'guias')    reiniciarAnimacionGuias();
     }
 
     function reiniciarAnimacionGuias() {
@@ -5693,6 +5686,261 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       void wrap.offsetWidth;
       wrap.classList.add('guias-anim-run');
     }
+
+    // ===== SISTEMA DE IDIOMAS (i18n) =====
+    window._luxLang = (function(){
+      var sup=['es','en','fr','pt','de','it','zh','ja','ko','ar','ru'];
+      var l=(navigator.language||'es').split('-')[0].toLowerCase();
+      return sup.includes(l)?l:'es';
+    })();
+    window._idiomaActual = window._luxLang;
+
+    var LUX_T = {
+      es:{
+        'nav.inicio':'Inicio','nav.viajes':'Viajes','nav.facturas':'Facturas',
+        'form.nombre':'Nombre del Cliente','form.tipo_svc':'Tipo de Servicio',
+        'form.tipo_traslado':'Tipo de Traslado',
+        'form.vuelo_lbl':'Datos de Vuelo (solo Pick Up / Drop Off)',
+        'form.horas':'Horas de Servicio (Mínimo 2h)',
+        'form.origen':'Origen (Recogida)','form.destino':'Destino Principal',
+        'form.pasajeros':'Pasajeros',
+        'form.svc_km':'🧭 Por Kilometraje','form.svc_t':'⏱️ Por Tiempo',
+        'form.trip_n':'🚘 Normal','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
+        'form.nombre_ph':'Ej: Estebanquito',
+        'form.origen_ph':'Ej: Club de Golf Bosques','form.destino_ph':'Ej: Pujol',
+        'form.aerolinea_ph':'Aerolínea (ej: Aeroméxico)',
+        'form.vuelo_ph':'No. de vuelo (ej: AM123)',
+        'form.vuelo_salida_ph':'Lugar de salida del vuelo',
+        'form.cliente_num_ph':'Teléfono del cliente',
+        'form.calcular':'🔍 Calcular Precio y Ruta',
+        'form.add_stop':'+ Agregar parada','form.del_stop':'− Eliminar parada',
+        'form.importante':'La asignación de su conductor se realizará durante el proceso de pago. Agradecemos incluir el nombre del usuario en el concepto del pago.',
+        'form.imp_bold':'IMPORTANTE:',
+        'form.ubicacion':'📍 Usar mi ubicación',
+        'viajes.titulo':'Mis Viajes','facturas.titulo':'Mis Facturas',
+        'viajes.cargando':'Cargando tus viajes…','facturas.cargando':'Cargando facturas…',
+        'viajes.login':'Inicia sesión para ver tus viajes.',
+        'viajes.empty':'Aún no tienes viajes registrados.\n¡Haz tu primera reserva!',
+        'viajes.error':'Error al cargar. Toca ↻ para reintentar.',
+        'rating.ph':'Escribe tu opinión (opcional)...',
+        'iovox.greeting':'¡Hola! 👋 Soy Iovox, tu asistente de LuxRides. ¿En qué puedo ayudarte hoy?',
+        'iovox.c1':'¿Hay tráfico ahorita?','iovox.c2':'Quiero ayuda con mi reserva',
+        'iovox.c3':'Opciones de traslado','iovox.c4':'Soporte de pago',
+      },
+      en:{
+        'nav.inicio':'Home','nav.viajes':'Trips','nav.facturas':'Invoices',
+        'form.nombre':'Client Name','form.tipo_svc':'Service Type',
+        'form.tipo_traslado':'Transfer Type',
+        'form.vuelo_lbl':'Flight Details (Pick Up / Drop Off only)',
+        'form.horas':'Service Hours (Minimum 2h)',
+        'form.origen':'Pickup Location','form.destino':'Main Destination',
+        'form.pasajeros':'Passengers',
+        'form.svc_km':'🧭 By Distance','form.svc_t':'⏱️ By Time',
+        'form.trip_n':'🚘 Standard','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
+        'form.nombre_ph':'e.g. John Smith',
+        'form.origen_ph':'e.g. Bosques Golf Club','form.destino_ph':'e.g. Downtown Hotel',
+        'form.aerolinea_ph':'Airline (e.g. American Airlines)',
+        'form.vuelo_ph':'Flight No. (e.g. AA123)',
+        'form.vuelo_salida_ph':'Flight departure location',
+        'form.cliente_num_ph':'Client phone number',
+        'form.calcular':'🔍 Calculate Price & Route',
+        'form.add_stop':'+ Add stop','form.del_stop':'− Remove stop',
+        'form.importante':'Your driver will be assigned during the payment process. Please include the user’s name in the payment reference.',
+        'form.imp_bold':'IMPORTANT:',
+        'form.ubicacion':'📍 Use my location',
+        'viajes.titulo':'My Trips','facturas.titulo':'My Invoices',
+        'viajes.cargando':'Loading your trips…','facturas.cargando':'Loading invoices…',
+        'viajes.login':'Sign in to view your trips.',
+        'viajes.empty':'No trips yet.\nMake your first booking!',
+        'viajes.error':'Failed to load. Tap ↻ to retry.',
+        'rating.ph':'Write your review (optional)...',
+        'iovox.greeting':'Hello! 👋 I’m Iovox, your LuxRides assistant. How can I help you today?',
+        'iovox.c1':'Is there traffic right now?','iovox.c2':'Help with my booking',
+        'iovox.c3':'Transfer options','iovox.c4':'Payment support',
+      },
+      fr:{
+        'nav.inicio':'Accueil','nav.viajes':'Trajets','nav.facturas':'Factures',
+        'form.nombre':'Nom du client','form.tipo_svc':'Type de service',
+        'form.tipo_traslado':'Type de transfert',
+        'form.vuelo_lbl':'Détails du vol (Pick Up / Drop Off uniquement)',
+        'form.horas':'Heures de service (Minimum 2h)',
+        'form.origen':'Lieu de prise en charge','form.destino':'Destination principale',
+        'form.pasajeros':'Passagers',
+        'form.svc_km':'🧭 Par distance','form.svc_t':'⏱️ À l’heure',
+        'form.trip_n':'🚘 Standard','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
+        'form.nombre_ph':'ex. Pierre Dupont',
+        'form.origen_ph':'ex. Hôtel du Centre','form.destino_ph':'ex. Aéroport',
+        'form.aerolinea_ph':'Compagnie aérienne','form.vuelo_ph':'N° de vol',
+        'form.vuelo_salida_ph':'Lieu de départ du vol',
+        'form.cliente_num_ph':'Téléphone du client',
+        'form.calcular':'🔍 Calculer prix et itinéraire',
+        'form.add_stop':'+ Ajouter arrêt','form.del_stop':'− Supprimer arrêt',
+        'form.importante':'Votre chauffeur sera assigné lors du paiement. Merci d’inclure votre nom dans la référence.',
+        'form.imp_bold':'IMPORTANT:',
+        'form.ubicacion':'📍 Utiliser ma position',
+        'viajes.titulo':'Mes Trajets','facturas.titulo':'Mes Factures',
+        'viajes.cargando':'Chargement…','facturas.cargando':'Chargement…',
+        'viajes.login':'Connectez-vous pour voir vos trajets.',
+        'viajes.empty':'Pas encore de trajets.\nFaites votre première réservation!',
+        'viajes.error':'Erreur. Touchez ↻ pour réessayer.',
+        'rating.ph':'Votre avis (optionnel)...',
+        'iovox.greeting':'Bonjour ! 👋 Je suis Iovox, votre assistant LuxRides. Comment puis-je vous aider ?',
+        'iovox.c1':'Y a-t-il du trafic ?','iovox.c2':'Aide avec ma réservation',
+        'iovox.c3':'Options de transfert','iovox.c4':'Support paiement',
+      },
+      pt:{
+        'nav.inicio':'Início','nav.viajes':'Viagens','nav.facturas':'Faturas',
+        'form.nombre':'Nome do cliente','form.tipo_svc':'Tipo de serviço',
+        'form.tipo_traslado':'Tipo de transferência',
+        'form.vuelo_lbl':'Dados do voo (somente Pick Up / Drop Off)',
+        'form.horas':'Horas de serviço (Mínimo 2h)',
+        'form.origen':'Local de coleta','form.destino':'Destino principal',
+        'form.pasajeros':'Passageiros',
+        'form.svc_km':'🧭 Por distância','form.svc_t':'⏱️ Por hora',
+        'form.trip_n':'🚘 Normal','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
+        'form.nombre_ph':'ex. João Silva',
+        'form.origen_ph':'ex. Hotel Marriott','form.destino_ph':'ex. Aeroporto',
+        'form.aerolinea_ph':'Companhia aérea (ex. LATAM)',
+        'form.vuelo_ph':'Nº do voo (ex. LA123)',
+        'form.vuelo_salida_ph':'Local de partida do voo',
+        'form.cliente_num_ph':'Telefone do cliente',
+        'form.calcular':'🔍 Calcular preço e rota',
+        'form.add_stop':'+ Adicionar parada','form.del_stop':'− Remover parada',
+        'form.importante':'Seu motorista será designado durante o pagamento. Por favor inclua seu nome na referência.',
+        'form.imp_bold':'IMPORTANTE:',
+        'form.ubicacion':'📍 Usar minha localização',
+        'viajes.titulo':'Minhas Viagens','facturas.titulo':'Minhas Faturas',
+        'viajes.cargando':'Carregando…','facturas.cargando':'Carregando…',
+        'viajes.login':'Faça login para ver suas viagens.',
+        'viajes.empty':'Nenhuma viagem ainda.\nFaça sua primeira reserva!',
+        'viajes.error':'Erro. Toque ↻ para tentar novamente.',
+        'rating.ph':'Escreva sua opinião (opcional)...',
+        'iovox.greeting':'Olá! 👋 Sou Iovox, seu assistente LuxRides. Como posso ajudar?',
+        'iovox.c1':'Há trânsito agora?','iovox.c2':'Ajuda com minha reserva',
+        'iovox.c3':'Opções de traslado','iovox.c4':'Suporte de pagamento',
+      },
+      de:{
+        'nav.inicio':'Start','nav.viajes':'Fahrten','nav.facturas':'Rechnungen',
+        'form.nombre':'Kundenname','form.tipo_svc':'Servicetyp',
+        'form.tipo_traslado':'Transfertyp',
+        'form.vuelo_lbl':'Flugdaten (nur Pick Up / Drop Off)',
+        'form.horas':'Servicestunden (Mindestens 2h)',
+        'form.origen':'Abholort','form.destino':'Hauptziel',
+        'form.pasajeros':'Passagiere',
+        'form.svc_km':'🧭 Nach Kilometer','form.svc_t':'⏱️ Nach Zeit',
+        'form.trip_n':'🚘 Standard','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
+        'form.nombre_ph':'z.B. Hans Müller',
+        'form.origen_ph':'z.B. Hotel Plaza','form.destino_ph':'z.B. Flughafen',
+        'form.aerolinea_ph':'Fluggesellschaft',
+        'form.vuelo_ph':'Flugnummer','form.vuelo_salida_ph':'Abflugort',
+        'form.cliente_num_ph':'Kundennummer',
+        'form.calcular':'🔍 Preis & Route berechnen',
+        'form.add_stop':'+ Stopp hinzufügen','form.del_stop':'− Stopp entfernen',
+        'form.importante':'Ihr Fahrer wird während des Zahlungsvorgangs zugewiesen. Bitte geben Sie Ihren Namen im Zahlungsbetreff an.',
+        'form.imp_bold':'WICHTIG:',
+        'form.ubicacion':'📍 Meinen Standort verwenden',
+        'viajes.titulo':'Meine Fahrten','facturas.titulo':'Meine Rechnungen',
+        'viajes.cargando':'Laden…','facturas.cargando':'Laden…',
+        'viajes.login':'Melden Sie sich an, um Ihre Fahrten anzuzeigen.',
+        'viajes.empty':'Noch keine Fahrten.\nMachen Sie Ihre erste Buchung!',
+        'viajes.error':'Fehler. Tippen Sie auf ↻ zum Wiederholen.',
+        'rating.ph':'Bewertung schreiben (optional)...',
+        'iovox.greeting':'Hallo! 👋 Ich bin Iovox, Ihr LuxRides-Assistent. Wie kann ich Ihnen helfen?',
+        'iovox.c1':'Gibt es Stau?','iovox.c2':'Hilfe bei meiner Buchung',
+        'iovox.c3':'Transferoptionen','iovox.c4':'Zahlungssupport',
+      },
+      it:{
+        'nav.inicio':'Home','nav.viajes':'Viaggi','nav.facturas':'Fatture',
+        'form.nombre':'Nome del cliente','form.tipo_svc':'Tipo di servizio',
+        'form.tipo_traslado':'Tipo di trasferimento',
+        'form.vuelo_lbl':'Dati volo (solo Pick Up / Drop Off)',
+        'form.horas':'Ore di servizio (Minimo 2h)',
+        'form.origen':'Luogo di ritiro','form.destino':'Destinazione principale',
+        'form.pasajeros':'Passeggeri',
+        'form.svc_km':'🧭 A chilometro','form.svc_t':'⏱️ A ora',
+        'form.trip_n':'🚘 Normale','form.trip_pu':'🛬 Pick Up','form.trip_do':'🛫 Drop Off',
+        'form.nombre_ph':'es. Mario Rossi',
+        'form.origen_ph':'es. Hotel Borghese','form.destino_ph':'es. Aeroporto',
+        'form.aerolinea_ph':'Compagnia aerea','form.vuelo_ph':'N. volo',
+        'form.vuelo_salida_ph':'Luogo di partenza del volo',
+        'form.cliente_num_ph':'Telefono del cliente',
+        'form.calcular':'🔍 Calcola prezzo e percorso',
+        'form.add_stop':'+ Aggiungi tappa','form.del_stop':'− Rimuovi tappa',
+        'form.importante':'Il tuo autista verrà assegnato durante il pagamento. Includi il nome utente nella causale.',
+        'form.imp_bold':'IMPORTANTE:',
+        'form.ubicacion':'📍 Usa la mia posizione',
+        'viajes.titulo':'I Miei Viaggi','facturas.titulo':'Le Mie Fatture',
+        'viajes.cargando':'Caricamento…','facturas.cargando':'Caricamento…',
+        'viajes.login':'Accedi per vedere i tuoi viaggi.',
+        'viajes.empty':'Nessun viaggio ancora.\nFai la tua prima prenotazione!',
+        'viajes.error':'Errore. Tocca ↻ per riprovare.',
+        'rating.ph':'Scrivi la tua opinione (opzionale)...',
+        'iovox.greeting':'Ciao! 👋 Sono Iovox, il tuo assistente LuxRides. Come posso aiutarti?',
+        'iovox.c1':'C’è traffico adesso?','iovox.c2':'Aiuto con la prenotazione',
+        'iovox.c3':'Opzioni di trasferimento','iovox.c4':'Supporto pagamento',
+      },
+    };
+
+    function luxT(k){return(LUX_T[window._luxLang]||{})[k]||(LUX_T.es||{})[k]||k;}
+
+    function applyLuxI18n(){
+      var T=LUX_T[window._luxLang]||LUX_T.es;
+      // Nav labels
+      ['inicio','viajes','facturas','iovox'].forEach(function(tab){
+        var el=document.querySelector('#nav-'+tab+' .nav-tab-label');
+        if(el&&T['nav.'+tab])el.textContent=T['nav.'+tab];
+      });
+      // Panel headers
+      var vh=document.querySelector('#viajes-panel .vf-header-title');
+      if(vh&&T['viajes.titulo'])vh.textContent=T['viajes.titulo'];
+      var fh=document.querySelector('#facturas-panel .vf-header-title');
+      if(fh&&T['facturas.titulo'])fh.textContent=T['facturas.titulo'];
+      // Labels con data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(function(el){
+        var k=el.dataset.i18n,v=T[k];
+        if(!v)return;
+        if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){el.placeholder=v;}
+        else if(el.children.length===0){el.textContent=v;}
+      });
+      // Placeholders por ID
+      var phMap={
+        'inp-nombre':'form.nombre_ph','inp-aerolinea':'form.aerolinea_ph',
+        'inp-vuelo':'form.vuelo_ph','inp-vuelo-salida':'form.vuelo_salida_ph',
+        'inp-cliente-num':'form.cliente_num_ph','inp-origen':'form.origen_ph',
+        'inp-destino':'form.destino_ph','rating-comentario':'rating.ph',
+      };
+      Object.keys(phMap).forEach(function(id){
+        var el=document.getElementById(id),v=T[phMap[id]];
+        if(el&&v)el.placeholder=v;
+      });
+      // Botón calcular
+      var btxt=document.getElementById('btn-calc-txt');
+      if(btxt&&T['form.calcular'])btxt.textContent=T['form.calcular'];
+      // Servicio / Traslado
+      [{sel:'[data-svc="I"]',k:'form.svc_km'},{sel:'[data-svc="T"]',k:'form.svc_t'},
+       {sel:'[data-trip="N"]',k:'form.trip_n'},{sel:'[data-trip="P"]',k:'form.trip_pu'},
+       {sel:'[data-trip="D"]',k:'form.trip_do'}].forEach(function(x){
+        var el=document.querySelector(x.sel);
+        if(el&&T[x.k])el.textContent=T[x.k];
+      });
+      // Agregar / Eliminar parada
+      var addS=document.querySelector('[onclick="agregarParada()"]');
+      if(addS&&T['form.add_stop'])addS.textContent=T['form.add_stop'];
+      var delS=document.querySelector('[onclick="eliminarParada()"]');
+      if(delS&&T['form.del_stop'])delS.textContent=T['form.del_stop'];
+      // Importante
+      var impBold=document.getElementById('lux-imp-bold');
+      if(impBold&&T['form.imp_bold'])impBold.textContent=T['form.imp_bold'];
+      var impTxt=document.getElementById('lux-importante-txt');
+      if(impTxt&&T['form.importante'])impTxt.textContent=T['form.importante'];
+      // Botón ubicación
+      var ubBtn=document.querySelector('[onclick="usarUbicacion()"]');
+      if(ubBtn&&T['form.ubicacion'])ubBtn.textContent=T['form.ubicacion'];
+      // HTML lang attr
+      document.documentElement.lang=window._luxLang;
+    }
+    document.addEventListener('DOMContentLoaded',applyLuxI18n);
+    setTimeout(applyLuxI18n,300);
 
     // Interacción sombrero — 3 hovers/toques = cae el sombrero y el chico lo recoge
     (function() {
@@ -6255,9 +6503,13 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
         _setIovoxConnStatus('esperando');
         var msgs = document.getElementById('iovox-messages');
         if(msgs && msgs.children.length === 0){
-          _msg('bot', '¡Hola! 👋 Soy Iovox, tu asistente de LuxRides. ¿En qué puedo ayudarte hoy?');
+          _msg('bot', (typeof luxT==='function')?luxT('iovox.greeting'):'¡Hola! 👋 Soy Iovox, tu asistente de LuxRides. ¿En qué puedo ayudarte hoy?');
           _iovoxHistory = [];
-          _chips(['¿Hay tráfico ahorita?', 'Quiero ayuda con mi reserva', 'Opciones de traslado', 'Soporte de pago']);
+          if(typeof luxT==='function'){
+            _chips([luxT('iovox.c1'),luxT('iovox.c2'),luxT('iovox.c3'),luxT('iovox.c4')]);
+          } else {
+            _chips(['¿Hay tráfico ahorita?','Quiero ayuda con mi reserva','Opciones de traslado','Soporte de pago']);
+          }
         }
       };
 
