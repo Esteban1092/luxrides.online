@@ -23,11 +23,11 @@ export const env = {
   groqApiKey: required('GROQ_API_KEY'),
 
   supabaseUrl: required('SUPABASE_URL'),
-  supabaseServiceKey: required('SUPABASE_SERVICE_KEY'),
+  supabaseServiceKey: optional('SUPABASE_SERVICE_KEY', optional('SUPABASE_ANON_KEY', '')),
 
   vapid: {
-    publicKey: required('VAPID_PUBLIC_KEY'),
-    privateKey: required('VAPID_PRIVATE_KEY'),
+    publicKey: optional('VAPID_PUBLIC_KEY', ''),
+    privateKey: optional('VAPID_PRIVATE_KEY', ''),
     email: optional('VAPID_EMAIL', 'luxrides@luxrides.online')
   },
 

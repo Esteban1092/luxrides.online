@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import { env } from './config/env.js';
 import healthRoutes from './routes/health.routes.js';
 import emailRoutes from './routes/email.routes.js';
+import groqRoutes from './routes/groq.routes.js';
 import pushRoutes from './routes/push.routes.js';
 import { errorHandler, notFound } from './middleware/error.js';
 
@@ -28,6 +29,7 @@ app.use(express.json({ limit: '1mb' }));
 
 app.use('/api', healthRoutes);
 app.use('/api', emailRoutes);
+app.use('/api', groqRoutes);
 app.use('/api', pushRoutes);
 
 app.use(notFound);

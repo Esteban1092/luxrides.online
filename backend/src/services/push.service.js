@@ -1,11 +1,16 @@
 import webpush from 'web-push';
 import { env } from '../config/env.js';
 
-webpush.setVapidDetails(
-  'mailto:' + env.vapid.email,
-  env.vapid.publicKey,
-  env.vapid.privateKey
-);
+// Solo configurar VAPID si ambas keys están disponibles
+if (env.vapid.publicKey && env.vapid.privateKey) {
+  webpush.setVapidDetails(
+    'mailto:' + env.vapid.email,
+    env.vapid.publicKey,
+    env.vapid.privateKey
+  );
+} else {
+  console.warn('[push] VAPID keys no configuradas — push notifications desactivadas');
+}
 
 export async function enviarPushAChofer(choferId) {
   const res = await fetch(
