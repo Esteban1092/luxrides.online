@@ -5687,15 +5687,127 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       wrap.classList.add('guias-anim-run');
     }
 
-    // ===== SISTEMA DE IDIOMAS (i18n) =====
-    window._luxLang = (function(){
+    // ===== AUTO-DETECCIÓN DE IDIOMA =====
+    // Conecta navigator.language al sistema existente I18N + aplicarIdioma()
+    (function(){
       var sup=['es','en','fr','pt','de','it','zh','ja','ko','ar','ru'];
-      var l=(navigator.language||'es').split('-')[0].toLowerCase();
-      return sup.includes(l)?l:'es';
-    })();
-    window._idiomaActual = window._luxLang;
+      var saved=localStorage.getItem('lux_idioma');
+      // 1) Respetar preferencia guardada; 2) ?lang=xx override; 3) navegador
+      var urlLang=new URLSearchParams(window.location.search).get('lang');
+      var lang=(urlLang&&sup.includes(urlLang))?urlLang:
+               (saved&&sup.includes(saved))?saved:
+               (function(){var l=(navigator.language||'es').split('-')[0].toLowerCase();return sup.includes(l)?l:'es';})();
+      window._luxLang=lang;
 
-    var LUX_T = {
+      // Extras no cubiertos por aplicarIdioma(): nav labels, importante, panels, placeholders
+      function applyExtras(){
+        var q=function(s,t){var e=document.querySelector(s);if(e)e.textContent=t;};
+        var sp=function(id,v){var e=document.getElementById(id);if(e&&v)e.placeholder=v;};
+
+        // Nav labels
+        var navT={es:{i:'Inicio',v:'Viajes',f:'Facturas'},
+          en:{i:'Home',v:'Trips',f:'Invoices'},fr:{i:'Accueil',v:'Trajets',f:'Factures'},
+          pt:{i:'Início',v:'Viagens',f:'Faturas'},de:{i:'Start',v:'Fahrten',f:'Rechnungen'},
+          it:{i:'Home',v:'Viaggi',f:'Fatture'},zh:{i:'主页',v:'行程',f:'发票'},
+          ja:{i:'ホーム',v:'旅行',f:'請求書'},ko:{i:'토',v:'여행',f:'청구서'},
+          ar:{i:'الرئيسية',v:'الرحلات',f:'الفواتير'},
+          ru:{i:'Главная',v:'Поездки',f:'Счета'}};
+        var nt=navT[lang]||navT.es;
+        q('#nav-inicio .nav-tab-label',nt.i);
+        q('#nav-viajes .nav-tab-label',nt.v);
+        q('#nav-facturas .nav-tab-label',nt.f);
+
+        // Mensaje IMPORTANTE
+        var impBold={es:'IMPORTANTE:',en:'IMPORTANT:',fr:'IMPORTANT:',pt:'IMPORTANTE:',
+          de:'WICHTIG:',it:'IMPORTANTE:',ar:'هام:',ru:'ВАЖНО:',zh:'重要：',ja:'重要：',ko:'중요:'};
+        var impTxt={
+          es:'La asignación de su conductor se realizará durante el proceso de pago. Agradecemos incluir el nombre del usuario en el concepto del pago.',
+          en:"Your driver will be assigned during the payment process. Please include the user's name in the payment reference.",
+          fr:"Votre chauffeur sera assigné lors du paiement. Merci d'inclure votre nom dans la référence.",
+          pt:'Seu motorista será designado durante o pagamento. Por favor inclua seu nome na referência.',
+          de:'Ihr Fahrer wird während des Zahlungsvorgangs zugewiesen. Geben Sie Ihren Namen im Zahlungsbetreff an.',
+          it:'Il tuo autista verrà assegnato durante il pagamento. Includi il nome utente nella causale.',
+          zh:'司机将在付款时指派。请将用户名包含在付款备注中。',
+          ja:'ドライバーは支払時に指定されます。支払メモにお名前をご記入ください。',
+          ko:'드라이버는 결제 시 배정됩니다. 결제 내역에 사용자 이름을 포함해 주세요.',
+          ar:'سيتم تعيين سائقك خلال عملية الدفع. يُرجى تضمين اسم المستخدم في مرجع الدفع.',
+          ru:'Ваш водитель будет назначен в процессе оплаты. Укажите имя пользователя в назначении платежа.'};
+        var ib=document.getElementById('lux-imp-bold');if(ib)ib.textContent=impBold[lang]||'IMPORTANTE:';
+        var ittxt=document.getElementById('lux-importante-txt');if(ittxt)ittxt.textContent=impTxt[lang]||impTxt.es;
+
+        // Panel headers (Mis Viajes / Mis Facturas)
+        var panT={es:{v:'Mis Viajes',f:'Mis Facturas'},en:{v:'My Trips',f:'My Invoices'},
+          fr:{v:'Mes Trajets',f:'Mes Factures'},pt:{v:'Minhas Viagens',f:'Minhas Faturas'},
+          de:{v:'Meine Fahrten',f:'Meine Rechnungen'},it:{v:'I Miei Viaggi',f:'Le Mie Fatture'},
+          zh:{v:'我的行程',f:'我的发票'},ja:{v:'マイトリップ',f:'請求書'},
+          ko:{v:'내 여행',f:'내 청구서'},ar:{v:'رحلاتي',f:'فواتيري'},ru:{v:'Мои поездки',f:'Мои счета'}};
+        var pt2=panT[lang]||panT.es;
+        q('#viajes-panel .vf-header-title',pt2.v);
+        q('#facturas-panel .vf-header-title',pt2.f);
+
+        // Placeholders de inputs
+        var phs={
+          es:{n:'Ej: Estebanquito',o:'Ej: Club de Golf Bosques',d:'Ej: Pujol',
+            a:'Aerolínea (ej: Aeroméxico)',vl:'No. de vuelo (ej: AM123)',
+            vs:'Lugar de salida del vuelo',cl:'Teléfono del cliente'},
+          en:{n:'e.g. John Smith',o:'e.g. Bosques Golf Club',d:'e.g. Downtown Hotel',
+            a:'Airline (e.g. American Airlines)',vl:'Flight No. (e.g. AA123)',
+            vs:'Flight departure location',cl:'Client phone number'},
+          fr:{n:'ex. Pierre Dupont',o:'ex. Hôtel du Centre',d:'ex. Aéroport',
+            a:'Compagnie aérienne',vl:'N° de vol',vs:'Lieu de départ',cl:'Téléphone du client'},
+          pt:{n:'ex. João Silva',o:'ex. Hotel Marriott',d:'ex. Aeroporto',
+            a:'Companhia aérea',vl:'Nº do voo',vs:'Local de partida',cl:'Telefone do cliente'},
+          de:{n:'z.B. Hans Müller',o:'z.B. Hotel Plaza',d:'z.B. Flughafen',
+            a:'Fluggesellschaft',vl:'Flugnummer',vs:'Abflugort',cl:'Kundennummer'},
+          it:{n:'es. Mario Rossi',o:'es. Hotel Borghese',d:'es. Aeroporto',
+            a:'Compagnia aerea',vl:'N. volo',vs:'Luogo di partenza',cl:'Telefono del cliente'},
+          zh:{n:'客户姓名',o:'出发地',d:'目的地',a:'航空公司',vl:'航班号',vs:'出发地点',cl:'客户电话'},
+          ja:{n:'お客様のお名前',o:'出発地',d:'目的地',a:'航空会社',vl:'便名',vs:'出発地',cl:'電話番号'},
+          ko:{n:'고객 이름',o:'출발지',d:'목적지',a:'항공사',vl:'편명',vs:'출발지',cl:'전화번호'},
+          ar:{n:'اسم العميل',o:'نقطة الانطلاق',d:'الوجهة',a:'شرкة طيران',vl:'رقم الرحلة',vs:'مكان المغادرة',cl:'هاتف العميل'},
+          ru:{n:'Имя клиента',o:'Место посадки',d:'Назначение',a:'Авиакомпания',vl:'Номер рейса',vs:'Место отправления',cl:'Телефон клиента'}};
+        var pp=phs[lang]||phs.en;
+        sp('inp-nombre',pp.n);sp('inp-origen',pp.o);sp('inp-destino',pp.d);
+        sp('inp-aerolinea',pp.a);sp('inp-vuelo',pp.vl);sp('inp-vuelo-salida',pp.vs);
+        sp('inp-cliente-num',pp.cl);
+
+        // Labels extra no cubiertos por aplicarIdioma
+        var xlT={es:{vl:'Datos de Vuelo (solo Pick Up / Drop Off)',h:'Horas de Servicio (Mínimo 2h)'},
+          en:{vl:'Flight Details (Pick Up / Drop Off only)',h:'Service Hours (Minimum 2h)'},
+          fr:{vl:'Détails du vol (Pick Up / Drop Off uniquement)',h:'Heures de service (Minimum 2h)'},
+          pt:{vl:'Dados do voo (somente Pick Up / Drop Off)',h:'Horas de serviço (Mínimo 2h)'},
+          de:{vl:'Flugdaten (nur Pick Up / Drop Off)',h:'Servicestunden (Mindestens 2h)'},
+          it:{vl:'Dati volo (solo Pick Up / Drop Off)',h:'Ore di servizio (Minimo 2h)'},
+          zh:{vl:'航班信息（仅Pick Up/Drop Off）',h:'服务小时（最少2h）'},
+          ja:{vl:'フライト情報（Pick Up / Drop Offのみ）',h:'サービス時間（最低2h）'},
+          ko:{vl:'항공편 정보 (Pick Up/Drop Off에만 해당)',h:'서비스 시간 (최소 2h)'},
+          ar:{vl:'تفاصيل الرحلة (للاستقبال والتوصيل فقط)',h:'ساعات الخدمة (حد أدنى 2h)'},
+          ru:{vl:'Данные рейса (только Pick Up/Drop Off)',h:'Часы обслуживания (мин. 2ч)'}};
+        var xl=xlT[lang]||xlT.es;
+        var fb=document.querySelector('#flight-box .lbl');if(fb)fb.textContent=xl.vl;
+        var hb=document.querySelector('#hours-box .lbl');if(hb)hb.textContent=xl.h;
+
+        // Rating placeholder
+        var rph={es:'Escribe tu opinión (opcional)...',en:'Write your review (optional)...',
+          fr:'Votre avis (optionnel)...',pt:'Escreva sua opinião (opcional)...',
+          de:'Bewertung schreiben (optional)...',it:'Scrivi la tua opinione (opzionale)...',
+          zh:'写下您的评价...',ja:'レビューを書く...',ko:'리븷을 작성하세요...',
+          ar:'اكتب ملاحظتك...',ru:'Напишите отзыв...'};
+        sp('rating-comentario',rph[lang]||rph.es);
+      }
+
+      function applyAll(){
+        // Sistema existente (maneja labels del form, botones, ajustes, perfil)
+        if(typeof aplicarIdioma==='function'){aplicarIdioma(lang);}
+        // Extras que aplicarIdioma no cubre
+        applyExtras();
+      }
+
+      if(document.readyState==='loading'){
+        document.addEventListener('DOMContentLoaded',applyAll);
+      } else { applyAll(); }
+      setTimeout(applyAll,400);
+    })();
       es:{
         'nav.inicio':'Inicio','nav.viajes':'Viajes','nav.facturas':'Facturas',
         'form.nombre':'Nombre del Cliente','form.tipo_svc':'Tipo de Servicio',
@@ -5881,66 +5993,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       },
     };
 
-    function luxT(k){return(LUX_T[window._luxLang]||{})[k]||(LUX_T.es||{})[k]||k;}
-
-    function applyLuxI18n(){
-      var T=LUX_T[window._luxLang]||LUX_T.es;
-      // Nav labels
-      ['inicio','viajes','facturas','iovox'].forEach(function(tab){
-        var el=document.querySelector('#nav-'+tab+' .nav-tab-label');
-        if(el&&T['nav.'+tab])el.textContent=T['nav.'+tab];
-      });
-      // Panel headers
-      var vh=document.querySelector('#viajes-panel .vf-header-title');
-      if(vh&&T['viajes.titulo'])vh.textContent=T['viajes.titulo'];
-      var fh=document.querySelector('#facturas-panel .vf-header-title');
-      if(fh&&T['facturas.titulo'])fh.textContent=T['facturas.titulo'];
-      // Labels con data-i18n
-      document.querySelectorAll('[data-i18n]').forEach(function(el){
-        var k=el.dataset.i18n,v=T[k];
-        if(!v)return;
-        if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){el.placeholder=v;}
-        else if(el.children.length===0){el.textContent=v;}
-      });
-      // Placeholders por ID
-      var phMap={
-        'inp-nombre':'form.nombre_ph','inp-aerolinea':'form.aerolinea_ph',
-        'inp-vuelo':'form.vuelo_ph','inp-vuelo-salida':'form.vuelo_salida_ph',
-        'inp-cliente-num':'form.cliente_num_ph','inp-origen':'form.origen_ph',
-        'inp-destino':'form.destino_ph','rating-comentario':'rating.ph',
-      };
-      Object.keys(phMap).forEach(function(id){
-        var el=document.getElementById(id),v=T[phMap[id]];
-        if(el&&v)el.placeholder=v;
-      });
-      // Botón calcular
-      var btxt=document.getElementById('btn-calc-txt');
-      if(btxt&&T['form.calcular'])btxt.textContent=T['form.calcular'];
-      // Servicio / Traslado
-      [{sel:'[data-svc="I"]',k:'form.svc_km'},{sel:'[data-svc="T"]',k:'form.svc_t'},
-       {sel:'[data-trip="N"]',k:'form.trip_n'},{sel:'[data-trip="P"]',k:'form.trip_pu'},
-       {sel:'[data-trip="D"]',k:'form.trip_do'}].forEach(function(x){
-        var el=document.querySelector(x.sel);
-        if(el&&T[x.k])el.textContent=T[x.k];
-      });
-      // Agregar / Eliminar parada
-      var addS=document.querySelector('[onclick="agregarParada()"]');
-      if(addS&&T['form.add_stop'])addS.textContent=T['form.add_stop'];
-      var delS=document.querySelector('[onclick="eliminarParada()"]');
-      if(delS&&T['form.del_stop'])delS.textContent=T['form.del_stop'];
-      // Importante
-      var impBold=document.getElementById('lux-imp-bold');
-      if(impBold&&T['form.imp_bold'])impBold.textContent=T['form.imp_bold'];
-      var impTxt=document.getElementById('lux-importante-txt');
-      if(impTxt&&T['form.importante'])impTxt.textContent=T['form.importante'];
-      // Botón ubicación
-      var ubBtn=document.querySelector('[onclick="usarUbicacion()"]');
-      if(ubBtn&&T['form.ubicacion'])ubBtn.textContent=T['form.ubicacion'];
-      // HTML lang attr
-      document.documentElement.lang=window._luxLang;
-    }
-    document.addEventListener('DOMContentLoaded',applyLuxI18n);
-    setTimeout(applyLuxI18n,300);
+    function luxT(k){return k;} // stub
 
     // Interacción sombrero — 3 hovers/toques = cae el sombrero y el chico lo recoge
     (function() {
@@ -6503,13 +6556,36 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
         _setIovoxConnStatus('esperando');
         var msgs = document.getElementById('iovox-messages');
         if(msgs && msgs.children.length === 0){
-          _msg('bot', (typeof luxT==='function')?luxT('iovox.greeting'):'¡Hola! 👋 Soy Iovox, tu asistente de LuxRides. ¿En qué puedo ayudarte hoy?');
+          var idioma=localStorage.getItem('lux_idioma')||'es';
+          var gl={
+            es:'¡Hola! 👋 Soy Iovox, tu asistente de LuxRides. ¿En qué puedo ayudarte hoy?',
+            en:'Hello! 👋 I’m Iovox, your LuxRides assistant. How can I help you today?',
+            fr:'Bonjour ! 👋 Je suis Iovox, votre assistant LuxRides. Comment puis-je vous aider ?',
+            pt:'Olá! 👋 Sou Iovox, seu assistente LuxRides. Como posso ajudar?',
+            de:'Hallo! 👋 Ich bin Iovox, Ihr LuxRides-Assistent. Wie kann ich helfen?',
+            it:'Ciao! 👋 Sono Iovox, il tuo assistente LuxRides. Come posso aiutarti?',
+            zh:'您好！👋 我是Iovox，您的LuxRides助理。有什么可以帮到您吗？',
+            ja:'こんにちは！👋 私はIovox、LuxRidesのアシスタントです。お手伝いできることはありますか？',
+            ko:'안녕하세요! 👋 저는 Iovox, LuxRides 어시스턴트입니다. 무엇을 도와드릴까요?',
+            ar:'مرحبا! 👋 أنا Iovox، مساعد LuxRides. كيف يمكنني مساعدتك اليوم؟',
+            ru:'Привет! 👋 Я Iovox, ваш помощник LuxRides. Чем могу помочь?',
+          };
+          var cl={
+            es:['¿Hay tráfico ahorita?','Quiero ayuda con mi reserva','Opciones de traslado','Soporte de pago'],
+            en:['Is there traffic right now?','Help with my booking','Transfer options','Payment support'],
+            fr:['Y a-t-il du trafic ?','Aide avec ma réservation','Options de transfert','Support paiement'],
+            pt:['Há trânsito agora?','Ajuda com minha reserva','Opções de traslado','Suporte de pagamento'],
+            de:['Gibt es Stau?','Hilfe bei meiner Buchung','Transferoptionen','Zahlungssupport'],
+            it:['C’è traffico adesso?','Aiuto con la prenotazione','Opzioni di trasferimento','Supporto pagamento'],
+            zh:['现在堵车吗？','我的预订帮助','交通方式选择','支付支持'],
+            ja:['今渋滯していますか？','予約のサポート','交通オプション','支払サポート'],
+            ko:['지금 교통 정체?','예약 도움','이동 옵션','결제 지원'],
+            ar:['هل يوجد ازدحام؟','مساعدة في حجزي','خيارات النقل','دعم الدفع'],
+            ru:['Есть пробки?','Помощь с бронированием','Варианты перевозки','Поддержка оплаты'],
+          };
+          _msg('bot', gl[idioma]||gl.es);
           _iovoxHistory = [];
-          if(typeof luxT==='function'){
-            _chips([luxT('iovox.c1'),luxT('iovox.c2'),luxT('iovox.c3'),luxT('iovox.c4')]);
-          } else {
-            _chips(['¿Hay tráfico ahorita?','Quiero ayuda con mi reserva','Opciones de traslado','Soporte de pago']);
-          }
+          _chips(cl[idioma]||cl.es);
         }
       };
 
