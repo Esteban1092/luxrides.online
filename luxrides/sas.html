@@ -1094,7 +1094,11 @@
         flex-direction:column;padding:13px 15px 12px;
         gap:8px;justify-content:flex-start;align-items:stretch;
         overflow-y:auto;
-        background:linear-gradient(180deg,#FDF8F0 0%,#F5F0E8 100%);
+        background-color:#F5EDD8;
+        background-image:
+          linear-gradient(rgba(180,155,90,.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(180,155,90,.1) 1px, transparent 1px);
+        background-size:22px 22px;
       }
       .guias-catalog-header{
         text-align:center;
@@ -1109,33 +1113,42 @@
       }
       .guias-char-row{display:flex;justify-content:center;margin:0;}
       .guias-character{overflow:visible;flex-shrink:0;}
-      /* Personaje estático — solo parpadea */
-      #guias-blink{pointer-events:none;}
-      .guias-anim-run #guias-blink{
-        animation:blinkEyes 5s ease-in-out infinite;
-        animation-delay:10s;
+      .guias-anim-run .guias-character{
+        animation:charBounce 2s ease-in-out infinite;
+        animation-delay:8.5s;
       }
-      @keyframes blinkEyes{
-        0%,84%{opacity:0}
-        85%,87%{opacity:1}
-        88%,91%{opacity:0}
-        92%,94%{opacity:1}
-        95%,100%{opacity:0}
+      @keyframes charBounce{
+        0%,100%{transform:translateY(0)}
+        45%,55%{transform:translateY(-5px)}
       }
       .guias-arm-r{transform-origin:0% 0%;transform-box:fill-box;}
+      .guias-anim-run .guias-arm-r{
+        animation:armWiggle .8s ease-in-out infinite alternate;
+        animation-delay:8.5s;
+      }
+      @keyframes armWiggle{
+        0%{transform:rotate(-10deg)}100%{transform:rotate(15deg)}
+      }
       .guias-arm-l{transform-origin:100% 0%;transform-box:fill-box;}
-      /* Sombrero — brisa muy suave */
-      #guias-hat{transform-origin:center center;transform-box:fill-box;}
+      .guias-anim-run .guias-arm-l{
+        animation:armWiggleL 1.1s ease-in-out infinite alternate;
+        animation-delay:8.5s;
+      }
+      @keyframes armWiggleL{
+        0%{transform:rotate(6deg)}100%{transform:rotate(-6deg)}
+      }
+      /* Sombrero bob cada 3s */
+      #guias-hat{transform-origin:center bottom;transform-box:fill-box;}
       .guias-anim-run #guias-hat{
-        animation:hatBreeze 4s cubic-bezier(.45,.05,.55,.95) infinite;
+        animation:hatBobIdle 3s ease-in-out infinite;
         animation-delay:9s;
       }
-      @keyframes hatBreeze{
-        0%,100%{transform:rotate(0deg)}
-        25%{transform:rotate(1.8deg)}
-        50%{transform:rotate(-0.8deg)}
-        75%{transform:rotate(1.4deg)}
-        90%{transform:rotate(-0.3deg)}
+      @keyframes hatBobIdle{
+        0%,78%,100%{transform:rotate(0deg) translateY(0)}
+        82%{transform:rotate(-22deg) translateY(-5px)}
+        87%{transform:rotate(12deg) translateY(-2px)}
+        92%{transform:rotate(-6deg) translateY(-1px)}
+        96%{transform:rotate(0deg) translateY(0)}
       }
       #guias-hat.hat-falling{
         animation:hatFall .9s cubic-bezier(.55,0,1,.45) both !important;
@@ -1154,33 +1167,25 @@
         70%{transform:rotate(-12deg) translateY(-6px)}
         100%{transform:rotate(0deg) translateY(0);opacity:1}
       }
-      /* Bandera TOUR — ondeo natural con brisa */
+      /* Bandera TOUR */
       .guias-pennant{transform-origin:0% 50%;transform-box:fill-box;}
       .guias-anim-run .guias-pennant{
-        animation:pennantWave 2.4s cubic-bezier(.25,.46,.45,.94) infinite;
+        animation:pennantFlap 1s ease-in-out infinite alternate;
         animation-delay:9s;
       }
-      @keyframes pennantWave{
-        0%  {transform:skewY(0deg) scaleX(1)}
-        12% {transform:skewY(5deg) scaleX(0.96)}
-        25% {transform:skewY(-2deg) scaleX(1.02)}
-        38% {transform:skewY(7deg) scaleX(0.93)}
-        52% {transform:skewY(-1deg) scaleX(1.01)}
-        65% {transform:skewY(5.5deg) scaleX(0.95)}
-        78% {transform:skewY(-2.5deg) scaleX(1.02)}
-        90% {transform:skewY(3deg) scaleX(0.97)}
-        100%{transform:skewY(0deg) scaleX(1)}
+      @keyframes pennantFlap{
+        0%{transform:skewY(-4deg) scaleX(1.03)}
+        100%{transform:skewY(7deg) scaleX(0.94)}
       }
       .guias-anim-run .guias-flag{
         transform-box:fill-box;transform-origin:center bottom;
-        animation:flagSway 3.5s ease-in-out infinite;
+        animation:flagSway 2.5s ease-in-out infinite;
         animation-delay:9s;
       }
       @keyframes flagSway{
         0%,100%{transform:rotate(0deg)}
-        28%{transform:rotate(1.8deg)}
-        55%{transform:rotate(-0.6deg)}
-        72%{transform:rotate(1.2deg)}
+        35%{transform:rotate(2.5deg)}
+        65%{transform:rotate(-1.5deg)}
       }
       .guias-catalog-cards{display:flex;flex-direction:column;gap:7px;}
       .guias-card{
@@ -5527,13 +5532,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               <ellipse cx="116" cy="99" rx="3.5" ry="2.2" fill="#C8956C" opacity=".5"/>
               <!-- Sonrisa -->
               <path d="M104,107 Q116,116 128,107" stroke="#C8956C" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-              <!-- Parpadeo (overlay animado) -->
-              <g id="guias-blink" style="opacity:0">
-                <rect x="100" y="85" width="14" height="9" rx="2" fill="#FFDAB9"/>
-                <rect x="118" y="85" width="14" height="9" rx="2" fill="#FFDAB9"/>
-                <path d="M101,90 Q107,93.5 113,90" stroke="#2d1a0a" stroke-width="2" fill="none" stroke-linecap="round"/>
-                <path d="M119,90 Q125,93.5 131,90" stroke="#2d1a0a" stroke-width="2" fill="none" stroke-linecap="round"/>
-              </g>
               <!-- SOMBRERO DE PAJA (grupo animado) -->
               <g id="guias-hat">
                 <ellipse cx="116" cy="67" rx="38" ry="9" fill="#A06C00" opacity=".18"/>
@@ -5547,13 +5545,126 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
                 <line x1="127" y1="30" x2="128" y2="63" stroke="#B8860B" stroke-width="1.1" opacity=".48"/>
                 <line x1="135" y1="32" x2="136" y2="63" stroke="#B8860B" stroke-width="1.1" opacity=".48"/>
               </g>
-              <!-- BANDERA TOUR -->
+            <svg id="guias-char-svg" class="guias-character" width="160" height="175" viewBox="0 0 250 272" xmlns="http://www.w3.org/2000/svg">
+              <!-- Trayectorias de viaje (fondo decorativo) -->
+              <path d="M20,265 Q60,240 90,255 Q130,275 160,250" fill="none" stroke="#C9B080" stroke-width="1.5" stroke-dasharray="6,5" opacity=".32"/>
+              <!-- === MALETA DUFFEL (izquierda, teal) === -->
+              <ellipse cx="38" cy="242" rx="34" ry="22" fill="#5B8FA0" stroke="#3A7285" stroke-width="2"/>
+              <ellipse cx="38" cy="236" rx="26" ry="14" fill="#4A7A8F"/>
+              <circle cx="38" cy="236" r="9" fill="#FFD166"/>
+              <circle cx="35" cy="233" r="1.5" fill="#3D2010"/><circle cx="41" cy="233" r="1.5" fill="#3D2010"/>
+              <path d="M35,239 Q38,242 41,239" stroke="#3D2010" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+              <path d="M28,219 Q28,212 38,212 Q48,212 48,219" stroke="#3A7285" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <!-- === MALETA PRINCIPAL (tostada, debajo del personaje) === -->
+              <rect x="66" y="214" width="150" height="48" rx="12" fill="#C9904A" stroke="#A06830" stroke-width="2"/>
+              <rect x="124" y="209" width="38" height="10" rx="4" fill="#A06830"/>
+              <rect x="130" y="207" width="26" height="14" rx="4" fill="#8B5820" stroke="#A06830" stroke-width="1.5"/>
+              <rect x="143" y="230" width="14" height="9" rx="2" fill="#D4AF37"/>
+              <rect x="170" y="222" width="26" height="18" rx="4" fill="#E8F4FF" stroke="#9BB" stroke-width="1"/>
+              <path d="M176,230 Q181,226 186,230 L184,232 L177,232Z" fill="#7BA7D4"/>
+              <circle cx="92" cy="235" r="10" fill="#FFD166"/><circle cx="92" cy="235" r="6" fill="#FFBE2E"/>
+              <circle cx="86" cy="262" r="7" fill="#2d2d2d"/><circle cx="196" cy="262" r="7" fill="#2d2d2d"/>
+              <!-- Maleta 2a (teal) -->
+              <rect x="76" y="190" width="118" height="30" rx="9" fill="#5EBFB5" stroke="#38A090" stroke-width="1.8"/>
+              <rect x="116" y="186" width="28" height="9" rx="3" fill="#38A090"/>
+              <rect x="121" y="184" width="18" height="13" rx="3" fill="#2D8880" stroke="#38A090" stroke-width="1.2"/>
+              <!-- === MOCHILA NARANJA (visible, izquierda) === -->
+              <rect x="53" y="120" width="40" height="66" rx="13" fill="#F07830" stroke="#C05010" stroke-width="2"/>
+              <rect x="58" y="140" width="30" height="30" rx="7" fill="#E06820" stroke="#C05010" stroke-width="1.2"/>
+              <path d="M63,120 Q68,108 77,106 Q86,108 86,120" stroke="#C05010" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <!-- Saco de dormir ROSA (prominente en cima) -->
+              <ellipse cx="73" cy="118" rx="22" ry="12" fill="#F5A0B0" stroke="#D07088" stroke-width="2"/>
+              <ellipse cx="73" cy="118" rx="17" ry="9" fill="#FFBCCC"/>
+              <ellipse cx="73" cy="118" rx="9" ry="5" fill="#FF9DB8" opacity=".62"/>
+              <!-- === CUERPO SUÉTER AZUL (path orgánico) === -->
+              <path d="M95,118 Q87,120 83,130 L79,184 Q81,192 118,192 Q155,192 157,184 L153,130 Q149,120 141,118 Q131,113 118,113 Q105,113 95,118Z" fill="#6B98C8" stroke="#4A78A8" stroke-width="2"/>
+              <path d="M106,118 Q118,132 130,118" stroke="#4A78A8" stroke-width="1.5" fill="none"/>
+              <line x1="84" y1="132" x2="152" y2="132" stroke="#5A88B8" stroke-width="1" stroke-linecap="round" opacity=".5"/>
+              <line x1="83" y1="141" x2="153" y2="141" stroke="#5A88B8" stroke-width="1" stroke-linecap="round" opacity=".5"/>
+              <line x1="82" y1="150" x2="154" y2="150" stroke="#5A88B8" stroke-width="1" stroke-linecap="round" opacity=".5"/>
+              <line x1="81" y1="159" x2="155" y2="159" stroke="#5A88B8" stroke-width="1" stroke-linecap="round" opacity=".5"/>
+              <line x1="80" y1="168" x2="156" y2="168" stroke="#5A88B8" stroke-width="1" stroke-linecap="round" opacity=".5"/>
+              <line x1="80" y1="177" x2="156" y2="177" stroke="#5A88B8" stroke-width="1" stroke-linecap="round" opacity=".5"/>
+              <!-- === BRAZO IZQUIERDO (trazo grueso estilo flat) === -->
+              <g class="guias-arm-l">
+                <path d="M87,127 Q73,140 69,162 Q71,172 81,177" stroke="#6B98C8" stroke-width="19" fill="none" stroke-linecap="round"/>
+                <path d="M87,127 Q73,140 69,162 Q71,172 81,177" stroke="#4A78A8" stroke-width="19" fill="none" stroke-linecap="round" opacity=".18"/>
+                <circle cx="79" cy="179" r="12" fill="#FDDAB9" stroke="#C89060" stroke-width="1.5"/>
+              </g>
+              <!-- === BRAZO DERECHO (trazo grueso) === -->
+              <g class="guias-arm-r">
+                <path d="M149,127 Q163,140 167,162 Q165,172 155,177" stroke="#6B98C8" stroke-width="19" fill="none" stroke-linecap="round"/>
+                <path d="M149,127 Q163,140 167,162 Q165,172 155,177" stroke="#4A78A8" stroke-width="19" fill="none" stroke-linecap="round" opacity=".18"/>
+                <circle cx="157" cy="179" r="12" fill="#FDDAB9" stroke="#C89060" stroke-width="1.5"/>
+              </g>
+              <!-- === MAPA ABIERTO === -->
+              <g transform="translate(84,168) rotate(-2)">
+                <rect x="0" y="0" width="44" height="32" rx="5" fill="#E8B860" stroke="#B8860B" stroke-width="1.5"/>
+                <rect x="44" y="0" width="44" height="32" rx="5" fill="#F0C870" stroke="#B8860B" stroke-width="1.5"/>
+                <rect x="41" y="0" width="6" height="32" rx="3" fill="#D4A84B"/>
+                <path d="M5,8 Q18,4 35,9" fill="none" stroke="#A8C8E8" stroke-width="4" stroke-linecap="round" opacity=".65"/>
+                <line x1="5" y1="16" x2="36" y2="16" stroke="#B8860B" stroke-width=".9" opacity=".5"/>
+                <line x1="5" y1="22" x2="31" y2="22" stroke="#B8860B" stroke-width=".9" opacity=".5"/>
+                <circle cx="23" cy="27" r="3.5" fill="#E63946"/>
+                <line x1="50" y1="8" x2="80" y2="8" stroke="#B8860B" stroke-width=".9" opacity=".5"/>
+                <line x1="50" y1="14" x2="76" y2="14" stroke="#B8860B" stroke-width=".9" opacity=".5"/>
+                <rect x="50" y="20" width="18" height="9" rx="2" fill="#B5EAD7" opacity=".5"/>
+              </g>
+              <!-- === PIERNAS SENTADO (trazo grueso rojo) === -->
+              <path d="M91,190 Q72,194 57,203 Q47,214 55,224" stroke="#E84040" stroke-width="22" fill="none" stroke-linecap="round"/>
+              <path d="M145,190 Q164,194 179,203 Q189,214 181,224" stroke="#E84040" stroke-width="22" fill="none" stroke-linecap="round"/>
+              <!-- === ZAPATOS AMARILLOS === -->
+              <ellipse cx="52" cy="228" rx="20" ry="10" fill="#F5B842" stroke="#C89000" stroke-width="2"/>
+              <rect x="36" y="221" width="18" height="8" rx="4" fill="#F5C85A"/>
+              <ellipse cx="184" cy="228" rx="20" ry="10" fill="#F5B842" stroke="#C89000" stroke-width="2"/>
+              <rect x="182" y="221" width="18" height="8" rx="4" fill="#F5C85A"/>
+              <!-- === CABEZA === -->
+              <circle cx="118" cy="88" r="31" fill="#FDDAB9" stroke="#C89060" stroke-width="2"/>
+              <circle cx="87" cy="91" r="9" fill="#FDDAB9" stroke="#C89060" stroke-width="1.5"/>
+              <circle cx="149" cy="91" r="9" fill="#FDDAB9" stroke="#C89060" stroke-width="1.5"/>
+              <!-- Cabello castaño -->
+              <path d="M89,84 Q91,56 118,54 Q145,56 147,84 Q140,62 118,62 Q96,62 89,84Z" fill="#3D2415"/>
+              <path d="M89,84 Q84,88 87,94 Q89,91 91,87Z" fill="#3D2415"/>
+              <path d="M147,84 Q152,88 149,94 Q147,91 145,87Z" fill="#3D2415"/>
+              <!-- Ojos felices -->
+              <path d="M104,88 Q109,82 114,88" stroke="#3D2415" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <path d="M122,88 Q127,82 132,88" stroke="#3D2415" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <!-- Mejillas -->
+              <circle cx="95" cy="100" r="10" fill="#F5A0A8" opacity=".33"/>
+              <circle cx="141" cy="100" r="10" fill="#F5A0A8" opacity=".33"/>
+              <!-- Nariz -->
+              <path d="M115,98 Q118,102 121,98" stroke="#C89060" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+              <!-- Sonrisa -->
+              <path d="M105,108 Q118,118 131,108" stroke="#C89060" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              <!-- Parpadeo overlay -->
+              <g id="guias-blink" style="opacity:0">
+                <rect x="100" y="82" width="18" height="11" rx="3" fill="#FDDAB9"/>
+                <rect x="120" y="82" width="18" height="11" rx="3" fill="#FDDAB9"/>
+                <path d="M101,88 Q109,93 117,88" stroke="#3D2415" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                <path d="M121,88 Q129,93 137,88" stroke="#3D2415" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              </g>
+              <!-- === SOMBRERO DE PAJA (animado) === -->
+              <g id="guias-hat">
+                <ellipse cx="118" cy="63" rx="46" ry="11" fill="#9B6C00" opacity=".14"/>
+                <ellipse cx="118" cy="62" rx="46" ry="11" fill="#D4A843" stroke="#9B6C00" stroke-width="2"/>
+                <path d="M90,62 Q90,27 118,25 Q146,27 146,62Z" fill="#D4A843" stroke="#9B6C00" stroke-width="2"/>
+                <path d="M104,28 Q118,22 132,28 Q126,25 118,24 Q110,25 104,28Z" fill="#E8C070" opacity=".48"/>
+                <rect x="90" y="57" width="56" height="8" rx="4" fill="#9B6C00" opacity=".6"/>
+                <line x1="96" y1="29" x2="93" y2="59" stroke="#B8860B" stroke-width="1.2" opacity=".4"/>
+                <line x1="103" y1="26" x2="101" y2="59" stroke="#B8860B" stroke-width="1.2" opacity=".4"/>
+                <line x1="110" y1="25" x2="109" y2="59" stroke="#B8860B" stroke-width="1.2" opacity=".4"/>
+                <line x1="118" y1="25" x2="118" y2="59" stroke="#B8860B" stroke-width="1.2" opacity=".4"/>
+                <line x1="126" y1="25" x2="127" y2="59" stroke="#B8860B" stroke-width="1.2" opacity=".4"/>
+                <line x1="133" y1="26" x2="135" y2="59" stroke="#B8860B" stroke-width="1.2" opacity=".4"/>
+                <line x1="140" y1="29" x2="143" y2="59" stroke="#B8860B" stroke-width="1.2" opacity=".4"/>
+              </g>
+              <!-- === BANDERA TOUR (animada) === -->
               <g class="guias-flag">
-                <line x1="178" y1="105" x2="178" y2="200" stroke="#6B4226" stroke-width="3.5" stroke-linecap="round"/>
-                <circle cx="178" cy="104" r="4.5" fill="#D4AF37"/>
-                <circle cx="178" cy="200" r="5" fill="#6B4226"/>
-                <path class="guias-pennant" d="M178,105 L215,120 L178,138 Z" fill="#E63946" stroke="#9B1B24" stroke-width="1"/>
-                <text x="184" y="127" font-family="Arial,sans-serif" font-size="10" font-weight="800" fill="white">TOUR</text>
+                <line x1="212" y1="110" x2="212" y2="215" stroke="#5A3210" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="212" cy="109" r="5.5" fill="#D4AF37"/>
+                <circle cx="212" cy="215" r="6" fill="#5A3210"/>
+                <path class="guias-pennant" d="M212,111 L252,128 L212,146 Z" fill="#E63946" stroke="#C02030" stroke-width="1.2"/>
+                <text x="218" y="134" font-family="Arial,sans-serif" font-size="10.5" font-weight="800" fill="white">TOUR</text>
               </g>
             </svg>
           </div>
