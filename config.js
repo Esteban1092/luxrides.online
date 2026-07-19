@@ -14,7 +14,7 @@
     WHATSAPP_CENTRAL:       '+525527729551',
     VAPID_PUBLIC_KEY:       'BLX6MhsrRUOf_m5So0bt1RtQeyQtsvq_UQpokto6XL8frM66o-kIW-AVQbcnT1PWOOIo_-yU7pOok6L2BmPpsnY',
     HOSTINGER_ORIGIN:       'https://luxrides.online',
-    BACKEND_URL:            'https://congenial-space-goldfish-g4944pp4vj6hv5wr-8787.app.github.dev'
+    BACKEND_URL:            'https://luxrides.online'
   };
 
   function get(k) {

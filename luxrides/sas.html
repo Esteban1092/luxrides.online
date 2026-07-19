@@ -6328,12 +6328,18 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
 
         var currentIsLocal = _isLocalHost(location.hostname);
         var configuredBase = _normalizeBase((window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || '');
+        var backendBase = _normalizeBase((window.LuxCfg && LuxCfg.backendUrl && LuxCfg.backendUrl()) || '');
         var candidateBases = [];
 
         if (configuredBase) {
           var cfgHost = _hostFromUrl(configuredBase);
           var cfgIsLocal = _isLocalHost(cfgHost);
           if (!(cfgIsLocal && !currentIsLocal)) candidateBases.push(configuredBase);
+        }
+        if (backendBase) {
+          var beHost = _hostFromUrl(backendBase);
+          var beIsLocal = _isLocalHost(beHost);
+          if (!(beIsLocal && !currentIsLocal)) candidateBases.push(backendBase);
         }
         if (!currentIsLocal && location.protocol !== 'file:') candidateBases.push(location.origin);
         if (currentIsLocal) candidateBases.push('http://localhost:8787');
@@ -6346,7 +6352,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
               method:'POST',
               headers:{'Content-Type':'application/json'},
               body:JSON.stringify({messages}),
-              signal: AbortSignal.timeout(8000)
+              signal: AbortSignal.timeout(15000)
             });
             if (r.ok) {
               var d = await r.json();
