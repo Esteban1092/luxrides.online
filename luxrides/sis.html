@@ -37,9 +37,11 @@
       --border:rgba(255,255,255,0.10);--fg:#f0f0f0;--muted:rgba(255,255,255,0.45);
     }
     body{background:var(--bg);color:var(--fg);font-family:'Outfit',sans-serif;min-height:100vh;padding:20px;}
-    header{text-align:center;padding-bottom:18px;border-bottom:2px solid var(--gold);margin-bottom:24px;}
+    header{text-align:center;padding-bottom:18px;border-bottom:2px solid var(--gold);margin-bottom:24px;position:relative;}
     header h1{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:700;letter-spacing:0.18em;color:var(--gold);}
     header p{font-size:0.7rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+    #btn-groq-admin{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(212,175,55,0.15);color:#D4AF37;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;z-index:100;}
+    #btn-groq-admin:hover{background:rgba(212,175,55,0.28);}
     #status-bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:22px;}
     .badge{font-size:0.72rem;letter-spacing:0.06em;padding:5px 14px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);transition:all .3s;}
     .badge.ok{border-color:rgba(34,197,94,0.5);color:#86efac;background:rgba(34,197,94,0.10);}
@@ -235,6 +237,7 @@
 <header>
   <h1>🛰️ DESPACHO LUXRIDES</h1>
   <p>Solo el despachador puede asignar viajes</p>
+  <button id="btn-groq-admin" onclick="abrirIovoxAdmin()" title="Asistente IA (Groq)">💬</button>
 </header>
 
 <div id="status-bar">
@@ -1875,6 +1878,26 @@ async function refrescarReservas(btnEl) {
   await cargarReservasIniciales();
   if (btnEl) { btnEl.disabled = false; btnEl.textContent = '🔄 Refrescar'; }
   showToast('🔄 Clientes actualizados');
+}
+
+function abrirIovoxAdmin() {
+  if (typeof abrirAsistente === 'function') {
+    abrirAsistente();
+  } else {
+    showToast('💬 Asistente IA - Acceso rápido');
+    var msg = prompt('Pregunta al Asistente IA:\n(Este es un acceso rápido desde el despacho)', '');
+    if (msg && msg.trim()) {
+      if (typeof _callIA === 'function') {
+        _callIA([{ role: 'user', content: msg }]).then(reply => {
+          alert('IA: ' + (reply || 'No hay respuesta'));
+        }).catch(err => {
+          alert('Error: ' + err.message);
+        });
+      } else {
+        alert('Asistente no disponible. Verifica la conexión.');
+      }
+    }
+  }
 }
 
 document.addEventListener('DOMContentLoaded', function() {

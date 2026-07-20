@@ -5343,6 +5343,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         <div class="nav-tab-label">Facturas</div>
         <div class="nav-tab-dot"></div>
       </div>
+      <div class="nav-tab" id="nav-guias" onclick="switchTab('guias')">
+        <div class="nav-tab-icon">🗺️</div>
+        <div class="nav-tab-label">Guías</div>
+        <div class="nav-tab-dot"></div>
+      </div>
       <div class="nav-tab" id="nav-iovox" onclick="switchTab('iovox')">
         <div class="nav-tab-icon iovox-nav-icon">
           <svg width="22" height="22" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -5672,7 +5677,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       if (facturasEl) facturasEl.classList.toggle('show', tab === 'facturas');
       if (guiasEl)    guiasEl.classList.toggle('show',    tab === 'guias');
 
-      ['inicio','viajes','facturas','iovox'].forEach(t => {
+      ['inicio','viajes','facturas','guias','iovox'].forEach(t => {
         const el = document.getElementById('nav-' + t);
         if (el) el.classList.toggle('active', t === tab);
       });
