@@ -949,6 +949,7 @@
         gap:3px;cursor:pointer;padding:8px 4px;
         transition:all .22s cubic-bezier(.4,0,.2,1);position:relative;
         -webkit-tap-highlight-color:transparent;
+        min-width:0;
       }
       .nav-tab:active{background:rgba(255,255,255,0.05);}
       .nav-tab-icon{font-size:1.25rem;line-height:1;transition:transform .22s cubic-bezier(.4,0,.2,1),filter .22s;}
@@ -956,6 +957,7 @@
         font-family:'Outfit',sans-serif;font-size:.54rem;font-weight:600;
         letter-spacing:.12em;text-transform:uppercase;
         color:rgba(255,255,255,0.35);transition:color .22s;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
       }
       .nav-tab.active .nav-tab-label{color:#D4AF37;}
       .nav-tab.active .nav-tab-icon{transform:scale(1.2);filter:drop-shadow(0 0 7px rgba(212,175,55,.6));}
@@ -969,6 +971,10 @@
       .nav-tab.active .nav-tab-dot{opacity:1;transform:scaleX(1);}
 
       @media(max-width:767px){
+        #bottom-nav{height:72px;}
+        .nav-tab{padding:6px 2px;}
+        .nav-tab-icon{font-size:1.18rem;}
+        .nav-tab-label{font-size:.52rem;letter-spacing:.08em;}
         #panel{bottom:76px !important;max-height:calc(100vh - 140px) !important;}
       }
 
@@ -5703,17 +5709,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         var sp=function(id,v){var e=document.getElementById(id);if(e&&v)e.placeholder=v;};
 
         // Nav labels
-        var navT={es:{i:'Inicio',v:'Viajes',f:'Facturas'},
-          en:{i:'Home',v:'Trips',f:'Invoices'},fr:{i:'Accueil',v:'Trajets',f:'Factures'},
-          pt:{i:'Início',v:'Viagens',f:'Faturas'},de:{i:'Start',v:'Fahrten',f:'Rechnungen'},
-          it:{i:'Home',v:'Viaggi',f:'Fatture'},zh:{i:'主页',v:'行程',f:'发票'},
-          ja:{i:'ホーム',v:'旅行',f:'請求書'},ko:{i:'홈',v:'여행',f:'청구서'},
-          ar:{i:'الرئيسية',v:'الرحلات',f:'الفواتير'},
-          ru:{i:'Главная',v:'Поездки',f:'Счета'}};
+        var navT={es:{i:'Inicio',g:'Guías',o:'Iovox'},
+          en:{i:'Home',g:'Guides',o:'Iovox'},fr:{i:'Accueil',g:'Guides',o:'Iovox'},
+          pt:{i:'Início',g:'Guias',o:'Iovox'},de:{i:'Start',g:'Guides',o:'Iovox'},
+          it:{i:'Home',g:'Guide',o:'Iovox'},zh:{i:'主页',g:'导览',o:'Iovox'},
+          ja:{i:'ホーム',g:'ガイド',o:'Iovox'},ko:{i:'홈',g:'가이드',o:'Iovox'},
+          ar:{i:'الرئيسية',g:'المرشدون',o:'Iovox'},
+          ru:{i:'Главная',g:'Гиды',o:'Iovox'}};
         var nt=navT[lang]||navT.es;
         q('#nav-inicio .nav-tab-label',nt.i);
-        q('#nav-viajes .nav-tab-label',nt.v);
-        q('#nav-facturas .nav-tab-label',nt.f);
+        q('#nav-guias .nav-tab-label',nt.g);
+        q('#nav-iovox .nav-tab-label',nt.o);
 
         // Mensaje IMPORTANTE
         var impBold={es:'IMPORTANTE:',en:'IMPORTANT:',fr:'IMPORTANT:',pt:'IMPORTANTE:',

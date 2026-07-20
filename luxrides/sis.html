@@ -260,6 +260,7 @@
     </div>
     <div class="panel-actions">
       <button class="btn-link-panel btn-gold" onclick="refrescarReservas(this)">🔄 Refrescar</button>
+      <button class="btn-link-panel btn-gold" onclick="autoAsignarPendientes()">⚡ Autoasignar cercanos</button>
       <button class="btn-link-panel btn-danger" onclick="borrarClientesPendientesAdmin()">🗑️ Borrar pendientes</button>
     </div>
     <div id="lista-clientes">
@@ -499,6 +500,9 @@ var historialChoferCallback = null;
 var historialGeneralCallback = null;
 var ultimoConteoClientes = 0;
 var channels = [];
+var autoAssignTimers = {};
+var autoAssignIntentos = {};
+var autoAssignEnProceso = false;
 
 function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -1007,6 +1011,11 @@ function manejarCambioReserva(payload) {
     notify('📱 +' + (count - ultimoConteoClientes) + ' nueva solicitud', 'ok');
   }
   ultimoConteoClientes = count;
+
+  if (estadoNormalizado === 'pendiente' && !r.chofer_id) {
+    var ultimo = autoAssignIntentos[r.reserva_id] || 0;
+    if (Date.now() - ultimo > 12000) agendarAutoAsignacion(r.reserva_id);
+  }
 }
 
 async function cargarReservasIniciales() {
@@ -1024,6 +1033,12 @@ async function cargarReservasIniciales() {
 
   var pendientes = Object.values(reservasActivas).filter(function(x) { return String(x.estado || '').toLowerCase() === 'pendiente'; });
   ultimoConteoClientes = pendientes.length;
+
+  pendientes.forEach(function(r) {
+    var rid = r.reserva_id;
+    var ultimo = autoAssignIntentos[rid] || 0;
+    if (Date.now() - ultimo > 12000) agendarAutoAsignacion(rid);
+  });
 }
 
 function suscribirChoferes() {
@@ -1108,6 +1123,113 @@ function _parseUbicacion(ub) {
   return { lat: lat, lng: lng };
 }
 
+function _distanciaKm(aLat, aLng, bLat, bLng) {
+  var R = 6371;
+  var dLat = (bLat - aLat) * Math.PI / 180;
+  var dLng = (bLng - aLng) * Math.PI / 180;
+  var s1 = Math.sin(dLat / 2);
+  var s2 = Math.sin(dLng / 2);
+  var q = s1 * s1 + Math.cos(aLat * Math.PI / 180) * Math.cos(bLat * Math.PI / 180) * s2 * s2;
+  return 2 * R * Math.atan2(Math.sqrt(q), Math.sqrt(1 - q));
+}
+
+function _choferOcupadoEnReservaActiva(choferId) {
+  return Object.values(reservasActivas).some(function(r) {
+    var est = String(r.estado || '').toLowerCase();
+    var activo = (est === 'asignado' || est === 'en curso' || est === 'en_curso');
+    return activo && String(r.chofer_id || '') === String(choferId || '');
+  });
+}
+
+function _choferDisponibleParaAuto(ch, choferId) {
+  var est = String(ch && ch.estado || '').toLowerCase();
+  var enLinea = /en linea|online|libre|demo/i.test(est);
+  if (!enLinea) return false;
+  if (_choferOcupadoEnReservaActiva(choferId)) return false;
+  return !!_parseUbicacion(ch.ubicacion);
+}
+
+function obtenerChoferMasCercano(reserva) {
+  if (!reserva) return null;
+  var lat = Number(reserva.origen_lat);
+  var lng = Number(reserva.origen_lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  var mejor = null;
+  Object.entries(choferesDisponibles).forEach(function(entry) {
+    var choferId = entry[0];
+    var ch = entry[1] || {};
+    if (!_choferDisponibleParaAuto(ch, choferId)) return;
+    var pos = _parseUbicacion(ch.ubicacion);
+    if (!pos) return;
+    var km = _distanciaKm(lat, lng, Number(pos.lat), Number(pos.lng));
+    if (!Number.isFinite(km)) return;
+    if (!mejor || km < mejor.km) {
+      mejor = { choferId: choferId, choferNombre: ch.nombre || choferId, km: km };
+    }
+  });
+  return mejor;
+}
+
+async function autoAsignarReserva(reservaId, silencioso) {
+  var r = reservasActivas[reservaId];
+  if (!r) return false;
+  var estado = String(r.estado || '').toLowerCase();
+  if (estado !== 'pendiente') return false;
+
+  if ((!r.origen_lat || !r.origen_lng) && r.origen) {
+    var pos = await geocodificarDireccion(r.origen);
+    if (pos) {
+      r.origen_lat = pos.lat;
+      r.origen_lng = pos.lng;
+    }
+  }
+
+  var mejor = obtenerChoferMasCercano(r);
+  if (!mejor) {
+    if (!silencioso) showToast('⚠️ No hay choferes en línea con GPS para autoasignar.', true);
+    return false;
+  }
+
+  csdSeleccionar(reservaId, mejor.choferId, mejor.choferNombre);
+  await despachar(reservaId);
+  if (!silencioso) showToast('⚡ Autoasignado: ' + mejor.choferNombre + ' · ' + mejor.km.toFixed(1) + ' km');
+  autoAssignIntentos[reservaId] = Date.now();
+  return true;
+}
+
+async function autoAsignarPendientes() {
+  if (autoAssignEnProceso) return;
+  autoAssignEnProceso = true;
+  try {
+    var pendientes = Object.keys(reservasActivas).filter(function(id) {
+      return String((reservasActivas[id] || {}).estado || '').toLowerCase() === 'pendiente';
+    });
+    if (!pendientes.length) {
+      showToast('ℹ️ No hay reservas pendientes para autoasignar.');
+      return;
+    }
+    var asignadas = 0;
+    for (var i = 0; i < pendientes.length; i++) {
+      var ok = await autoAsignarReserva(pendientes[i], true);
+      if (ok) asignadas++;
+    }
+    if (asignadas > 0) showToast('⚡ Autoasignación completada: ' + asignadas + ' reserva(s).');
+    else showToast('⚠️ No se pudo autoasignar (sin GPS o sin chofer disponible).', true);
+  } finally {
+    autoAssignEnProceso = false;
+  }
+}
+
+function agendarAutoAsignacion(reservaId) {
+  clearTimeout(autoAssignTimers[reservaId]);
+  autoAssignTimers[reservaId] = setTimeout(function() {
+    autoAsignarReserva(reservaId, true).catch(function(e) {
+      console.warn('autoAsignarReserva:', e);
+    });
+  }, 600);
+}
+
 function formatearChofer(id, ch) {
   return {
     id: id,
@@ -1187,7 +1309,7 @@ function renderizarClientes() {
       + (r.distancia_km ? '<p>📏 ' + r.distancia_km + ' km · ⏱️ ' + r.duracion_min + ' min</p>' : '')
       + avisoReasignacion + avisoReembolso + califHtml
       + '<div class="precio">$' + formatNum(r.total || 0) + ' MXN</div><hr>'
-      + (estado === 'pendiente' ? '<div class="assign-row"><label>Asignar a:</label><div class="csd-wrap"><input type="text" class="csd-input" id="si-' + reservaId + '" placeholder="🔍 Nombre, ID o vehículo…" oninput="csdFiltrar(\'' + reservaId + '\',this.value)" onfocus="csdAbrir(\'' + reservaId + '\')" autocomplete="off"/><div class="csd-list" id="sd-' + reservaId + '"></div><input type="hidden" id="sel-' + reservaId + '" value=""/></div><button class="btn-despachar" onclick="despachar(\'' + reservaId + '\')">ENVIAR 🚀</button></div>' : '')
+      + (estado === 'pendiente' ? '<div class="assign-row"><label>Asignar a:</label><div class="csd-wrap"><input type="text" class="csd-input" id="si-' + reservaId + '" placeholder="🔍 Nombre, ID o vehículo…" oninput="csdFiltrar(\'' + reservaId + '\',this.value)" onfocus="csdAbrir(\'' + reservaId + '\')" autocomplete="off"/><div class="csd-list" id="sd-' + reservaId + '"></div><input type="hidden" id="sel-' + reservaId + '" value=""/></div><button class="btn-despachar" onclick="despachar(\'' + reservaId + '\')">ENVIAR 🚀</button><button class="btn-despachar" style="background:#2563eb;color:#fff;" onclick="autoAsignarReserva(\'' + reservaId + '\', false)">AUTO CERCANO ⚡</button></div>' : '')
       + (estado === 'asignado' ? '<div class="assign-row" style="margin-top:8px;"><label>↻ Reasignar a:</label><div class="csd-wrap"><input type="text" class="csd-input" id="si-' + reservaId + '" placeholder="🔍 Nombre, ID o vehículo…" oninput="csdFiltrar(\'' + reservaId + '\',this.value)" onfocus="csdAbrir(\'' + reservaId + '\')" autocomplete="off"/><div class="csd-list" id="sd-' + reservaId + '"></div><input type="hidden" id="sel-' + reservaId + '" value=""/></div><button class="btn-despachar" style="background:#3B82F6;color:#fff;" onclick="reasignarChofer(\'' + reservaId + '\')">REASIGNAR ↻</button></div>' : '')
       + '<div style="display:flex;gap:8px;margin-top:10px;">'
       + '<button onclick="compartirEnlace(\'' + reservaId + '\')" style="flex:1;padding:9px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:#86efac;border-radius:10px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .2s;" onmouseover="this.style.background=\'rgba(34,197,94,.22)\'" onmouseout="this.style.background=\'rgba(34,197,94,.12)\'">🔗 Copiar enlace</button>'
@@ -1881,23 +2003,53 @@ async function refrescarReservas(btnEl) {
 }
 
 function abrirIovoxAdmin() {
-  if (typeof abrirAsistente === 'function') {
-    abrirAsistente();
-  } else {
-    showToast('💬 Asistente IA - Acceso rápido');
-    var msg = prompt('Pregunta al Asistente IA:\n(Este es un acceso rápido desde el despacho)', '');
-    if (msg && msg.trim()) {
-      if (typeof _callIA === 'function') {
-        _callIA([{ role: 'user', content: msg }]).then(reply => {
-          alert('IA: ' + (reply || 'No hay respuesta'));
-        }).catch(err => {
-          alert('Error: ' + err.message);
-        });
-      } else {
-        alert('Asistente no disponible. Verifica la conexión.');
-      }
+  showToast('💬 Asistente IA listo');
+  var msg = prompt('Pregunta al Asistente IA (Groq):\n(Ej. "¿Qué chofer está más cerca de Polanco?")', '');
+  if (!msg || !msg.trim()) return;
+  _callIA([{ role: 'user', content: msg.trim() }])
+    .then(function(reply) { alert('IA: ' + (reply || 'No hay respuesta')); })
+    .catch(function(err) { alert('Error IA: ' + (err && err.message ? err.message : err)); });
+}
+
+async function _fetchJsonWithTimeout(url, options, timeoutMs) {
+  var ctrl = new AbortController();
+  var timer = setTimeout(function() { ctrl.abort(); }, timeoutMs || 12000);
+  try {
+    var res = await fetch(url, Object.assign({}, options, { signal: ctrl.signal }));
+    var body = await res.json().catch(function() { return {}; });
+    return { ok: res.ok, status: res.status, body: body };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function _callIA(messages) {
+  var apiBase = (window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || '';
+  var backendBase = (window.LuxCfg && LuxCfg.backendUrl && LuxCfg.backendUrl()) || '';
+  var origin = window.location.origin || '';
+  var candidates = [
+    apiBase ? apiBase + '/api/chat' : '',
+    backendBase ? backendBase + '/api/chat' : '',
+    origin ? origin + '/api/chat' : '',
+    'https://luxrides.online/api/chat'
+  ].filter(function(x, i, arr) { return x && arr.indexOf(x) === i; });
+
+  var lastErr = null;
+  for (var i = 0; i < candidates.length; i++) {
+    var url = candidates[i];
+    try {
+      var out = await _fetchJsonWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: messages })
+      }, 15000);
+      if (out.ok && out.body && out.body.ok && out.body.reply) return out.body.reply;
+      lastErr = new Error((out.body && (out.body.error || out.body.detail)) || ('HTTP ' + out.status));
+    } catch (e) {
+      lastErr = e;
     }
   }
+  throw (lastErr || new Error('No se pudo contactar al asistente IA.'));
 }
 
 document.addEventListener('DOMContentLoaded', function() {
