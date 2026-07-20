@@ -5333,16 +5333,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         <div class="nav-tab-label">Inicio</div>
         <div class="nav-tab-dot"></div>
       </div>
-      <div class="nav-tab" id="nav-viajes" onclick="switchTab('viajes')">
-        <div class="nav-tab-icon">🚗</div>
-        <div class="nav-tab-label">Viajes</div>
-        <div class="nav-tab-dot"></div>
-      </div>
-      <div class="nav-tab" id="nav-facturas" onclick="switchTab('facturas')">
-        <div class="nav-tab-icon">🧾</div>
-        <div class="nav-tab-label">Facturas</div>
-        <div class="nav-tab-dot"></div>
-      </div>
       <div class="nav-tab" id="nav-guias" onclick="switchTab('guias')">
         <div class="nav-tab-icon">🗺️</div>
         <div class="nav-tab-label">Guías</div>
@@ -5668,31 +5658,23 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
     function switchTab(tab) {
       _activeTab = tab;
       const panelEl   = document.getElementById('panel');
-      const viajesEl  = document.getElementById('viajes-panel');
-      const facturasEl= document.getElementById('facturas-panel');
       const guiasEl   = document.getElementById('guias-panel');
 
       if (panelEl)    panelEl.style.display    = tab === 'inicio' ? '' : 'none';
-      if (viajesEl)   viajesEl.classList.toggle('show',   tab === 'viajes');
-      if (facturasEl) facturasEl.classList.toggle('show', tab === 'facturas');
       if (guiasEl)    guiasEl.classList.toggle('show',    tab === 'guias');
 
-      ['inicio','viajes','facturas','guias','iovox'].forEach(t => {
+      ['inicio','guias','iovox'].forEach(t => {
         const el = document.getElementById('nav-' + t);
         if (el) el.classList.toggle('active', t === tab);
       });
 
       closeTpcDropdown();
-      if (tab === 'viajes')   cargarViajes();
-      if (tab === 'facturas') cargarFacturas();
       if (tab === 'guias')    reiniciarAnimacionGuias();
       if (tab === 'iovox')    abrirAsistente();
     }
 
     document.addEventListener('lux:langchange', function() {
       actualizarTopProfileCard();
-      if (_activeTab === 'viajes') cargarViajes();
-      if (_activeTab === 'facturas') cargarFacturas();
     });
 
     function reiniciarAnimacionGuias() {
