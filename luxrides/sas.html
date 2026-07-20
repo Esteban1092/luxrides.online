@@ -90,6 +90,23 @@
   </script>
       <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script>
+      (function(){
+        var build = '2026-07-20-b';
+        var key = 'lux_sas_build';
+        try {
+          var prev = localStorage.getItem(key);
+          if (prev !== build) {
+            localStorage.setItem(key, build);
+            var u = new URL(window.location.href);
+            if (u.searchParams.get('v') !== build) {
+              u.searchParams.set('v', build);
+              window.location.replace(u.toString());
+            }
+          }
+        } catch (e) {}
+      })();
+      </script>
+      <script>
       window._tycToggleBtn = window._tycToggleBtn || function(cb){
         var btn = document.getElementById('btn-tyc-aceptar');
         if (btn) btn.disabled = !(cb && cb.checked);
