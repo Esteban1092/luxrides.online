@@ -546,8 +546,10 @@ function dbUpdate(table, id, data) {
   return SUPABASE.from(table).update(data).eq('id', id);
 }
 
-function dbInsert(table, data) {
-  return SUPABASE.from(table).insert(data).select().single();
+async function dbInsert(table, data) {
+  var res = await SUPABASE.from(table).insert(data).select().single();
+  if (res.error) throw new Error(res.error.message || JSON.stringify(res.error));
+  return res;
 }
 
 function dbDelete(table, id) {
@@ -1657,13 +1659,34 @@ async function confirmarNuevoChofer() {
   var nombre = (document.getElementById('nuevo-chofer-nombre') ? document.getElementById('nuevo-chofer-nombre').value : '').trim();
   var hotelInput = (document.getElementById('nuevo-chofer-hotel') ? document.getElementById('nuevo-chofer-hotel').value : '').trim();
   if (!id || !nombre) { showToast('⚠️ ID y nombre son obligatorios.', true); return; }
+
+  // Evitar duplicado: si ya existe ese ID, actualizar en lugar de insertar
   try {
-    await dbInsert('choferes', { id: id, nombre: nombre, hotel: hotelInput || 'Sin hotel', estado: 'offline', creado_en: new Date().toISOString() });
+    var existente = await dbGet('choferes', id);
+    if (existente) {
+      showToast('⚠️ Ya existe el ID ' + id + ' (' + existente.nombre + '). Usa otro ID.', true);
+      return;
+    }
+  } catch(e) { /* si no se puede leer, intentamos insertar de todas formas */ }
+
+  try {
+    var res = await dbInsert('choferes', { id: id, nombre: nombre, hotel: hotelInput || 'Sin hotel', estado: 'offline', creado_en: new Date().toISOString() });
     document.getElementById('nuevo-chofer-id').value = '';
     document.getElementById('nuevo-chofer-nombre').value = '';
     document.getElementById('nuevo-chofer-hotel').value = '';
     showToast('✅ Chofer ' + nombre + ' agregado');
-  } catch (err) { console.error(err); showToast('❌ ' + (err.message || err), true); }
+    console.log('[chofer agregado]', res.data);
+  } catch (err) {
+    console.error('[confirmarNuevoChofer error]', err);
+    var msg = err.message || String(err);
+    if (msg.includes('duplicate') || msg.includes('unique')) {
+      showToast('❌ ID ' + id + ' ya existe. Usa otro ID.', true);
+    } else if (msg.includes('violates') || msg.includes('policy') || msg.includes('permission')) {
+      showToast('❌ Sin permiso para agregar choferes (revisa RLS en Supabase).', true);
+    } else {
+      showToast('❌ Error al guardar: ' + msg, true);
+    }
+  }
 }
 
 async function editarNombreChofer(choferID) {
