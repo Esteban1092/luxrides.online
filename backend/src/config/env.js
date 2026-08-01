@@ -31,9 +31,10 @@ export const env = {
   groqApiKey: required('GROQ_API_KEY'),
   hotelsApiKey: optional('HOTELS_API_KEY', ''),
   hotelsApiUrl: optional('HOTELS_API_URL', ''),
-  fishStudioApiKey: optional('FISH_STUDIO_API_KEY', ''),
-  fishStudioApiUrl: optional('FISH_STUDIO_API_URL', 'https://api.fish.audio/v1/tts'),
-  fishStudioVoiceId: optional('FISH_STUDIO_VOICE_ID', ''),
+  edgeTtsVoice: optional('EDGE_TTS_VOICE', 'es-MX-DaliaNeural'),
+  edgeTtsRate: optional('EDGE_TTS_RATE', '+0%'),
+  edgeTtsPitch: optional('EDGE_TTS_PITCH', '+0Hz'),
+  edgeTtsVolume: optional('EDGE_TTS_VOLUME', '+0%'),
 
   supabaseUrl: required('SUPABASE_URL'),
   supabaseServiceKey: optional('SUPABASE_SERVICE_KEY', optional('SUPABASE_ANON_KEY', '')),
