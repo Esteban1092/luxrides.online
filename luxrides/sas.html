@@ -1117,7 +1117,10 @@
       .guias-scene-3{
         flex-direction:column;padding:13px 15px 12px;
         gap:8px;justify-content:flex-start;align-items:stretch;
+        pointer-events:auto;
+        touch-action:pan-y;
         overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
         background-color:#F5EDD8;
         background-image:
           linear-gradient(rgba(180,155,90,.1) 1px, transparent 1px),
@@ -1211,7 +1214,7 @@
         35%{transform:rotate(2.5deg)}
         65%{transform:rotate(-1.5deg)}
       }
-      .guias-catalog-cards{display:flex;flex-direction:column;gap:10px;max-height:345px;overflow-y:auto;padding-right:2px;}
+      .guias-catalog-cards{display:flex;flex-direction:column;gap:10px;overflow:visible;padding-right:2px;}
       .guias-card{
         background:white;border-radius:13px;
         padding:9px 13px;
