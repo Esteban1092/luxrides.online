@@ -1211,11 +1211,11 @@
         35%{transform:rotate(2.5deg)}
         65%{transform:rotate(-1.5deg)}
       }
-      .guias-catalog-cards{display:flex;flex-direction:column;gap:7px;}
+      .guias-catalog-cards{display:flex;flex-direction:column;gap:10px;max-height:345px;overflow-y:auto;padding-right:2px;}
       .guias-card{
         background:white;border-radius:13px;
         padding:9px 13px;
-        display:flex;align-items:center;gap:11px;
+        display:flex;align-items:flex-start;gap:11px;
         box-shadow:0 2px 12px rgba(0,0,0,0.06);
         border:1.5px solid rgba(0,0,0,0.05);
       }
@@ -1224,13 +1224,31 @@
         display:flex;align-items:center;justify-content:center;
         font-size:1.25rem;flex-shrink:0;
       }
-      .guias-card-title{font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:700;color:#1a1a1a;}
-      .guias-card-desc{font-family:'Outfit',sans-serif;font-size:.67rem;color:#9B9B9B;margin-top:1px;}
+      .guias-card-main{flex:1;min-width:0;}
+      .guias-card-top{display:flex;gap:8px;align-items:flex-start;}
+      .guias-card-head{flex:1;min-width:0;}
+      .guias-card-title{font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:700;color:#1a1a1a;line-height:1.25;}
+      .guias-card-desc{font-family:'Outfit',sans-serif;font-size:.67rem;color:#9B9B9B;margin-top:2px;line-height:1.35;}
       .guias-card-badge{
-        margin-left:auto;padding:3px 8px;border-radius:20px;
+        padding:3px 8px;border-radius:20px;
         font-family:'Outfit',sans-serif;font-size:.61rem;font-weight:700;
-        flex-shrink:0;
+        flex-shrink:0;white-space:nowrap;
       }
+      .guias-card-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 10px;margin-top:9px;}
+      .guias-card-meta-item{background:#FBF8F1;border:1px solid rgba(212,175,55,.16);border-radius:10px;padding:6px 8px;min-width:0;}
+      .guias-card-meta-label{font-family:'Outfit',sans-serif;font-size:.52rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#B28A2E;}
+      .guias-card-meta-value{font-family:'Outfit',sans-serif;font-size:.64rem;color:#5C564C;line-height:1.35;margin-top:2px;word-break:break-word;}
+      .guias-card-pricing{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-top:9px;}
+      .guias-card-select-wrap{min-width:0;}
+      .guias-card-select{width:100%;border:1px solid rgba(212,175,55,.24);background:#fffaf0;color:#3E3420;border-radius:10px;padding:8px 10px;font-family:'Outfit',sans-serif;font-size:.68rem;outline:none;}
+      .guias-card-pricebox{background:linear-gradient(135deg,#FFF3CD,#FFE8A3);border:1px solid rgba(212,175,55,.28);border-radius:11px;padding:7px 10px;min-width:110px;text-align:right;}
+      .guias-card-pricebox .lbl{font-family:'Outfit',sans-serif;font-size:.5rem;letter-spacing:.08em;text-transform:uppercase;color:#8D6D14;display:block;}
+      .guias-card-pricebox .val{font-family:'Playfair Display',serif;font-size:.86rem;font-weight:700;color:#6C5108;display:block;line-height:1.15;}
+      .guias-card-pricebox .sub{font-family:'Outfit',sans-serif;font-size:.56rem;color:#8A7A4E;display:block;margin-top:2px;}
+      .guias-card-contact{margin-top:8px;font-family:'Outfit',sans-serif;font-size:.62rem;color:#877A5C;line-height:1.45;}
+      .guias-status-legend{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:9px;}
+      .guias-status-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.78);border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:5px 9px;font-family:'Outfit',sans-serif;font-size:.6rem;font-weight:600;color:#645A45;}
+      .guias-status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
       .guias-coming{
         text-align:center;padding:6px 0 2px;
         font-family:'Outfit',sans-serif;font-size:.68rem;font-weight:600;
@@ -5588,33 +5606,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               </g>
             </svg>
           </div>
-          <div class="guias-catalog-cards">
-            <div class="guias-card">
-              <div class="guias-card-icon" style="background:#EAF4FF;">🏖️</div>
-              <div>
-                <div class="guias-card-title">Cancún · Tour de Playa</div>
-                <div class="guias-card-desc">Traslado VIP + recorrido costero</div>
-              </div>
-              <div class="guias-card-badge" style="background:#EAF4FF;color:#5B8BDF;">Próx.</div>
-            </div>
-            <div class="guias-card">
-              <div class="guias-card-icon" style="background:#FFF3CD;">🏛️</div>
-              <div>
-                <div class="guias-card-title">CDMX · Tour Histórico</div>
-                <div class="guias-card-desc">Centro, Chapultepec, Coyoacán</div>
-              </div>
-              <div class="guias-card-badge" style="background:#FFF3CD;color:#B8860B;">Próx.</div>
-            </div>
-            <div class="guias-card">
-              <div class="guias-card-icon" style="background:#E8F8EE;">🏔️</div>
-              <div>
-                <div class="guias-card-title">Valle de Bravo · Escapada</div>
-                <div class="guias-card-desc">Naturaleza + gastronomía local</div>
-              </div>
-              <div class="guias-card-badge" style="background:#E8F8EE;color:#2D9E6B;">Próx.</div>
-            </div>
+          <div class="guias-catalog-cards" id="guias-catalog-cards"></div>
+          <div class="guias-status-legend">
+            <span class="guias-status-chip"><span class="guias-status-dot" style="background:#22C55E"></span>Completado / Pagado</span>
+            <span class="guias-status-chip"><span class="guias-status-dot" style="background:#F59E0B"></span>Pendiente / En curso</span>
+            <span class="guias-status-chip"><span class="guias-status-dot" style="background:#EF4444"></span>No pagado / Reembolso / Cancelado</span>
           </div>
-          <div class="guias-coming">🌟 Guías interactivas — próximamente</div>
+          <div class="guias-coming">🌟 Catalogo activo LuxRides</div>
         </div>
       </div>
     </div>
@@ -5708,6 +5706,243 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       void wrap.offsetWidth;
       wrap.classList.add('guias-anim-run');
     }
+
+    const LUX_GUIAS_TOURS = [
+      {
+        id:'teotihuacan-basilica', icon:'🏛️', iconBg:'#FFF3CD',
+        title:'Piramides de Teotihuacan y Basilica de Guadalupe',
+        desc:'Calzada de los Muertos, Piramide del Sol y visita a la Basilica.',
+        duration:'7-8 horas · 8:00 AM · Diario',
+        includes:'Transporte redondo, guia bilingue y entradas a Basilica.',
+        capacidad:'3/6 disponible',
+        turista:'Pendiente de asignar',
+        estado:'Pendiente',
+        contacto:'+52 55 2772 9551 · hola@toursteotihuacan.mx · @toursteotihuacan',
+        tarifas:[
+          { label:'1 a 3 personas', price:'$4,000 MXN', note:'Tarifa base privada' },
+          { label:'4+ personas', price:'$1,600 MXN', note:'Tarifa grupo' },
+          { label:'Grupo compartido', price:'$1,350 MXN p/p', note:'Por persona' }
+        ]
+      },
+      {
+        id:'globo-teotihuacan', icon:'🎈', iconBg:'#EAF4FF',
+        title:'Vuelo en Globo sobre Teotihuacan',
+        desc:'Vuelo al amanecer sobre la Ciudad de los Dioses con desayuno.',
+        duration:'4-5 horas · 4:40 AM · Diario',
+        includes:'Transporte, vuelo compartido, bebida, brindis y desayuno.',
+        capacidad:'4/6 disponible',
+        turista:'Pendiente de asignar',
+        estado:'Pagado',
+        contacto:'+52 55 2772 9551 · LuxRides Concierge',
+        tarifas:[
+          { label:'1 a 3 personas', price:'$3,000 MXN', note:'Reserva compartida' },
+          { label:'4 a 6 personas', price:'$4,000 MXN', note:'Bloque grupal' },
+          { label:'Individual', price:'$2,400 MXN p/p', note:'Por persona' }
+        ]
+      },
+      {
+        id:'xochimilco-coyoacan-frida', icon:'🎨', iconBg:'#FDECF3',
+        title:'Xochimilco, Coyoacan y Museo Frida Kahlo',
+        desc:'Trajinera, Coyoacan, Casa Azul, UNAM y Estadio Olimpico 68.',
+        duration:'7 horas · 9:00 AM · Mar-Dom',
+        includes:'Transporte, guia bilingue, museo y trajinera (1 h).',
+        capacidad:'5/6 disponible',
+        turista:'Turista asignado: Sofia M.',
+        estado:'En curso',
+        contacto:'+52 55 2772 9551 · LuxRides Concierge',
+        tarifas:[
+          { label:'1 a 3 personas', price:'$4,400 MXN', note:'Servicio personalizado' },
+          { label:'4+ personas', price:'$1,700 MXN', note:'Servicio personalizado' },
+          { label:'Grupo compartido', price:'$1,150 MXN p/p', note:'Por persona' }
+        ]
+      },
+      {
+        id:'taxco-cuernavaca', icon:'⛪', iconBg:'#F7E8FF',
+        title:'Taxco y Cuernavaca',
+        desc:'Centro historico, Santa Prisca, calles empedradas y plateria.',
+        duration:'11 horas · 7:30 AM · Diario',
+        includes:'Transporte, seguro, guia y entradas. Minimo 5 personas.',
+        capacidad:'2/6 disponible',
+        turista:'Pendiente de asignar',
+        estado:'No pagado',
+        contacto:'+52 55 2772 9551 · LuxRides Concierge',
+        tarifas:[
+          { label:'1 a 3 personas', price:'$8,000 MXN', note:'Tarifa privada' },
+          { label:'4 a 6 personas', price:'$12,000 MXN', note:'Grupo completo' }
+        ]
+      },
+      {
+        id:'puebla-cholula', icon:'🌋', iconBg:'#E8F8EE',
+        title:'Puebla y Cholula',
+        desc:'Joya colonial y la piramide mas grande del mundo.',
+        duration:'Salida programada · Consultar horario',
+        includes:'Experiencia cultural y traslado ejecutivo.',
+        capacidad:'Disponible',
+        turista:'Turista asignado: Reserva corporate',
+        estado:'Pagado',
+        contacto:'+52 55 2772 9551 · LuxRides Concierge',
+        tarifas:[
+          { label:'1 a 3 personas', price:'$7,000 MXN', note:'Tarifa privada' },
+          { label:'4 a 6 personas', price:'$11,000 MXN', note:'Grupo completo' }
+        ]
+      },
+      {
+        id:'san-miguel', icon:'🏰', iconBg:'#FFF0E1',
+        title:'San Miguel de Allende',
+        desc:'Arte, historia y cultura colonial en un viaje de un dia.',
+        duration:'11 horas · Sabados · 7:00 AM',
+        includes:'Transporte, guia bilingue y entradas.',
+        capacidad:'3/6 disponible',
+        turista:'Pendiente de asignar',
+        estado:'Pendiente',
+        contacto:'+52 55 2772 9551 · hola@sitioincreible.com',
+        tarifas:[
+          { label:'1 a 3 personas', price:'$9,000 MXN', note:'Tarifa privada' },
+          { label:'4 a 6 personas', price:'$12,000 MXN', note:'Grupo completo' }
+        ]
+      },
+      {
+        id:'city-tour-cdmx', icon:'🏙️', iconBg:'#EAF4FF',
+        title:'City Tour Ciudad de Mexico',
+        desc:'Centro historico y Museo Nacional de Antropologia.',
+        duration:'4-5 horas · 9:00 AM · Diario excepto lunes',
+        includes:'Transporte con entretenimiento, guia certificado y museo.',
+        capacidad:'En ruta',
+        turista:'Turista asignado: Daniel R.',
+        estado:'Completado',
+        contacto:'+52 55 2772 9551 · LuxRides Concierge',
+        tarifas:[
+          { label:'3 horas', price:'$2,100 MXN', note:'Minimo 3 horas' },
+          { label:'4 horas', price:'$2,800 MXN', note:'$700 MXN por hora' },
+          { label:'5 horas', price:'$3,500 MXN', note:'Tarifa extendida' }
+        ]
+      },
+      {
+        id:'mariposa-valle', icon:'🦋', iconBg:'#FFF7D8',
+        title:'Mariposa Monarca y Valle de Bravo',
+        desc:'Santuario invernal y recorrido por presa Miguel Aleman.',
+        duration:'11-12 horas · Desde 20 Nov · Minimo 5 personas',
+        includes:'Temporada invernal, tour panoramico y traslado ejecutivo.',
+        capacidad:'Lleno',
+        turista:'Turista asignado: Grupo Valle Winter',
+        estado:'Pagado',
+        contacto:'+52 55 2772 9551 · LuxRides Concierge',
+        tarifas:[
+          { label:'1 a 3 personas', price:'$9,000 MXN', note:'Tarifa privada' },
+          { label:'4 a 6 personas', price:'$12,500 MXN', note:'Grupo completo' }
+        ]
+      },
+      {
+        id:'avandaro-refugio', icon:'🌲', iconBg:'#E8F8EE',
+        title:'Avandaro - Valle de Bravo',
+        desc:'Naturaleza, desconexion y refugio premium en Avandaro.',
+        duration:'Salida flexible · Consultar agenda',
+        includes:'Traslado ejecutivo y experiencia de descanso premium.',
+        capacidad:'Disponible',
+        turista:'Pendiente de asignar',
+        estado:'Reserva rechazada',
+        contacto:'+52 55 2772 9551 · LuxRides Concierge',
+        tarifas:[
+          { label:'1 a 3 personas', price:'$7,000 MXN', note:'Tarifa privada' },
+          { label:'4 a 6 personas', price:'$9,500 MXN', note:'Grupo completo' }
+        ]
+      },
+      {
+        id:'transporte-ejecutivo', icon:'🚘', iconBg:'#F3F1FF',
+        title:'Servicios de Transporte Ejecutivo',
+        desc:'Sedan VIP y SUV de lujo para aeropuerto, hospital, distrito y concierge.',
+        duration:'24/7 · Bajo disponibilidad',
+        includes:'Traslados, snacks, apoyo administrativo y atencion ejecutiva.',
+        capacidad:'Disponible ahora',
+        turista:'Turista asignado: Pendiente de definir',
+        estado:'En curso',
+        contacto:'+52 55 2772 9551 · luxrides@luxrides.online',
+        tarifas:[
+          { label:'Sedan VIP', price:'Cotizacion', note:'Tarifa segun ruta' },
+          { label:'SUV de lujo', price:'Cotizacion', note:'Escalade o similar' },
+          { label:'Airport / Medical', price:'Cotizacion', note:'Servicio especializado' }
+        ]
+      }
+    ];
+
+    var _guiasTourSelections = {};
+
+    function _guiasEscapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function _guiasStatusStyle(status) {
+      var key = String(status || '').toLowerCase();
+      if (key === 'completado' || key === 'pagado') {
+        return { bg:'#E8F8EE', fg:'#2D9E6B' };
+      }
+      if (key === 'pendiente' || key === 'en curso') {
+        return { bg:'#FFF3CD', fg:'#B7791F' };
+      }
+      return { bg:'#FDECEC', fg:'#C0392B' };
+    }
+
+    function renderGuiasCatalogo() {
+      var wrap = document.getElementById('guias-catalog-cards');
+      if (!wrap) return;
+
+      wrap.innerHTML = LUX_GUIAS_TOURS.map(function(tour, index) {
+        var selectedIndex = Number(_guiasTourSelections[tour.id] || 0);
+        if (!tour.tarifas[selectedIndex]) selectedIndex = 0;
+        var tarifa = tour.tarifas[selectedIndex];
+        var statusStyle = _guiasStatusStyle(tour.estado);
+        var options = tour.tarifas.map(function(item, itemIndex) {
+          return '<option value="' + itemIndex + '"' + (itemIndex === selectedIndex ? ' selected' : '') + '>' +
+            _guiasEscapeHtml(item.label) + '</option>';
+        }).join('');
+
+        return '' +
+          '<div class="guias-card">' +
+            '<div class="guias-card-icon" style="background:' + _guiasEscapeHtml(tour.iconBg) + ';">' + _guiasEscapeHtml(tour.icon) + '</div>' +
+            '<div class="guias-card-main">' +
+              '<div class="guias-card-top">' +
+                '<div class="guias-card-head">' +
+                  '<div class="guias-card-title">' + _guiasEscapeHtml((index + 1) + '. ' + tour.title) + '</div>' +
+                  '<div class="guias-card-desc">' + _guiasEscapeHtml(tour.desc) + '</div>' +
+                '</div>' +
+                '<div class="guias-card-badge" style="background:' + statusStyle.bg + ';color:' + statusStyle.fg + ';">' + _guiasEscapeHtml(tour.estado) + '</div>' +
+              '</div>' +
+              '<div class="guias-card-meta">' +
+                '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Duracion</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.duration) + '</div></div>' +
+                '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Cupo</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.capacidad) + '</div></div>' +
+                '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Incluye</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.includes) + '</div></div>' +
+                '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Turista asignado</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.turista) + '</div></div>' +
+              '</div>' +
+              '<div class="guias-card-pricing">' +
+                '<div class="guias-card-select-wrap">' +
+                  '<div class="guias-card-meta-label">Pasajeros / tarifa</div>' +
+                  '<select class="guias-card-select" data-tour-id="' + _guiasEscapeHtml(tour.id) + '">' + options + '</select>' +
+                '</div>' +
+                '<div class="guias-card-pricebox">' +
+                  '<span class="lbl">Precio</span>' +
+                  '<span class="val">' + _guiasEscapeHtml(tarifa.price) + '</span>' +
+                  '<span class="sub">' + _guiasEscapeHtml(tarifa.note) + '</span>' +
+                '</div>' +
+              '</div>' +
+              '<div class="guias-card-contact">Contacto: ' + _guiasEscapeHtml(tour.contacto) + '</div>' +
+            '</div>' +
+          '</div>';
+      }).join('');
+
+      Array.prototype.forEach.call(wrap.querySelectorAll('.guias-card-select'), function(selectEl) {
+        selectEl.addEventListener('change', function() {
+          _guiasTourSelections[this.getAttribute('data-tour-id')] = this.value;
+          renderGuiasCatalogo();
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', renderGuiasCatalogo);
 
     // ===== AUTO-DETECCIÓN DE IDIOMA =====
     // Conecta navigator.language al sistema existente I18N + aplicarIdioma()
