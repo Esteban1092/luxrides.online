@@ -22,7 +22,7 @@ function normalizeLang(lang) {
 
 function pickVoice(lang) {
   const base = normalizeLang(lang);
-  return DEFAULT_VOICE_BY_LANG[base] || env.edgeTtsVoice || DEFAULT_VOICE_BY_LANG.es;
+  return env.edgeTtsVoice || DEFAULT_VOICE_BY_LANG[base] || DEFAULT_VOICE_BY_LANG.es;
 }
 
 function pickLocale(lang) {

@@ -6440,6 +6440,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
         function _isLocalHost(h){ return h === 'localhost' || h === '127.0.0.1' || h === '::1'; }
         function _hostFromUrl(u){ try { return new URL(u, location.origin).hostname || ''; } catch(e){ return ''; } }
         function _normalizeBase(u){ return String(u || '').trim().replace(/\/+$/, ''); }
+        var lang = _luxLangNow();
 
         var currentIsLocal = _isLocalHost(location.hostname);
         var configuredBase = _normalizeBase((window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || '');
@@ -6467,7 +6468,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
             var r = await fetch(base + '/api/lovox/speak', {
               method: 'POST',
               headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({ text: text }),
+              body: JSON.stringify({ text: text, lang: lang }),
               signal: AbortSignal.timeout(15000)
             });
             var d = await r.json().catch(function(){ return {}; });

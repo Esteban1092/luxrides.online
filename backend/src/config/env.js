@@ -32,8 +32,8 @@ export const env = {
   hotelsApiKey: optional('HOTELS_API_KEY', ''),
   hotelsApiUrl: optional('HOTELS_API_URL', ''),
   edgeTtsVoice: optional('EDGE_TTS_VOICE', 'es-MX-DaliaNeural'),
-  edgeTtsRate: optional('EDGE_TTS_RATE', '+0%'),
-  edgeTtsPitch: optional('EDGE_TTS_PITCH', '+0Hz'),
+  edgeTtsRate: optional('EDGE_TTS_RATE', '-8%'),
+  edgeTtsPitch: optional('EDGE_TTS_PITCH', '-8Hz'),
   edgeTtsVolume: optional('EDGE_TTS_VOLUME', '+0%'),
 
   supabaseUrl: required('SUPABASE_URL'),
