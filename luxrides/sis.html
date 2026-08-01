@@ -531,10 +531,12 @@ function setBadge(id, type, text) {
 function formatNum(n) { return Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
 
 function dbGet(table, id) {
+  if (!SUPABASE) return Promise.resolve(null);
   return SUPABASE.from(table).select().eq('id', id).maybeSingle().then(function(res) { return res.data; }).catch(function(e) { console.warn('dbGet:', e); return null; });
 }
 
 function dbGetAll(table) {
+  if (!SUPABASE) return Promise.resolve([]);
   return SUPABASE.from(table).select('*').then(function(res) { return res.data || []; }).catch(function(e) { console.warn('dbGetAll:', e); return []; });
 }
 
@@ -543,10 +545,12 @@ function dbGetList(table, col, val) {
 }
 
 function dbUpdate(table, id, data) {
+  if (!SUPABASE) return Promise.reject(new Error('Supabase no inicializado. Revisa SUPABASE_URL / SUPABASE_ANON_KEY.'));
   return SUPABASE.from(table).update(data).eq('id', id);
 }
 
 async function dbInsert(table, data) {
+  if (!SUPABASE) throw new Error('Supabase no inicializado. Revisa SUPABASE_URL / SUPABASE_ANON_KEY.');
   var res = await SUPABASE.from(table).insert(data).select().single();
   if (res.error) throw new Error(res.error.message || JSON.stringify(res.error));
   return res;
@@ -1679,6 +1683,9 @@ async function confirmarNuevoChofer() {
   } catch (err) {
     console.error('[confirmarNuevoChofer error]', err);
     var msg = err.message || String(err);
+    if (/Failed to fetch|fetch/i.test(msg)) {
+      showToast('❌ No conecta con Supabase. El dominio configurado no responde.', true);
+    } else 
     if (msg.includes('duplicate') || msg.includes('unique')) {
       showToast('❌ ID ' + id + ' ya existe. Usa otro ID.', true);
     } else if (msg.includes('violates') || msg.includes('policy') || msg.includes('permission')) {
@@ -2082,6 +2089,8 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarChoferesIniciales();
     cargarGananciasTotales();
     setTimeout(function() { iniciarAppSupabase(); }, 100);
+  } else {
+    setBadge('badge-supabase', 'warn', 'Supabase: sin conexion / URL invalida');
   }
 });
 </script>
