@@ -4,6 +4,21 @@ import { requireAdminSession } from '../middleware/admin-auth.js';
 
 const router = Router();
 
+const CHOFER_ALLOWED_FIELDS = new Set([
+  'id',
+  'nombre',
+  'hotel',
+  'estado',
+  'creado_en',
+  'vehiculo_tipo',
+  'vehiculo_marca',
+  'vehiculo_modelo',
+  'vehiculo_color',
+  'placa',
+  'ubicacion',
+  'viaje_actual'
+]);
+
 function supabaseHeaders(preferRepresentation = false) {
   const headers = {
     apikey: env.supabaseServiceKey,
@@ -27,21 +42,19 @@ async function supabaseRequest(path, options = {}) {
 }
 
 function normalizeChofer(input) {
-  return {
-    id: String(input?.id || '').trim(),
-    nombre: String(input?.nombre || '').trim(),
-    hotel: String(input?.hotel || 'Sin hotel').trim() || 'Sin hotel',
-    estado: String(input?.estado || 'offline').trim() || 'offline',
-    creado_en: input?.creado_en || new Date().toISOString(),
-    updated_at: input?.updated_at || new Date().toISOString(),
-    vehiculo_tipo: input?.vehiculo_tipo || null,
-    vehiculo_marca: input?.vehiculo_marca || null,
-    vehiculo_modelo: input?.vehiculo_modelo || null,
-    vehiculo_color: input?.vehiculo_color || null,
-    placa: input?.placa || null,
-    ubicacion: input?.ubicacion || null,
-    viaje_actual: input?.viaje_actual || null
-  };
+  const out = {};
+  for (const [key, value] of Object.entries(input || {})) {
+    if (!CHOFER_ALLOWED_FIELDS.has(key)) continue;
+    out[key] = value;
+  }
+
+  out.id = String(out.id || '').trim();
+  out.nombre = String(out.nombre || '').trim();
+  out.hotel = String(out.hotel || 'Sin hotel').trim() || 'Sin hotel';
+  out.estado = String(out.estado || 'offline').trim() || 'offline';
+  out.creado_en = out.creado_en || new Date().toISOString();
+
+  return out;
 }
 
 router.use('/admin/choferes', requireAdminSession);
@@ -101,9 +114,15 @@ router.patch('/admin/choferes/:id', async (req, res, next) => {
     const idRaw = String(req.params.id || '').trim();
     if (!idRaw) return res.status(400).json({ ok: false, error: 'ID invalido' });
 
-    const patch = { ...(req.body || {}) };
-    delete patch.id;
-    patch.updated_at = new Date().toISOString();
+    const patch = {};
+    for (const [key, value] of Object.entries(req.body || {})) {
+      if (key === 'id') continue;
+      if (!CHOFER_ALLOWED_FIELDS.has(key)) continue;
+      patch[key] = value;
+    }
+    if (!Object.keys(patch).length) {
+      return res.status(400).json({ ok: false, error: 'No hay campos validos para actualizar.' });
+    }
 
     const rows = await supabaseRequest('choferes?id=eq.' + encodeURIComponent(idRaw), {
       method: 'PATCH',
