@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Despacho LuxRides</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"/>
-  <script src="config.js"></script>
+  <script src="config.js?v=20260801a"></script>
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -1784,7 +1784,7 @@ async function confirmarNuevoChofer() {
     console.error('[confirmarNuevoChofer error]', err);
     var msg = err.message || String(err);
     if (/Failed to fetch|fetch/i.test(msg)) {
-      showToast('❌ No conecta con el servidor API (revisa internet o sesión admin).', true);
+      showToast('❌ No conecta con Supabase. El dominio configurado no responde.', true);
     } else 
     if (msg.includes('duplicate') || msg.includes('unique')) {
       showToast('❌ ID ' + id + ' ya existe. Usa otro ID.', true);
