@@ -1232,12 +1232,7 @@
       .guias-card-head{flex:1;min-width:0;}
       .guias-card-title{font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:700;color:#1a1a1a;line-height:1.25;}
       .guias-card-desc{font-family:'Outfit',sans-serif;font-size:.67rem;color:#9B9B9B;margin-top:2px;line-height:1.35;}
-      .guias-card-badge{
-        padding:3px 8px;border-radius:20px;
-        font-family:'Outfit',sans-serif;font-size:.61rem;font-weight:700;
-        flex-shrink:0;white-space:nowrap;
-      }
-      .guias-card-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 10px;margin-top:9px;}
+      .guias-card-meta{display:grid;grid-template-columns:minmax(0,1fr);gap:7px 10px;margin-top:9px;}
       .guias-card-meta-item{background:#FBF8F1;border:1px solid rgba(212,175,55,.16);border-radius:10px;padding:6px 8px;min-width:0;}
       .guias-card-meta-label{font-family:'Outfit',sans-serif;font-size:.52rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#B28A2E;}
       .guias-card-meta-value{font-family:'Outfit',sans-serif;font-size:.64rem;color:#5C564C;line-height:1.35;margin-top:2px;word-break:break-word;}
@@ -1248,10 +1243,13 @@
       .guias-card-pricebox .lbl{font-family:'Outfit',sans-serif;font-size:.5rem;letter-spacing:.08em;text-transform:uppercase;color:#8D6D14;display:block;}
       .guias-card-pricebox .val{font-family:'Playfair Display',serif;font-size:.86rem;font-weight:700;color:#6C5108;display:block;line-height:1.15;}
       .guias-card-pricebox .sub{font-family:'Outfit',sans-serif;font-size:.56rem;color:#8A7A4E;display:block;margin-top:2px;}
+      .guias-card-paynote{margin-top:8px;background:#F7F2E4;border:1px solid rgba(212,175,55,.14);color:#7B6430;border-radius:10px;padding:8px 10px;font-family:'Outfit',sans-serif;font-size:.64rem;line-height:1.35;}
+      .guias-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;}
+      .guias-card-btn{flex:1;min-width:140px;border:none;border-radius:11px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:.69rem;font-weight:700;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease;}
+      .guias-card-btn:hover{transform:translateY(-1px);}
+      .guias-card-btn.pay{background:#635BFF;color:#fff;box-shadow:0 8px 22px rgba(99,91,255,.18);}
+      .guias-card-btn.quote{background:#F2E8C9;color:#7E5F10;}
       .guias-card-contact{margin-top:8px;font-family:'Outfit',sans-serif;font-size:.62rem;color:#877A5C;line-height:1.45;}
-      .guias-status-legend{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:9px;}
-      .guias-status-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.78);border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:5px 9px;font-family:'Outfit',sans-serif;font-size:.6rem;font-weight:600;color:#645A45;}
-      .guias-status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
       .guias-coming{
         text-align:center;padding:6px 0 2px;
         font-family:'Outfit',sans-serif;font-size:.68rem;font-weight:600;
@@ -3582,11 +3580,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       async function abrirPagoStripe(){
-        if (!resultado || !resultado.totalPrecio) {
+        var montoBase = _stripeTourContext ? _stripeTourContext.amount : (resultado && resultado.totalPrecio);
+        if (!montoBase) {
           alert('Primero calcula el precio del servicio.');
           return;
         }
-        stripeMontoActual = resultado.totalPrecio;
+        stripeMontoActual = montoBase;
         document.getElementById('stripe-monto-display').textContent = '$' + stripeMontoActual.toLocaleString('es-MX');
 
         const modal = document.getElementById('stripe-modal');
@@ -3635,6 +3634,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       function cerrarPagoStripe(){
         document.getElementById('stripe-modal').style.display = 'none';
+        _stripeTourContext = null;
       }
 
       async function procesarPagoStripe(){
@@ -3659,8 +3659,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
         if (!STRIPE_PK || !stripeInstance || !stripeCardElement) {
           const nombre  = (document.getElementById('inp-nombre').value || '').trim() || nombreTitular;
-          const origen  = coordOrigen  ? coordOrigen.display  : '—';
-          const destino = coordDestino ? coordDestino.display : '—';
+          const origen  = _stripeTourContext ? 'Tour LuxRides' : (coordOrigen  ? coordOrigen.display  : '—');
+          const destino = _stripeTourContext ? _stripeTourContext.title : (coordDestino ? coordDestino.display : '—');
           const msg = encodeURIComponent(
             '💳 *Solicitud de pago LuxRides*\n' +
             '👤 Cliente: ' + nombre + '\n' +
@@ -3695,8 +3695,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           // Llamar al backend para cobrar
           const base = (window.LuxCfg && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
           const nombre = (document.getElementById('inp-nombre').value || '').trim() || nombreTitular;
-          const origen  = coordOrigen  ? coordOrigen.display  : '—';
-          const destino = coordDestino ? coordDestino.display : '—';
+          const origen  = _stripeTourContext ? 'Tour LuxRides' : (coordOrigen  ? coordOrigen.display  : '—');
+          const destino = _stripeTourContext ? _stripeTourContext.title : (coordDestino ? coordDestino.display : '—');
+          const descripcionPago = _stripeTourContext
+            ? ('Tour LuxRides: ' + _stripeTourContext.title + ' · ' + _stripeTourContext.tarifaLabel)
+            : ('LuxRides: ' + origen + ' → ' + destino);
 
           const pagoRes = await fetch(base + '/api/stripe/pagar', {
             method: 'POST',
@@ -3706,7 +3709,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               monto: stripeMontoActual,
               nombre: nombreTitular,
               email: emailCliente,
-              descripcion: 'LuxRides: ' + origen + ' → ' + destino
+              descripcion: descripcionPago
             })
           });
           const pagoData = await pagoRes.json().catch(() => ({}));
@@ -3723,10 +3726,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               hora_recogida: document.getElementById('inp-hora').value + ':' + (document.getElementById('inp-min').value||'00').toString().padStart(2,'0') + ' ' + ampm,
               total: stripeMontoActual,
               estado: 'pagado',
-              servicio,
-              vehiculo: pasajeros <= 3 ? 'Sedán VIP Diamond' : 'SUV Platinum Diamond',
+              servicio: _stripeTourContext ? 'G' : servicio,
+              vehiculo: _stripeTourContext ? ('Tour · ' + _stripeTourContext.tarifaLabel) : (pasajeros <= 3 ? 'Sedán VIP Diamond' : 'SUV Platinum Diamond'),
               timestamp: new Date().toISOString()
             });
+            _stripeTourContext = null;
             return;
           }
 
@@ -5610,11 +5614,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             </svg>
           </div>
           <div class="guias-catalog-cards" id="guias-catalog-cards"></div>
-          <div class="guias-status-legend">
-            <span class="guias-status-chip"><span class="guias-status-dot" style="background:#22C55E"></span>Completado / Pagado</span>
-            <span class="guias-status-chip"><span class="guias-status-dot" style="background:#F59E0B"></span>Pendiente / En curso</span>
-            <span class="guias-status-chip"><span class="guias-status-dot" style="background:#EF4444"></span>No pagado / Reembolso / Cancelado</span>
-          </div>
           <div class="guias-coming">🌟 Catalogo activo LuxRides</div>
         </div>
       </div>
@@ -5869,6 +5868,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
     ];
 
     var _guiasTourSelections = {};
+    var _stripeTourContext = null;
 
     function _guiasEscapeHtml(value) {
       return String(value || '')
@@ -5879,15 +5879,38 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         .replace(/'/g, '&#39;');
     }
 
-    function _guiasStatusStyle(status) {
-      var key = String(status || '').toLowerCase();
-      if (key === 'completado' || key === 'pagado') {
-        return { bg:'#E8F8EE', fg:'#2D9E6B' };
+    function _guiasParseAmount(value) {
+      var match = String(value || '').replace(/,/g, '').match(/\$\s*([0-9]+(?:\.[0-9]{1,2})?)/);
+      return match ? Number(match[1]) : null;
+    }
+
+    function abrirPagoTourStripe(tourId) {
+      var tour = LUX_GUIAS_TOURS.find(function(item){ return item.id === tourId; });
+      if (!tour) return;
+      var selectedIndex = Number(_guiasTourSelections[tour.id] || 0);
+      var tarifa = tour.tarifas[selectedIndex] || tour.tarifas[0];
+      var amount = _guiasParseAmount(tarifa && tarifa.price);
+      if (!amount) {
+        mostrarToast('Este tour requiere cotizacion antes del pago.', 'err');
+        return;
       }
-      if (key === 'pendiente' || key === 'en curso') {
-        return { bg:'#FFF3CD', fg:'#B7791F' };
-      }
-      return { bg:'#FDECEC', fg:'#C0392B' };
+      _stripeTourContext = {
+        id: tour.id,
+        title: tour.title,
+        tarifaLabel: tarifa.label,
+        tarifaNote: tarifa.note,
+        amount: amount,
+        contacto: tour.contacto
+      };
+      abrirPagoStripe();
+    }
+
+    function solicitarCotizacionTour(tourId) {
+      var tour = LUX_GUIAS_TOURS.find(function(item){ return item.id === tourId; });
+      if (!tour) return;
+      var numeroCentral = normalizarNumeroWhatsApp(WHATSAPP_CENTRAL);
+      var msg = encodeURIComponent('Hola, quiero cotizar el tour: ' + tour.title + '.');
+      abrirWhatsAppSeguro(numeroCentral, msg, null);
     }
 
     function renderGuiasCatalogo() {
@@ -5898,7 +5921,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         var selectedIndex = Number(_guiasTourSelections[tour.id] || 0);
         if (!tour.tarifas[selectedIndex]) selectedIndex = 0;
         var tarifa = tour.tarifas[selectedIndex];
-        var statusStyle = _guiasStatusStyle(tour.estado);
+        var payAmount = _guiasParseAmount(tarifa.price);
         var options = tour.tarifas.map(function(item, itemIndex) {
           return '<option value="' + itemIndex + '"' + (itemIndex === selectedIndex ? ' selected' : '') + '>' +
             _guiasEscapeHtml(item.label) + '</option>';
@@ -5913,13 +5936,10 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
                   '<div class="guias-card-title">' + _guiasEscapeHtml((index + 1) + '. ' + tour.title) + '</div>' +
                   '<div class="guias-card-desc">' + _guiasEscapeHtml(tour.desc) + '</div>' +
                 '</div>' +
-                '<div class="guias-card-badge" style="background:' + statusStyle.bg + ';color:' + statusStyle.fg + ';">' + _guiasEscapeHtml(tour.estado) + '</div>' +
               '</div>' +
               '<div class="guias-card-meta">' +
                 '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Duracion</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.duration) + '</div></div>' +
-                '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Cupo</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.capacidad) + '</div></div>' +
                 '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Incluye</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.includes) + '</div></div>' +
-                '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Turista asignado</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.turista) + '</div></div>' +
               '</div>' +
               '<div class="guias-card-pricing">' +
                 '<div class="guias-card-select-wrap">' +
@@ -5931,6 +5951,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
                   '<span class="val">' + _guiasEscapeHtml(tarifa.price) + '</span>' +
                   '<span class="sub">' + _guiasEscapeHtml(tarifa.note) + '</span>' +
                 '</div>' +
+              '</div>' +
+              '<div class="guias-card-paynote">Pago anticipado requerido para confirmar este tour.</div>' +
+              '<div class="guias-card-actions">' +
+                (payAmount
+                  ? '<button class="guias-card-btn pay" onclick="abrirPagoTourStripe(\'' + _guiasEscapeHtml(tour.id) + '\')">💳 Pagar con Stripe</button>'
+                  : '<button class="guias-card-btn quote" onclick="solicitarCotizacionTour(\'' + _guiasEscapeHtml(tour.id) + '\')">📝 Solicitar cotizacion</button>') +
               '</div>' +
               '<div class="guias-card-contact">Contacto: ' + _guiasEscapeHtml(tour.contacto) + '</div>' +
             '</div>' +

@@ -31,6 +31,7 @@ export const env = {
   groqApiKey: required('GROQ_API_KEY'),
   hotelsApiKey: optional('HOTELS_API_KEY', ''),
   hotelsApiUrl: optional('HOTELS_API_URL', ''),
+  stripeSecretKey: optional('STRIPE_SECRET_KEY', ''),
   edgeTtsVoice: optional('EDGE_TTS_VOICE', 'es-MX-DaliaNeural'),
   edgeTtsRate: optional('EDGE_TTS_RATE', '-8%'),
   edgeTtsPitch: optional('EDGE_TTS_PITCH', '-8Hz'),
