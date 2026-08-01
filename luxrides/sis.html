@@ -596,6 +596,14 @@ function dbUpdate(table, id, data) {
       return { data: res.data || null, error: null };
     });
   }
+  if (table === 'historial') {
+    return adminApi('/admin/historial/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      body: JSON.stringify(data || {})
+    }).then(function(res) {
+      return { data: res.data || null, error: null };
+    });
+  }
   if (!SUPABASE) return Promise.reject(new Error('Supabase no inicializado. Revisa SUPABASE_URL / SUPABASE_ANON_KEY.'));
   return SUPABASE.from(table).update(data).eq('id', id);
 }
@@ -607,6 +615,20 @@ async function dbInsert(table, data) {
       body: JSON.stringify(data || {})
     });
     return { data: out.data || null, error: null };
+  }
+  if (table === 'viajes') {
+    var outViaje = await adminApi('/admin/viajes', {
+      method: 'POST',
+      body: JSON.stringify(data || {})
+    });
+    return { data: outViaje.data || null, error: null };
+  }
+  if (table === 'push_notifications') {
+    var outPush = await adminApi('/admin/push-notifications', {
+      method: 'POST',
+      body: JSON.stringify(data || {})
+    });
+    return { data: outPush.data || null, error: null };
   }
   if (!SUPABASE) throw new Error('Supabase no inicializado. Revisa SUPABASE_URL / SUPABASE_ANON_KEY.');
   var res = await SUPABASE.from(table).insert(data).select().single();
@@ -622,6 +644,13 @@ function dbDelete(table, id) {
       return { error: null };
     });
   }
+  if (table === 'historial') {
+    return adminApi('/admin/historial/' + encodeURIComponent(id), {
+      method: 'DELETE'
+    }).then(function() {
+      return { error: null };
+    });
+  }
   return SUPABASE.from(table).delete().eq('id', id);
 }
 
@@ -629,13 +658,19 @@ function dbGetReserva(reservaId) {
   return SUPABASE.from('reservas').select().eq('reserva_id', reservaId).maybeSingle().then(function(res) { return res.data; }).catch(function(e) { console.warn('dbGetReserva:', e); return null; });
 }
 function dbUpdateReserva(reservaId, data) {
-  return SUPABASE.from('reservas').update(data).eq('reserva_id', reservaId);
+  return adminApi('/admin/reservas/' + encodeURIComponent(reservaId), {
+    method: 'PATCH',
+    body: JSON.stringify(data || {})
+  }).then(function(res) {
+    return { data: res.data || null, error: null };
+  });
 }
 async function dbDeleteReserva(reservaId) {
-  try {
-    await SUPABASE.from('viajes').delete().eq('reserva_id', reservaId);
-  } catch(e) { console.warn('dbDeleteReserva viajes:', e); }
-  return SUPABASE.from('reservas').delete().eq('reserva_id', reservaId);
+  return adminApi('/admin/reservas/' + encodeURIComponent(reservaId), {
+    method: 'DELETE'
+  }).then(function() {
+    return { error: null };
+  });
 }
 
 function dbSubscribe(table, filterCol, filterVal, eventType, cb) {
@@ -1811,34 +1846,10 @@ async function borrarReservaForzada(reservaId) {
 
   try {
     var choferId = r ? (r.chofer_id || r.chofer_asignado || null) : null;
-    if (choferId) {
-      try {
-        await dbUpdate('choferes', choferId, { viaje_actual: null, updated_at: new Date().toISOString() });
-      } catch (e1) {
-        console.warn('borrarReservaForzada: no se pudo liberar chofer', e1);
-      }
-    }
-    try {
-      await dbUpdateReserva(reservaId, {
-        chofer_id: null,
-        chofer_asignado: null,
-        chofer_nombre: null,
-        estado: 'cancelado',
-        updated_at: new Date().toISOString()
-      });
-    } catch (e2) {
-      console.warn('borrarReservaForzada: no se pudo limpiar referencia en reserva', e2);
-    }
-    var tablasDependientes = ['viajes', 'calificaciones', 'notificaciones'];
-    for (var i = 0; i < tablasDependientes.length; i++) {
-      try {
-        await SUPABASE.from(tablasDependientes[i]).delete().eq('reserva_id', reservaId);
-      } catch (e3) {
-        console.warn('borrarReservaForzada: tabla dependiente', tablasDependientes[i], e3);
-      }
-    }
-    var del = await SUPABASE.from('reservas').delete().eq('reserva_id', reservaId);
-    if (del && del.error) throw del.error;
+    await adminApi('/admin/reservas/' + encodeURIComponent(reservaId) + '/force', {
+      method: 'DELETE',
+      body: JSON.stringify({ choferId: choferId || '' })
+    });
 
     delete reservasActivas[reservaId];
     delete reservaEstadosPrevios[reservaId];
@@ -2031,8 +2042,9 @@ async function borrarHistorialChoferAdmin() {
   var nombre = (choferesDisponibles[choferId] || {}).nombre || choferId;
   if (!window.confirm('¿Borrar historial de ' + nombre + '?')) return;
   try {
-    var items = await dbGetList('historial', 'chofer_id', choferId);
-    if (items) { for (var i = 0; i < items.length; i++) { await dbDelete('historial', items[i].id); } }
+    await adminApi('/admin/historial/chofer/' + encodeURIComponent(choferId), {
+      method: 'DELETE'
+    });
     showToast('🗑️ Historial borrado');
     cargarHistorialChofer(choferId);
   } catch (err) { showToast('❌ ' + (err.message || err), true); }
