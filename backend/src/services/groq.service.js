@@ -104,12 +104,68 @@ function shouldAttachToursCatalog(messages) {
   return /(tour|tours|teotihuacan|xochimilco|coyoacan|frida|taxco|cuernavaca|puebla|cholula|san miguel|city tour|monarca|valle de bravo|avandaro|globo|basilica|guadalupe|precio|cost|cotizacion|paquete)/.test(text);
 }
 
-function withLovoxContext(messages) {
+function shouldFetchHotelsContext(messages) {
+  const lastUser = [...messages].reverse().find((m) => String(m?.role || '').toLowerCase() === 'user');
+  const text = String(lastUser?.content || '').toLowerCase();
+  if (!text) return false;
+  return /(hotel|hoteles|hospedaje|alojamiento|zona hotelera|resort|check-?in|check-?out|habita|suite)/.test(text);
+}
+
+function normalizeHotelsPayload(data) {
+  const list = data?.results || data?.hotels || data?.items || data?.data || [];
+  if (!Array.isArray(list)) return [];
+  return list.slice(0, 8).map((h, i) => {
+    const name = h?.name || h?.hotel_name || h?.title || 'Hotel ' + (i + 1);
+    const zone = h?.zone || h?.area || h?.location || h?.city || '';
+    const price = h?.price || h?.rate || h?.nightly_price || h?.from || '';
+    return { name: String(name), zone: String(zone || ''), price: String(price || '') };
+  });
+}
+
+async function fetchHotelsContext(messages) {
+  if (!env.hotelsApiKey || !env.hotelsApiUrl) return '';
+  if (!shouldFetchHotelsContext(messages)) return '';
+  const lastUser = [...messages].reverse().find((m) => String(m?.role || '').toLowerCase() === 'user');
+  const query = String(lastUser?.content || '').trim();
+  if (!query) return '';
+
+  try {
+    const res = await fetch(env.hotelsApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + env.hotelsApiKey
+      },
+      body: JSON.stringify({ query, limit: 8 })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return '';
+    const hotels = normalizeHotelsPayload(data);
+    if (!hotels.length) return '';
+
+    const lines = hotels.map((h, idx) => {
+      const zone = h.zone ? (' | zona: ' + h.zone) : '';
+      const price = h.price ? (' | precio: ' + h.price) : '';
+      return (idx + 1) + '. ' + h.name + zone + price;
+    });
+    return 'Contexto actualizado de hoteles (API externa):\n' + lines.join('\n');
+  } catch {
+    return '';
+  }
+}
+
+async function withLovoxContext(messages) {
+  const hotelsContext = await fetchHotelsContext(messages);
   const systemContent = shouldAttachToursCatalog(messages)
     ? (LOVOX_SYSTEM_PROMPT_BASE + '\n' + LOVOX_TOURS_CATALOG)
     : LOVOX_SYSTEM_PROMPT_BASE;
+
+  const finalSystem = hotelsContext
+    ? (systemContent + '\n\n' + hotelsContext + '\n\nSi el usuario pregunta por hoteles, prioriza esta informacion.')
+    : systemContent;
+
   return [
-    { role: 'system', content: systemContent },
+    { role: 'system', content: finalSystem },
     ...messages
   ];
 }
@@ -129,7 +185,7 @@ export async function completarChat(messages) {
     },
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
-      messages: withLovoxContext(messages),
+      messages: await withLovoxContext(messages),
       max_tokens: 800,
       temperature: 0.75
     })

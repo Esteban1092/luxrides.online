@@ -29,6 +29,11 @@ export const env = {
   frontendOrigin: optional('FRONTEND_ORIGIN', 'https://luxrides.online'),
 
   groqApiKey: required('GROQ_API_KEY'),
+  hotelsApiKey: optional('HOTELS_API_KEY', ''),
+  hotelsApiUrl: optional('HOTELS_API_URL', ''),
+  fishStudioApiKey: optional('FISH_STUDIO_API_KEY', ''),
+  fishStudioApiUrl: optional('FISH_STUDIO_API_URL', 'https://api.fish.audio/v1/tts'),
+  fishStudioVoiceId: optional('FISH_STUDIO_VOICE_ID', ''),
 
   supabaseUrl: required('SUPABASE_URL'),
   supabaseServiceKey: optional('SUPABASE_SERVICE_KEY', optional('SUPABASE_ANON_KEY', '')),
