@@ -1784,7 +1784,7 @@ async function confirmarNuevoChofer() {
     console.error('[confirmarNuevoChofer error]', err);
     var msg = err.message || String(err);
     if (/Failed to fetch|fetch/i.test(msg)) {
-      showToast('❌ No conecta con Supabase. El dominio configurado no responde.', true);
+      showToast('❌ No conecta con el servidor API (revisa internet o sesión admin).', true);
     } else 
     if (msg.includes('duplicate') || msg.includes('unique')) {
       showToast('❌ ID ' + id + ' ya existe. Usa otro ID.', true);
