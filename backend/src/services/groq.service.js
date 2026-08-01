@@ -1,14 +1,19 @@
 import { env } from '../config/env.js';
 
-const LOVOX_SYSTEM_PROMPT = `
+const LOVOX_SYSTEM_PROMPT_BASE = `
 Eres Lovox, el asistente premium de LuxRides Mexico.
 Objetivo: vender y explicar servicios de transporte ejecutivo VIP y tours de lujo en CDMX, con respuestas claras, profesionales y directas.
 
 Reglas:
 - Responde en espanol por defecto, salvo que el usuario pida otro idioma.
-- Si preguntan por tours, prioriza este catalogo oficial y no inventes precios.
+- Si preguntan por tours, prioriza el catalogo oficial y no inventes precios.
 - Siempre que aplique, cierra con llamada a la accion: reservar por telefono +52 55 2772 9551.
 - Si no hay datos en el catalogo, dilo con transparencia y ofrece contactar por WhatsApp/telefono.
+
+Para consultas generales (no tours), responde breve y util para ahorrar tokens.
+`;
+
+const LOVOX_TOURS_CATALOG = `
 
 Catalogo oficial LuxRides (base comercial):
 
@@ -92,9 +97,19 @@ Sitio web: https://luxrides.online | Telefono: +52 55 2772 9551
 LuxRides Mexico (c) 2026. Todos los derechos reservados.
 `;
 
+function shouldAttachToursCatalog(messages) {
+  const lastUser = [...messages].reverse().find((m) => String(m?.role || '').toLowerCase() === 'user');
+  const text = String(lastUser?.content || '').toLowerCase();
+  if (!text) return false;
+  return /(tour|tours|teotihuacan|xochimilco|coyoacan|frida|taxco|cuernavaca|puebla|cholula|san miguel|city tour|monarca|valle de bravo|avandaro|globo|basilica|guadalupe|precio|cost|cotizacion|paquete)/.test(text);
+}
+
 function withLovoxContext(messages) {
+  const systemContent = shouldAttachToursCatalog(messages)
+    ? (LOVOX_SYSTEM_PROMPT_BASE + '\n' + LOVOX_TOURS_CATALOG)
+    : LOVOX_SYSTEM_PROMPT_BASE;
   return [
-    { role: 'system', content: LOVOX_SYSTEM_PROMPT },
+    { role: 'system', content: systemContent },
     ...messages
   ];
 }
