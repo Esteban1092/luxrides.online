@@ -5,8 +5,8 @@
      Secretos (GROQ, SMTP, ADMIN) viven SOLO en backend/.env
   ─────────────────────────────────────────────────────────────────────── */
   var CFG = {
-    SUPABASE_URL:           'https://symcauagugifzsjzwypx.supabase.co',
-    SUPABASE_ANON_KEY:      'sb_publishable_pKYjfH4R6E_nFDtvGs2isQ_SxIzhggG',
+    SUPABASE_URL:           'https://middsrnwpzdffwiewwiec.supabase.co',
+    SUPABASE_ANON_KEY:      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZGRzcm53cHpkZmZ3aWV3aWVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2OTMzMjEsImV4cCI6MjA5ODI2OTMyMX0.b794pHp-suRHl39P2oldP1Fc7JLb2-p4D5rhL9rqUpg',
     GOOGLE_MAPS_API_KEY:    'AIzaSyDr38n4Xz6bpjTzZ9aShFJvb9FvUtOggkU',
     TICKETMASTER_KEY:       '4wWDZ5aK885DEPKRT98wLSZuIKOWZMk9',
     HERE_API_KEY:           'LIn8K-l1u4qiSUI7VGcRDJ__79o=',
