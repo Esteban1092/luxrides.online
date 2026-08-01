@@ -5714,6 +5714,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         id:'teotihuacan-basilica', icon:'🏛️', iconBg:'#FFF3CD',
         title:'Piramides de Teotihuacan y Basilica de Guadalupe',
         desc:'Calzada de los Muertos, Piramide del Sol y visita a la Basilica.',
+        rutas:'Calzada de los Muertos · Pirámide del Sol · Basílica de Guadalupe',
         duration:'7-8 horas · 8:00 AM · Diario',
         includes:'Transporte redondo, guia bilingue y entradas a Basilica.',
         capacidad:'3/6 disponible',
@@ -5730,6 +5731,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         id:'globo-teotihuacan', icon:'🎈', iconBg:'#EAF4FF',
         title:'Vuelo en Globo sobre Teotihuacan',
         desc:'Vuelo al amanecer sobre la Ciudad de los Dioses con desayuno.',
+        rutas:'Amanecer sobre Teotihuacán · Vista panorámica del valle · Desayuno en el campo',
         duration:'4-5 horas · 4:40 AM · Diario',
         includes:'Transporte, vuelo compartido, bebida, brindis y desayuno.',
         capacidad:'4/6 disponible',
@@ -5746,6 +5748,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         id:'xochimilco-coyoacan-frida', icon:'🎨', iconBg:'#FDECF3',
         title:'Xochimilco, Coyoacan y Museo Frida Kahlo',
         desc:'Trajinera, Coyoacan, Casa Azul, UNAM y Estadio Olimpico 68.',
+        rutas:'Trajinera en Xochimilco · Coyoacán · Museo Frida Kahlo',
         duration:'7 horas · 9:00 AM · Mar-Dom',
         includes:'Transporte, guia bilingue, museo y trajinera (1 h).',
         capacidad:'5/6 disponible',
@@ -5762,6 +5765,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         id:'taxco-cuernavaca', icon:'⛪', iconBg:'#F7E8FF',
         title:'Taxco y Cuernavaca',
         desc:'Centro historico, Santa Prisca, calles empedradas y plateria.',
+        rutas:'Centro histórico de Taxco · Santa Prisca · Platería y miradores',
         duration:'11 horas · 7:30 AM · Diario',
         includes:'Transporte, seguro, guia y entradas. Minimo 5 personas.',
         capacidad:'2/6 disponible',
@@ -5777,6 +5781,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         id:'puebla-cholula', icon:'🌋', iconBg:'#E8F8EE',
         title:'Puebla y Cholula',
         desc:'Joya colonial y la piramide mas grande del mundo.',
+        rutas:'Puebla · Cholula · Pirámide de Cholula',
         duration:'Salida programada · Consultar horario',
         includes:'Experiencia cultural y traslado ejecutivo.',
         capacidad:'Disponible',
@@ -5792,6 +5797,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         id:'san-miguel', icon:'🏰', iconBg:'#FFF0E1',
         title:'San Miguel de Allende',
         desc:'Arte, historia y cultura colonial en un viaje de un dia.',
+        rutas:'Centro histórico de San Miguel · Callejones · Miradores y plazas',
         duration:'11 horas · Sabados · 7:00 AM',
         includes:'Transporte, guia bilingue y entradas.',
         capacidad:'3/6 disponible',
@@ -5807,6 +5813,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         id:'city-tour-cdmx', icon:'🏙️', iconBg:'#EAF4FF',
         title:'City Tour Ciudad de Mexico',
         desc:'Centro Historico, Palacio Nacional, Bellas Artes, Templo Mayor, Antropologia y Chapultepec.',
+        rutas:'Centro Histórico · Palacio Nacional · Bellas Artes · Templo Mayor · Chapultepec',
         duration:'4-5 horas · 9:00 AM · Diario excepto lunes',
         includes:'Ruta por Palacio Nacional, Museo Nacional de Antropologia, Castillo de Chapultepec, Bellas Artes, Templo Mayor, Museo de Arte Popular, MUNAL, Soumaya, Jumex, Frida Kahlo y museos clave de la ciudad.',
         capacidad:'En ruta',
@@ -5823,6 +5830,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         id:'mariposa-valle', icon:'🦋', iconBg:'#FFF7D8',
         title:'Mariposa Monarca y Valle de Bravo',
         desc:'Santuario invernal y recorrido por presa Miguel Aleman.',
+        rutas:'Santuario de la Mariposa Monarca · Valle de Bravo · Presa Miguel Alemán',
         duration:'11-12 horas · Desde 20 Nov · Minimo 5 personas',
         includes:'Temporada invernal, tour panoramico y traslado ejecutivo.',
         capacidad:'Lleno',
@@ -5838,6 +5846,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         id:'avandaro-refugio', icon:'🌲', iconBg:'#E8F8EE',
         title:'Avandaro - Valle de Bravo',
         desc:'Naturaleza, desconexion y refugio premium en Avandaro.',
+        rutas:'Avandaro · Valle de Bravo · Refugio premium',
         duration:'Salida flexible · Consultar agenda',
         includes:'Traslado ejecutivo y experiencia de descanso premium.',
         capacidad:'Disponible',
@@ -5923,6 +5932,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               '</div>' +
               '<div class="guias-card-meta">' +
                 '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Duracion</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.duration) + '</div></div>' +
+                '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Rutas</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.rutas || 'Por confirmar') + '</div></div>' +
                 '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Incluye</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.includes) + '</div></div>' +
               '</div>' +
               '<div class="guias-card-pricing">' +
