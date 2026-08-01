@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { env } from '../config/env.js';
-import { clearAdminSessionCookie, readAdminSession, setAdminSessionCookie } from '../middleware/admin-auth.js';
+import { clearAdminSessionCookie, createAdminSessionCookieValue, readAdminSession, setAdminSessionCookie } from '../middleware/admin-auth.js';
 
 const router = Router();
 
@@ -54,8 +54,10 @@ router.post('/admin/login', (req, res) => {
   }
 
   clearFailures(ip);
+  const sessionToken = createAdminSessionCookieValue();
+  res.set('Cache-Control', 'no-store');
   setAdminSessionCookie(res);
-  return res.json({ ok: true });
+  return res.json({ ok: true, sessionToken });
 });
 
 router.get('/admin/session', (req, res) => {

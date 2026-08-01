@@ -76,7 +76,16 @@ export function clearAdminSessionCookie(res) {
 
 export function readAdminSession(req) {
   const cookies = parseCookies(req);
-  return verifyAdminSessionCookieValue(cookies[ADMIN_COOKIE]);
+  const cookieSession = verifyAdminSessionCookieValue(cookies[ADMIN_COOKIE]);
+  if (cookieSession) return cookieSession;
+
+  const authHeader = String(req.headers?.authorization || '');
+  if (authHeader.toLowerCase().startsWith('bearer ')) {
+    const token = authHeader.slice(7).trim();
+    return verifyAdminSessionCookieValue(token);
+  }
+
+  return null;
 }
 
 export function requireAdminSession(req, res, next) {

@@ -439,11 +439,16 @@ var SUPABASE = null;
 try { SUPABASE = supabase.createClient(_SUPABASE_URL, _SUPABASE_KEY); } catch(e) { console.error('Supabase init:', e); }
 
 const ADMIN_SESSION_KEY = 'luxrides_admin_session';
+const ADMIN_TOKEN_KEY = 'luxrides_admin_token';
 const ADMIN_API_BASE = ((window.LuxCfg && LuxCfg.apiBaseUrl()) || 'https://luxrides.online') + '/api';
 
 async function adminApi(path, options){
   var opts = options || {};
   var headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  var token = sessionStorage.getItem(ADMIN_TOKEN_KEY) || '';
+  if (token && !headers.Authorization) {
+    headers.Authorization = 'Bearer ' + token;
+  }
   var res = await fetch(ADMIN_API_BASE + path, Object.assign({}, opts, {
     headers: headers,
     credentials: 'include'
@@ -473,6 +478,7 @@ async function intentarLogin(){
     if (res.ok && data.ok) {
       errorEl.style.display = 'none';
       sessionStorage.setItem(ADMIN_SESSION_KEY, 'ok');
+      if (data.sessionToken) sessionStorage.setItem(ADMIN_TOKEN_KEY, data.sessionToken);
       mostrarApp();
       return;
     }
@@ -499,6 +505,7 @@ async function verificarSesionAdmin(){
       return true;
     }
   } catch(e) {
+    sessionStorage.removeItem(ADMIN_TOKEN_KEY);
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
   }
   return false;
