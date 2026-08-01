@@ -6265,7 +6265,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
           <div class="iovox-hdr-btns">
             <button class="iovox-hdr-btn" onclick="abrirIdioma()" title="Cambiar idioma">🌐</button>
             <button class="iovox-hdr-btn" onclick="toggleTema()" id="iovox-tema-btn" title="Cambiar tema">☀️</button>
-            <button class="iovox-hdr-btn" onclick="toggleIovoxVoice()" id="iovox-voice-btn" title="Activar voz">🔈</button>
+            <button class="iovox-hdr-btn" id="iovox-voice-btn" title="Activar voz">🔈</button>
             <button id="iovox-close" onclick="cerrarAsistente()">✕</button>
           </div>
         </div>
@@ -6284,6 +6284,8 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
       var _iovoxBusy = false;
       var _iovoxVoiceEnabled = localStorage.getItem('lux_iovox_voice') === '1';
       var _iovoxAudio = null;
+      var _voiceCache = null;
+      var _voiceCacheAt = 0;
 
       function _hora(){
         var l = _luxLangNow();
@@ -6352,6 +6354,88 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
           .trim();
       }
 
+      function _stopAllVoice(){
+        if (_iovoxAudio) {
+          try { _iovoxAudio.pause(); } catch(_e) {}
+          _iovoxAudio = null;
+        }
+        try {
+          if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        } catch(_e) {}
+      }
+
+      function _langToBCP47(lang){
+        var l = String(lang || 'es').toLowerCase();
+        if (l === 'es') return 'es-MX';
+        if (l === 'en') return 'en-US';
+        if (l === 'pt') return 'pt-BR';
+        if (l === 'zh') return 'zh-CN';
+        if (l === 'ja') return 'ja-JP';
+        if (l === 'ko') return 'ko-KR';
+        if (l === 'ar') return 'ar-SA';
+        if (l === 'ru') return 'ru-RU';
+        return l + '-' + l.toUpperCase();
+      }
+
+      function _getVoices(){
+        if (!('speechSynthesis' in window)) return [];
+        var now = Date.now();
+        if (_voiceCache && (now - _voiceCacheAt) < 4000) return _voiceCache;
+        var list = window.speechSynthesis.getVoices() || [];
+        _voiceCache = list;
+        _voiceCacheAt = now;
+        return list;
+      }
+
+      function _chooseNaturalVoice(lang){
+        var voices = _getVoices();
+        if (!voices.length) return null;
+        var target = _langToBCP47(lang);
+        var targetPrefix = target.split('-')[0].toLowerCase();
+        var preferredNames = {
+          'es': ['paulina','monica','google español','google espanol','helena','soledad','carmen','sabina'],
+          'en': ['samantha','victoria','karen','google us english','aria','jenny'],
+          'pt': ['luciana','vitoria'],
+          'fr': ['amelie','audrey'],
+          'de': ['anna','petra'],
+          'it': ['alice','federica']
+        };
+
+        var exact = voices.filter(function(v){ return String(v.lang||'').toLowerCase() === target.toLowerCase(); });
+        var sameLang = voices.filter(function(v){ return String(v.lang||'').toLowerCase().indexOf(targetPrefix) === 0; });
+        var pool = exact.length ? exact : (sameLang.length ? sameLang : voices);
+
+        var wanted = preferredNames[targetPrefix] || [];
+        for (var i = 0; i < wanted.length; i++) {
+          var key = wanted[i];
+          var hit = pool.find(function(v){ return String(v.name||'').toLowerCase().indexOf(key) !== -1; });
+          if (hit) return hit;
+        }
+
+        var local = pool.find(function(v){ return !!v.localService; });
+        return local || pool[0] || null;
+      }
+
+      function _speakWithBrowserTTS(msg){
+        try {
+          if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return false;
+          _stopAllVoice();
+          var utter = new SpeechSynthesisUtterance(msg);
+          var langCode = (window._luxLang || localStorage.getItem('lux_idioma') || 'es').toLowerCase();
+          var bcp47 = _langToBCP47(langCode);
+          utter.lang = bcp47;
+          var voice = _chooseNaturalVoice(langCode);
+          if (voice) utter.voice = voice;
+          utter.rate = 0.95;
+          utter.pitch = 1.02;
+          utter.volume = 1;
+          window.speechSynthesis.speak(utter);
+          return true;
+        } catch (_e) {
+          return false;
+        }
+      }
+
       async function _callSpeakAPI(text){
         function _isLocalHost(h){ return h === 'localhost' || h === '127.0.0.1' || h === '::1'; }
         function _hostFromUrl(u){ try { return new URL(u, location.origin).hostname || ''; } catch(e){ return ''; } }
@@ -6401,30 +6485,11 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
         var clean = _speechText(text);
         if (!clean) return;
 
-        function _speakWithBrowserTTS(msg){
-          try {
-            if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return false;
-            window.speechSynthesis.cancel();
-            var utter = new SpeechSynthesisUtterance(msg);
-            var lang = (window._luxLang || localStorage.getItem('lux_idioma') || 'es').toLowerCase();
-            utter.lang = (lang === 'es') ? 'es-MX' : (lang + '-' + lang.toUpperCase());
-            utter.rate = 1;
-            utter.pitch = 1;
-            utter.volume = 1;
-            window.speechSynthesis.speak(utter);
-            return true;
-          } catch (_e) {
-            return false;
-          }
-        }
-
         try {
           var out = await _callSpeakAPI(clean);
           var mime = out.mimeType || 'audio/mpeg';
           var src = 'data:' + mime + ';base64,' + out.audioBase64;
-          if (_iovoxAudio) {
-            try { _iovoxAudio.pause(); } catch(_e) {}
-          }
+          _stopAllVoice();
           _iovoxAudio = new Audio(src);
           _iovoxAudio.play().catch(function(e){
             console.warn('No se pudo reproducir audio remoto:', e);
@@ -6440,9 +6505,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
         _iovoxVoiceEnabled = !_iovoxVoiceEnabled;
         localStorage.setItem('lux_iovox_voice', _iovoxVoiceEnabled ? '1' : '0');
         _syncVoiceBtn();
-        if (!_iovoxVoiceEnabled && _iovoxAudio) {
-          try { _iovoxAudio.pause(); } catch(_e) {}
-        }
+        if (!_iovoxVoiceEnabled) _stopAllVoice();
         mostrarToast(_iovoxVoiceEnabled ? '🔊 Voz activada' : '🔈 Voz desactivada');
       };
 
@@ -6618,6 +6681,7 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
       };
 
       window.cerrarAsistente = function(){
+        _stopAllVoice();
         document.getElementById('iovox-overlay').classList.remove('show');
         if (typeof switchTab === 'function') switchTab('inicio');
         else {
@@ -6664,6 +6728,21 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
           this.style.height='auto';
           this.style.height=Math.min(this.scrollHeight,100)+'px';
         });
+        var voiceBtn = document.getElementById('iovox-voice-btn');
+        if (voiceBtn) {
+          voiceBtn.addEventListener('click', function(e){
+            e.preventDefault();
+            if (typeof window.toggleIovoxVoice === 'function') window.toggleIovoxVoice();
+          });
+        }
+        if ('speechSynthesis' in window && typeof window.speechSynthesis.onvoiceschanged !== 'undefined') {
+          window.speechSynthesis.onvoiceschanged = function(){
+            _voiceCache = null;
+            _voiceCacheAt = 0;
+            _getVoices();
+          };
+          _getVoices();
+        }
         _syncVoiceBtn();
       });
 
@@ -6672,7 +6751,6 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
     </script>
 
     <script>
-    /* ── Tema claro / oscuro ── */
     (function(){
       function applyTheme(t){
         document.documentElement.setAttribute('data-theme', t);
