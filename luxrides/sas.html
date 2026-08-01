@@ -5815,7 +5815,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         id:'city-tour-cdmx', icon:'🏙️', iconBg:'#EAF4FF',
         title:'City Tour Ciudad de Mexico',
         desc:'Centro Historico, Palacio Nacional, Bellas Artes, Templo Mayor, Antropologia y Chapultepec.',
-        rutas:[
+        rutas:'Ruta cultural personalizada por museos y puntos iconicos de la ciudad.',
+        routeOptions:[
           'Museo Nacional de Antropologia',
           'Museo del Templo Mayor',
           'Palacio de Bellas Artes',
@@ -5892,6 +5893,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
     ];
 
     var _guiasTourSelections = {};
+  var _guiasRouteSelections = {};
     var _stripeTourContext = null;
 
     function _guiasEscapeHtml(value) {
@@ -5955,9 +5957,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         if (!tour.tarifas[selectedIndex]) selectedIndex = 0;
         var tarifa = tour.tarifas[selectedIndex];
         var payAmount = _guiasParseAmount(tarifa.price);
+        var routeOptions = Array.isArray(tour.routeOptions) ? tour.routeOptions : [];
+        var selectedRouteIndex = Number(_guiasRouteSelections[tour.id] || 0);
+        if (!routeOptions[selectedRouteIndex]) selectedRouteIndex = 0;
+        var selectedRoute = routeOptions[selectedRouteIndex] || '';
         var options = tour.tarifas.map(function(item, itemIndex) {
           return '<option value="' + itemIndex + '"' + (itemIndex === selectedIndex ? ' selected' : '') + '>' +
             _guiasEscapeHtml(item.label) + '</option>';
+        }).join('');
+        var routeSelectOptions = routeOptions.map(function(item, itemIndex) {
+          return '<option value="' + itemIndex + '"' + (itemIndex === selectedRouteIndex ? ' selected' : '') + '>' +
+            _guiasEscapeHtml(item) + '</option>';
         }).join('');
 
         return '' +
@@ -5975,6 +5985,18 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
                 '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Rutas</div><div class="guias-card-meta-value">' + _guiasRenderRoutes(tour.rutas) + '</div></div>' +
                 '<div class="guias-card-meta-item"><div class="guias-card-meta-label">Incluye</div><div class="guias-card-meta-value">' + _guiasEscapeHtml(tour.includes) + '</div></div>' +
               '</div>' +
+              (routeOptions.length
+                ? '<div class="guias-card-pricing">' +
+                    '<div class="guias-card-select-wrap">' +
+                      '<div class="guias-card-meta-label">Ruta opcional</div>' +
+                      '<select class="guias-card-select guias-card-route-select" data-tour-id="' + _guiasEscapeHtml(tour.id) + '">' + routeSelectOptions + '</select>' +
+                    '</div>' +
+                    '<div class="guias-card-pricebox">' +
+                      '<span class="lbl">Destino elegido</span>' +
+                      '<span class="sub" style="font-size:.64rem;margin-top:4px;display:block;">' + _guiasEscapeHtml(selectedRoute) + '</span>' +
+                    '</div>' +
+                  '</div>'
+                : '') +
               '<div class="guias-card-pricing">' +
                 '<div class="guias-card-select-wrap">' +
                   '<div class="guias-card-meta-label">Pasajeros / tarifa</div>' +
@@ -5999,7 +6021,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       Array.prototype.forEach.call(wrap.querySelectorAll('.guias-card-select'), function(selectEl) {
         selectEl.addEventListener('change', function() {
-          _guiasTourSelections[this.getAttribute('data-tour-id')] = this.value;
+          if (this.classList.contains('guias-card-route-select')) {
+            _guiasRouteSelections[this.getAttribute('data-tour-id')] = this.value;
+          } else {
+            _guiasTourSelections[this.getAttribute('data-tour-id')] = this.value;
+          }
           renderGuiasCatalogo();
         });
       });
