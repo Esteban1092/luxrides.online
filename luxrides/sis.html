@@ -439,6 +439,23 @@ var SUPABASE = null;
 try { SUPABASE = supabase.createClient(_SUPABASE_URL, _SUPABASE_KEY); } catch(e) { console.error('Supabase init:', e); }
 
 const ADMIN_SESSION_KEY = 'luxrides_admin_session';
+const ADMIN_API_BASE = ((window.LuxCfg && LuxCfg.apiBaseUrl()) || 'https://luxrides.online') + '/api';
+
+async function adminApi(path, options){
+  var opts = options || {};
+  var headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  var res = await fetch(ADMIN_API_BASE + path, Object.assign({}, opts, {
+    headers: headers,
+    credentials: 'include'
+  }));
+  var data = await res.json().catch(function(){ return {}; });
+  if (!res.ok || !data.ok) {
+    var err = new Error(data.error || 'Error de API admin');
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
 
 async function intentarLogin(){
   var id = (document.getElementById('login-id').value || '').trim();
@@ -446,10 +463,10 @@ async function intentarLogin(){
   var errorEl = document.getElementById('login-error');
   if (!id || !pass) { errorEl.textContent = '⚠️ Ingresa ID y contraseña'; errorEl.style.display = 'block'; return; }
   try {
-    var base = (window.LuxCfg && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
-    var res = await fetch(base + '/api/admin/login', {
+    var res = await fetch(ADMIN_API_BASE + '/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ id: id, pass: pass })
     });
     var data = await res.json().catch(function(){ return {}; });
@@ -473,8 +490,17 @@ function mostrarApp(){
   setTimeout(function() { initMapaChoferes(); }, 800);
 }
 
-function verificarSesionAdmin(){
-  if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'ok') { mostrarApp(); return true; }
+async function verificarSesionAdmin(){
+  try {
+    var ses = await adminApi('/admin/session', { method: 'GET' });
+    if (ses && ses.ok) {
+      sessionStorage.setItem(ADMIN_SESSION_KEY, 'ok');
+      mostrarApp();
+      return true;
+    }
+  } catch(e) {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  }
   return false;
 }
 
@@ -531,11 +557,21 @@ function setBadge(id, type, text) {
 function formatNum(n) { return Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
 
 function dbGet(table, id) {
+  if (table === 'choferes') {
+    return adminApi('/admin/choferes/' + encodeURIComponent(id), { method: 'GET' })
+      .then(function(res) { return res.data || null; })
+      .catch(function(e) { console.warn('dbGet choferes:', e); return null; });
+  }
   if (!SUPABASE) return Promise.resolve(null);
   return SUPABASE.from(table).select().eq('id', id).maybeSingle().then(function(res) { return res.data; }).catch(function(e) { console.warn('dbGet:', e); return null; });
 }
 
 function dbGetAll(table) {
+  if (table === 'choferes') {
+    return adminApi('/admin/choferes', { method: 'GET' })
+      .then(function(res) { return res.data || []; })
+      .catch(function(e) { console.warn('dbGetAll choferes:', e); return []; });
+  }
   if (!SUPABASE) return Promise.resolve([]);
   return SUPABASE.from(table).select('*').then(function(res) { return res.data || []; }).catch(function(e) { console.warn('dbGetAll:', e); return []; });
 }
@@ -545,11 +581,26 @@ function dbGetList(table, col, val) {
 }
 
 function dbUpdate(table, id, data) {
+  if (table === 'choferes') {
+    return adminApi('/admin/choferes/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      body: JSON.stringify(data || {})
+    }).then(function(res) {
+      return { data: res.data || null, error: null };
+    });
+  }
   if (!SUPABASE) return Promise.reject(new Error('Supabase no inicializado. Revisa SUPABASE_URL / SUPABASE_ANON_KEY.'));
   return SUPABASE.from(table).update(data).eq('id', id);
 }
 
 async function dbInsert(table, data) {
+  if (table === 'choferes') {
+    var out = await adminApi('/admin/choferes', {
+      method: 'POST',
+      body: JSON.stringify(data || {})
+    });
+    return { data: out.data || null, error: null };
+  }
   if (!SUPABASE) throw new Error('Supabase no inicializado. Revisa SUPABASE_URL / SUPABASE_ANON_KEY.');
   var res = await SUPABASE.from(table).insert(data).select().single();
   if (res.error) throw new Error(res.error.message || JSON.stringify(res.error));
@@ -557,6 +608,13 @@ async function dbInsert(table, data) {
 }
 
 function dbDelete(table, id) {
+  if (table === 'choferes') {
+    return adminApi('/admin/choferes/' + encodeURIComponent(id), {
+      method: 'DELETE'
+    }).then(function() {
+      return { error: null };
+    });
+  }
   return SUPABASE.from(table).delete().eq('id', id);
 }
 
@@ -1722,8 +1780,7 @@ async function borrarChoferIndividual(choferID) {
 async function borrarChoferesAdmin() {
   if (!window.confirm('¿Borrar TODOS los choferes?')) return;
   try {
-    var data = await dbGetAll('choferes');
-    if (data) { for (var i = 0; i < data.length; i++) { await dbDelete('choferes', data[i].id); } }
+    await adminApi('/admin/choferes', { method: 'DELETE' });
     showToast('🗑️ Todos los choferes borrados');
   } catch (err) { showToast('❌ ' + (err.message || err), true); }
 }
