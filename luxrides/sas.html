@@ -2340,6 +2340,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       let stripeCardExpiry = null;
       let stripeCardCvc = null;
       let stripeMontoActual = 0;
+      let stripeQuoteToken = '';
       const CLIP_PAYMENT_URL = 'https://clip.mx/@Luxridesreservas.com';
 
       const MEXICO_STATE_SUGGESTIONS = [
@@ -3251,6 +3252,20 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         }
       }
 
+      async function solicitarQuoteTraslado(payload){
+        const base = (window.LuxCfg && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
+        const res = await fetch(base + '/api/quotes/transfer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(function(){ return {}; });
+        if (!res.ok || !data.ok || !data.quote || !data.token) {
+          throw new Error(data.error || 'No se pudo cotizar el traslado.');
+        }
+        return data;
+      }
+
       async function calcular(){
         const nombre=document.getElementById('inp-nombre').value.trim();
         document.getElementById('error-msg').style.display='none';
@@ -3319,6 +3334,28 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             const minT1 = pasajeros > 3 ? 760 : 560;
             totalPrecio = Math.max(totalPrecio, minT1);
           }
+        }
+
+        try {
+          const quoteOut = await solicitarQuoteTraslado({
+            service: servicio,
+            transferType: tipoTraslado,
+            passengers: pasajeros,
+            hours: hSel,
+            origin: coordOrigen ? { lat: coordOrigen.lat, lng: coordOrigen.lon } : null,
+            destination: coordDestino ? { lat: coordDestino.lat, lng: coordDestino.lon } : null,
+            originText: coordOrigen?.display || document.getElementById('inp-origen')?.value || '',
+            destinationText: coordDestino?.display || document.getElementById('inp-destino')?.value || ''
+          });
+          stripeQuoteToken = quoteOut.token;
+          distanciaKm = quoteOut.quote.distanceKm || distanciaKm;
+          duracionMin = quoteOut.quote.durationMin || duracionMin;
+          casetasTotal = quoteOut.quote.tolls || casetasTotal;
+          totalPrecio = quoteOut.quote.amountMx || totalPrecio;
+        } catch (quoteErr) {
+          resetBtn();
+          mostrarError(quoteErr.message || 'No se pudo calcular en servidor');
+          return;
         }
 
         resultado={distanciaKm,duracionMin,totalPrecio,casetasTotal};
@@ -3587,6 +3624,10 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           alert('Primero calcula el precio del servicio.');
           return;
         }
+        if (!stripeQuoteToken) {
+          alert('No hay cotización segura activa. Recalcula o vuelve a elegir el tour.');
+          return;
+        }
         stripeMontoActual = montoBase;
         document.getElementById('stripe-monto-display').textContent = '$' + stripeMontoActual.toLocaleString('es-MX');
 
@@ -3637,6 +3678,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       function cerrarPagoStripe(){
         document.getElementById('stripe-modal').style.display = 'none';
         _stripeTourContext = null;
+        stripeQuoteToken = '';
       }
 
       async function procesarPagoStripe(){
@@ -3708,7 +3750,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               paymentMethodId: paymentMethod.id,
-              monto: stripeMontoActual,
+              quoteToken: stripeQuoteToken,
               nombre: nombreTitular,
               email: emailCliente,
               descripcion: descripcionPago
@@ -5919,25 +5961,45 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       return _guiasEscapeHtml(value || 'Por confirmar');
     }
 
-    function abrirPagoTourStripe(tourId) {
+    async function solicitarQuoteTour(tourId, tarifaLabel, routeChoice) {
+      const base = (window.LuxCfg && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
+      const res = await fetch(base + '/api/quotes/tour', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tourId: tourId, tarifaLabel: tarifaLabel, routeChoice: routeChoice || '' })
+      });
+      const data = await res.json().catch(function(){ return {}; });
+      if (!res.ok || !data.ok || !data.quote || !data.token) {
+        throw new Error(data.error || 'No se pudo cotizar el tour.');
+      }
+      return data;
+    }
+
+    async function abrirPagoTourStripe(tourId) {
       var tour = LUX_GUIAS_TOURS.find(function(item){ return item.id === tourId; });
       if (!tour) return;
       var selectedIndex = Number(_guiasTourSelections[tour.id] || 0);
       var tarifa = tour.tarifas[selectedIndex] || tour.tarifas[0];
-      var amount = _guiasParseAmount(tarifa && tarifa.price);
-      if (!amount) {
-        mostrarToast('Este tour requiere cotizacion antes del pago.', 'err');
-        return;
+      var routeOptions = Array.isArray(tour.routeOptions) ? tour.routeOptions : [];
+      var selectedRouteIndex = Number(_guiasRouteSelections[tour.id] || 0);
+      if (!routeOptions[selectedRouteIndex]) selectedRouteIndex = 0;
+      var selectedRoute = routeOptions[selectedRouteIndex] || '';
+      try {
+        var quoteOut = await solicitarQuoteTour(tour.id, tarifa.label, selectedRoute);
+        stripeQuoteToken = quoteOut.token;
+        _stripeTourContext = {
+          id: tour.id,
+          title: tour.title,
+          tarifaLabel: tarifa.label,
+          tarifaNote: tarifa.note,
+          amount: quoteOut.quote.amountMx,
+          contacto: tour.contacto,
+          routeChoice: selectedRoute
+        };
+        abrirPagoStripe();
+      } catch (err) {
+        mostrarToast(err.message || 'No se pudo preparar el pago del tour.', 'err');
       }
-      _stripeTourContext = {
-        id: tour.id,
-        title: tour.title,
-        tarifaLabel: tarifa.label,
-        tarifaNote: tarifa.note,
-        amount: amount,
-        contacto: tour.contacto
-      };
-      abrirPagoStripe();
     }
 
     function solicitarCotizacionTour(tourId) {

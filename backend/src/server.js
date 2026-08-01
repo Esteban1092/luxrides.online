@@ -10,6 +10,7 @@ import groqRoutes from './routes/groq.routes.js';
 import pushRoutes from './routes/push.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import lovoxRoutes from './routes/lovox.routes.js';
+import quoteRoutes from './routes/quote.routes.js';
 import stripeRoutes from './routes/stripe.routes.js';
 import { errorHandler, notFound } from './middleware/error.js';
 
@@ -36,6 +37,7 @@ app.use('/api', groqRoutes);
 app.use('/api', pushRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', lovoxRoutes);
+app.use('/api', quoteRoutes);
 app.use('/api', stripeRoutes);
 
 app.use(notFound);

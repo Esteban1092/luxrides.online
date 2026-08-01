@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import Stripe from 'stripe';
 import { env } from '../config/env.js';
+import { decodeQuoteToken } from '../services/quote.service.js';
 
 const router = Router();
 
@@ -23,10 +24,18 @@ router.post('/stripe/pagar', async (req, res, next) => {
     }
 
     const paymentMethodId = String(req.body?.paymentMethodId || '').trim();
-    const amount = normalizeAmount(req.body?.monto);
+    const quoteToken = String(req.body?.quoteToken || '').trim();
     const nombre = String(req.body?.nombre || '').trim();
     const email = String(req.body?.email || '').trim();
-    const descripcion = String(req.body?.descripcion || 'LuxRides').trim();
+    if (!quoteToken) {
+      return res.status(400).json({ ok: false, error: 'quoteToken es requerido.' });
+    }
+
+    const quote = decodeQuoteToken(quoteToken);
+    const amount = normalizeAmount(quote.amountMx);
+    const descripcion = String(req.body?.descripcion || (quote.type === 'tour'
+      ? ('LuxRides tour: ' + (quote.tourId || 'tour'))
+      : 'LuxRides transfer')).trim();
 
     if (!paymentMethodId) {
       return res.status(400).json({ ok: false, error: 'paymentMethodId es requerido.' });
@@ -46,7 +55,10 @@ router.post('/stripe/pagar', async (req, res, next) => {
       payment_method_types: ['card'],
       metadata: {
         nombre: nombre || 'Cliente LuxRides',
-        source: 'luxrides-web'
+        source: 'luxrides-web',
+        quote_type: quote.type || '',
+        quote_tour_id: quote.tourId || '',
+        quote_tarifa: quote.tarifaLabel || ''
       }
     });
 
