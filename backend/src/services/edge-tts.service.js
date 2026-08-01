@@ -1,5 +1,12 @@
-import { tts } from 'edge-tts';
 import { env } from '../config/env.js';
+import { promisify } from 'node:util';
+import { execFile } from 'node:child_process';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+
+const execFileAsync = promisify(execFile);
 
 const DEFAULT_VOICE_BY_LANG = {
   es: 'es-MX-DaliaNeural',
@@ -21,11 +28,34 @@ function pickVoice(lang) {
   return DEFAULT_VOICE_BY_LANG[base] || env.edgeTtsVoice || DEFAULT_VOICE_BY_LANG.es;
 }
 
-function toBuffer(data) {
-  if (Buffer.isBuffer(data)) return data;
-  if (data instanceof Uint8Array) return Buffer.from(data);
-  if (Array.isArray(data)) return Buffer.from(data);
-  return Buffer.from(String(data || ''), 'binary');
+async function synthesizeToBuffer(text, voice) {
+  const dir = await mkdtemp(join(tmpdir(), 'edge-tts-'));
+  const outputFile = join(dir, randomUUID() + '.mp3');
+  try {
+    const args = [
+      '--text',
+      text,
+      '--voice',
+      voice,
+      '--rate',
+      env.edgeTtsRate,
+      '--pitch',
+      env.edgeTtsPitch,
+      '--volume',
+      env.edgeTtsVolume,
+      '--write-media',
+      outputFile
+    ];
+
+    await execFileAsync(env.edgeTtsBin, args, {
+      maxBuffer: 1024 * 1024 * 10,
+      timeout: 30000
+    });
+
+    return await readFile(outputFile);
+  } finally {
+    await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 export async function generarVozEdge(text, lang = 'es') {
@@ -37,14 +67,9 @@ export async function generarVozEdge(text, lang = 'es') {
   }
 
   try {
-    const audio = await tts(clean, {
-      voice: pickVoice(lang),
-      rate: env.edgeTtsRate,
-      pitch: env.edgeTtsPitch,
-      volume: env.edgeTtsVolume
-    });
-
-    const audioBase64 = toBuffer(audio).toString('base64');
+    const voice = pickVoice(lang);
+    const audio = await synthesizeToBuffer(clean, voice);
+    const audioBase64 = audio.toString('base64');
     if (!audioBase64) {
       const err = new Error('Edge-TTS no devolvio audio');
       err.status = 502;
