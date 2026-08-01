@@ -6400,6 +6400,24 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
         if (!_iovoxVoiceEnabled) return;
         var clean = _speechText(text);
         if (!clean) return;
+
+        function _speakWithBrowserTTS(msg){
+          try {
+            if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return false;
+            window.speechSynthesis.cancel();
+            var utter = new SpeechSynthesisUtterance(msg);
+            var lang = (window._luxLang || localStorage.getItem('lux_idioma') || 'es').toLowerCase();
+            utter.lang = (lang === 'es') ? 'es-MX' : (lang + '-' + lang.toUpperCase());
+            utter.rate = 1;
+            utter.pitch = 1;
+            utter.volume = 1;
+            window.speechSynthesis.speak(utter);
+            return true;
+          } catch (_e) {
+            return false;
+          }
+        }
+
         try {
           var out = await _callSpeakAPI(clean);
           var mime = out.mimeType || 'audio/mpeg';
@@ -6408,9 +6426,13 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
             try { _iovoxAudio.pause(); } catch(_e) {}
           }
           _iovoxAudio = new Audio(src);
-          _iovoxAudio.play().catch(function(e){ console.warn('No se pudo reproducir audio:', e); });
+          _iovoxAudio.play().catch(function(e){
+            console.warn('No se pudo reproducir audio remoto:', e);
+            _speakWithBrowserTTS(clean);
+          });
         } catch (e) {
           console.warn('Iovox voz no disponible:', e);
+          _speakWithBrowserTTS(clean);
         }
       }
 
