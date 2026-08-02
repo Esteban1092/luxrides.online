@@ -57,7 +57,11 @@ export const env = {
 
   admin: {
     id: optionalFirst(['ADMIN_ID', 'ADMIN_USER', 'DESPACHO_ADMIN_ID'], 'admin12343'),
-    pass: optionalFirst(['ADMIN_PASS', 'ADMIN_PASSWORD', 'DESPACHO_ADMIN_PASS'], optionalFirst(['ADMIN_ID', 'ADMIN_USER', 'DESPACHO_ADMIN_ID'], 'admin12343')),
+    pass: optionalFirst(['ADMIN_PASS', 'ADMIN_PASSWORD', 'DESPACHO_ADMIN_PASS'], '131125'),
     sessionSecret: optionalFirst(['ADMIN_SESSION_SECRET', 'SESSION_SECRET', 'QUOTE_SECRET'], optionalFirst(['ADMIN_PASS', 'ADMIN_PASSWORD', 'DESPACHO_ADMIN_PASS'], ''))
+  },
+
+  driver: {
+    sessionSecret: optionalFirst(['DRIVER_SESSION_SECRET', 'ADMIN_SESSION_SECRET', 'SESSION_SECRET', 'QUOTE_SECRET'], optionalFirst(['ADMIN_PASS', 'ADMIN_PASSWORD', 'DESPACHO_ADMIN_PASS'], ''))
   }
 };

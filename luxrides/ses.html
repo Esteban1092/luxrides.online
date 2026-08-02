@@ -7,7 +7,7 @@
 <meta name="description" content="Plataforma de conductores LuxRides"/>
 <link rel="icon" type="image/png" href="/logo-luxrides.png"/>
 <link rel="apple-touch-icon" href="/logo-luxrides.png"/>
-<script src="config.js?v=20260801a"></script>
+<script src="config.js?v=20260802b"></script>
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -38,7 +38,7 @@ html,body{width:100%;height:100%;background:#050505;color:#fff;overflow:hidden;-
 
 #login-screen{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%, rgba(212,175,55,0.08) 0%, #050505 60%);padding:24px;gap:16px;}
 #login-screen::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
-#login-screen .logo{font-family:'Playfair Display',serif;font-size:2.6rem;letter-spacing:.15em;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px;position:relative;}
+#login-screen .logo{font-family:'Playfair Display',serif;font-size:2.6rem;letter-spacing:.15em;background:linear-gradient(135deg,var(--gold),var(--gold-light));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px;position:relative;}
 #login-screen .logo::after{content:'LUXRIDES';position:absolute;inset:0;filter:blur(12px);opacity:0.4;z-index:-1;font-family:'Playfair Display',serif;}
 #login-screen .sub{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:24px;}
 #login-screen input{width:100%;max-width:320px;padding:15px 18px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;color:#fff;font-size:.92rem;outline:none;transition:all .3s;}
@@ -109,7 +109,7 @@ html,body{width:100%;height:100%;background:#050505;color:#fff;overflow:hidden;-
 .tab-content{position:fixed;top:0;left:0;right:0;bottom:60px;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;}
 .tab-content.active{display:block;}
 .tab-header{position:sticky;top:0;z-index:10;padding:18px 20px 14px;background:rgba(8,8,8,.92);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;}
-.tab-header h2{font-family:'Playfair Display',serif;font-size:1.15rem;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.tab-header h2{font-family:'Playfair Display',serif;font-size:1.15rem;background:linear-gradient(135deg,var(--gold),var(--gold-light));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .tab-header .state-badge{display:inline-block;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;padding:4px 12px;border-radius:999px;}
 .state-badge.online{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3);}
 .state-badge.offline{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.25);}
@@ -169,7 +169,7 @@ html,body{width:100%;height:100%;background:#050505;color:#fff;overflow:hidden;-
 .stripe-modal-card h4{color:var(--gold);margin-bottom:14px;font-size:.95rem;}
 .stripe-modal-card .monto-box{background:rgba(255,255,255,.03);border-radius:12px;padding:14px;text-align:center;margin-bottom:16px;border:1px solid rgba(255,255,255,.06);}
 .stripe-modal-card .monto-box .lbl{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.35);}
-.stripe-modal-card .monto-box .val{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.stripe-modal-card .monto-box .val{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 #stripe-card-element{padding:13px;border:1.5px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.04);margin-bottom:10px;}
 #stripe-card-element.StripeElement--focus{border-color:var(--gold);box-shadow:0 0 20px rgba(212,175,55,.08);}
 #stripe-card-error{color:var(--red);font-size:.76rem;min-height:18px;margin-bottom:8px;}
@@ -222,7 +222,7 @@ html,body{width:100%;height:100%;background:#050505;color:#fff;overflow:hidden;-
 .perfil-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 18px;}
 .perfil-stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px 12px;text-align:center;transition:all .3s;}
 .perfil-stat:hover{border-color:rgba(212,175,55,.2);}
-.perfil-stat .num{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.perfil-stat .num{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .perfil-stat .lbl{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:3px;}
 
 .retiro-box{background:linear-gradient(145deg,rgba(212,175,55,.04),rgba(255,255,255,.01));border:1px solid rgba(212,175,55,.15);border-radius:18px;margin:8px 14px;padding:16px 18px;position:relative;overflow:hidden;animation:editSlideIn .4s cubic-bezier(.22,1,.36,1);}
@@ -234,7 +234,7 @@ html,body{width:100%;height:100%;background:#050505;color:#fff;overflow:hidden;-
 .retiro-header-left h4{font-family:'Playfair Display',serif;font-size:.92rem;color:var(--gold);letter-spacing:.04em;}
 .retiro-balance{text-align:right;}
 .retiro-balance .lbl{font-size:.5rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);display:block;}
-.retiro-balance .num{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;display:block;}
+.retiro-balance .num{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;display:block;}
 .retiro-pills{display:flex;gap:8px;margin-bottom:12px;position:relative;z-index:1;}
 .retiro-pill{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;border-radius:14px;background:rgba(255,255,255,.02);border:1.5px solid rgba(255,255,255,.06);color:rgba(255,255,255,.35);cursor:pointer;transition:all .35s cubic-bezier(.22,1,.36,1);position:relative;overflow:hidden;}
 .retiro-pill .pill-icon{font-size:1.3rem;transition:transform .3s;}
@@ -251,7 +251,7 @@ html,body{width:100%;height:100%;background:#050505;color:#fff;overflow:hidden;-
 .retiro-monto-lbl{font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.25);display:block;margin-bottom:6px;}
 .retiro-monto-input-group{display:flex;align-items:center;justify-content:center;gap:4px;}
 .retiro-monto-sign{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--gold);opacity:.5;}
-.retiro-monto-input{width:160px;background:transparent;border:none;border-bottom:2.5px solid rgba(212,175,55,.15);color:#fff;font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:700;text-align:center;outline:none;padding:4px 0;transition:all .35s cubic-bezier(.22,1,.36,1);-moz-appearance:textfield;}
+.retiro-monto-input{width:160px;background:transparent;border:none;border-bottom:2.5px solid rgba(212,175,55,.15);color:#fff;font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:700;text-align:center;outline:none;padding:4px 0;transition:all .35s cubic-bezier(.22,1,.36,1);appearance:textfield;-moz-appearance:textfield;}
 .retiro-monto-input::-webkit-outer-spin-button,.retiro-monto-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 .retiro-monto-input:focus{border-bottom-color:var(--gold);box-shadow:0 8px 20px -8px rgba(212,175,55,.15);}
 .retiro-monto-input::placeholder{color:rgba(255,255,255,.08);}
@@ -272,7 +272,7 @@ html,body{width:100%;height:100%;background:#050505;color:#fff;overflow:hidden;-
 .viaje-card:hover{border-color:rgba(212,175,55,.15);}
 .viaje-card .head{display:flex;justify-content:space-between;margin-bottom:8px;}
 .viaje-card .head .name{font-weight:600;font-size:.85rem;}
-.viaje-card .head .price{font-family:'Playfair Display',serif;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.viaje-card .head .price{font-family:'Playfair Display',serif;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .viaje-card .detail{font-size:.73rem;color:rgba(255,255,255,.45);display:flex;gap:14px;flex-wrap:wrap;}
 .historial-empty{text-align:center;padding:48px 20px;color:rgba(255,255,255,.25);font-size:.85rem;}
 
@@ -614,6 +614,7 @@ let posWatchId = null, heartbeatInt = null, searchInt = null;
 let liveMap = null, tripMap = null, driverMarker = null, tripRouteAdded = false;
 let stripeInstance = null, stripeCardElement = null, noSleep = null, wakeLockSentinel = null;
 let viajesPendientes = {};
+let driverSessionToken = '';
 let _dirSvc = null;
 let _livePolylines = [];
 let _tripPolylines = [];
@@ -722,6 +723,14 @@ async function dbGetList(table, col, val) {
 }
 
 function dbUpdate(table, id, data) {
+  if (table === 'choferes') {
+    return driverApi('/api/driver/chofer', {
+      method: 'PATCH',
+      body: data || {}
+    }).then(function(res) {
+      return { data: res.data || null, error: null };
+    });
+  }
   return SUPABASE.from(table).update(data).eq('id', id).then(function(res) {
     if (res.error) {
       console.error('dbUpdate error:', table, id, res.error);
@@ -732,6 +741,22 @@ function dbUpdate(table, id, data) {
 }
 
 function dbInsert(table, data) {
+  if (table === 'solicitudes_retiro') {
+    return driverApi('/api/driver/withdrawals', {
+      method: 'POST',
+      body: data || {}
+    }).then(function(res) {
+      return { data: res.data || null, error: null };
+    });
+  }
+  if (table === 'push_subscriptions') {
+    return driverApi('/api/driver/push-subscription', {
+      method: 'POST',
+      body: data || {}
+    }).then(function(res) {
+      return { data: res.data || null, error: null };
+    });
+  }
   return SUPABASE.from(table).insert(data).select().single();
 }
 
@@ -743,6 +768,55 @@ function dbSubscribe(table, filterCol, filterVal, eventType, cb) {
   const ch = SUPABASE.channel(table + '-' + filterVal + '-' + Date.now());
   ch.on('postgres_changes', { event: eventType, schema: 'public', table, filter: filterCol + '=eq.' + filterVal }, cb).subscribe();
   return ch;
+}
+
+function driverBackendBase() {
+  var base = (window.LuxCfg && LuxCfg.backendUrl && LuxCfg.backendUrl()) || '';
+  if (!base) base = (window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || '';
+  if (!base && window.location && window.location.origin) base = window.location.origin;
+  return base.replace(/\/+$/, '');
+}
+
+function getDriverSessionToken() {
+  if (driverSessionToken) return driverSessionToken;
+  try {
+    driverSessionToken = localStorage.getItem('luxrides_driver_session_token') || '';
+  } catch (e) {}
+  return driverSessionToken;
+}
+
+async function driverApi(path, options) {
+  var base = driverBackendBase();
+  if (!base) throw new Error('Backend no configurado');
+  var token = getDriverSessionToken();
+  if (!token) throw new Error('Sesion de chofer no disponible');
+  var opts = Object.assign({ method: 'GET', credentials: 'same-origin' }, options || {});
+  var headers = Object.assign({}, opts.headers || {}, { Authorization: 'Bearer ' + token });
+  if (opts.body && typeof opts.body !== 'string' && !(opts.body instanceof FormData) && !(opts.body instanceof Blob)) {
+    opts.body = JSON.stringify(opts.body);
+  }
+  if (opts.body && !headers['Content-Type'] && !(opts.body instanceof FormData) && !(opts.body instanceof Blob)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  var res = await fetch(base + path, Object.assign({}, opts, { headers: headers }));
+  var data = await res.json().catch(function() { return {}; });
+  if (!res.ok) throw new Error(data.error || data.message || ('HTTP ' + res.status));
+  return data;
+}
+
+async function refreshChoferDesdeBackend() {
+  try {
+    if (!getDriverSessionToken()) return null;
+    var res = await driverApi('/api/driver/me');
+    if (res && res.data) {
+      choferData = res.data;
+      actualizarEstadoUI();
+      return res.data;
+    }
+  } catch (e) {
+    console.warn('No se pudo refrescar chofer desde backend:', e);
+  }
+  return null;
 }
 
 function urlBase64ToUint8Array(base64) {
@@ -790,10 +864,7 @@ async function guardarSuscripcionPush(sub) {
   if (!choferId) return;
   try {
     var subData = JSON.parse(JSON.stringify(sub));
-    await SUPABASE.from('push_subscriptions').upsert(
-      { chofer_id: choferId, subscription: subData, updated_at: new Date().toISOString() },
-      { onConflict: 'chofer_id' }
-    );
+    await dbInsert('push_subscriptions', { subscription: subData });
     console.log('Push subscription saved');
   } catch (e) { console.warn('Error saving push sub:', e); }
 }
@@ -1207,27 +1278,23 @@ async function loginChofer() {
   btn.disabled = true; btn.textContent = 'Verificando...';
   document.getElementById('login-error').textContent = '';
 
-  if (!SUPABASE) {
-    document.getElementById('login-error').textContent = 'Error de conexión: Supabase no inicializado.';
-    btn.disabled = false; btn.textContent = 'INGRESAR'; return;
-  }
   try {
-    var data = await dbGet('choferes', id);
-    if (!data) {
-      document.getElementById('login-error').textContent = 'Chofer no encontrado. Verifica tu ID.';
-      btn.disabled = false; btn.textContent = 'INGRESAR'; return;
+    var res = await driverApi('/api/driver/login', {
+      method: 'POST',
+      body: { id: id, nombre: nom }
+    });
+    if (!res || !res.ok || !res.sessionToken) {
+      throw new Error((res && res.error) || 'No se pudo iniciar sesión');
     }
-    if (data.nombre && data.nombre.toLowerCase() !== nom.toLowerCase()) {
-      document.getElementById('login-error').textContent = 'El nombre no coincide con el ID proporcionado.';
-      btn.disabled = false; btn.textContent = 'INGRESAR'; return;
-    }
-    choferId = id;
-    choferData = data;
-    try { localStorage.setItem('luxrides_chofer_id', id); localStorage.setItem('luxrides_chofer_nombre', data.nombre || nom); } catch(e) {}
+    driverSessionToken = res.sessionToken;
+    try { localStorage.setItem('luxrides_driver_session_token', res.sessionToken); } catch(e) {}
+    choferId = (res.data && res.data.id) || id;
+    choferData = res.data || { id: id, nombre: nom };
+    try { localStorage.setItem('luxrides_chofer_id', choferId); localStorage.setItem('luxrides_chofer_nombre', choferData.nombre || nom); } catch(e) {}
     iniciarApp();
   } catch (e) {
     console.error(e);
-    document.getElementById('login-error').textContent = 'Error de conexión. Intenta de nuevo.';
+    document.getElementById('login-error').textContent = 'No se pudo iniciar sesión. ' + (e.message || 'Intenta de nuevo.');
     btn.disabled = false; btn.textContent = 'INGRESAR';
   }
 }
@@ -1636,8 +1703,10 @@ function aceptarViaje(id) {
   viajeActual = v;
   if (viajesPendientes[v.id]) delete viajesPendientes[v.id];
   renderViajesPendientes();
-  dbUpdate('viajes', v.id, { estado: 'aceptado', chofer_id: choferId, aceptado_en: new Date().toISOString() });
-  dbUpdate('choferes', choferId, { estado: 'en_viaje' });
+  driverApi('/api/driver/trips/' + encodeURIComponent(v.id) + '/accept', { method: 'PATCH' }).catch(function(err) {
+    console.error(err);
+    notify('Error al aceptar viaje', 'err');
+  });
   toggleBusquedaViajes(false);
   switchTab('mapa');
   setTimeout(function() {
@@ -1661,7 +1730,9 @@ function aceptarViaje(id) {
 function rechazarViaje(id) {
   var v = viajesPendientes[id];
   if (!v) return;
-  dbUpdate('viajes', v.id, { estado: 'rechazado' });
+  driverApi('/api/driver/trips/' + encodeURIComponent(v.id) + '/reject', { method: 'PATCH' }).catch(function(err) {
+    console.error(err);
+  });
   delete viajesPendientes[id];
   renderViajesPendientes();
 }
@@ -1709,34 +1780,13 @@ function cerrarViajeScreen() {
 async function finalizarViaje() {
   if (!viajeActual) return;
   var v = viajeActual;
-  var pagoChofer = Math.round((v.total || v.precio || 0) * 0.8);
   try {
-    await dbUpdate('viajes', v.id, {
-      estado: 'completado',
-      completado_en: new Date().toISOString(),
-      pago_chofer: pagoChofer
+    var pagoChofer = Math.round((v.total || v.precio || 0) * 0.8);
+    var result = await driverApi('/api/driver/trips/' + encodeURIComponent(v.id) + '/finalize', {
+      method: 'PATCH',
+      body: { pago_chofer: pagoChofer }
     });
-    var now = new Date();
-    await dbInsert('historial', {
-      chofer_id: choferId,
-      cliente: v.cliente,
-      origen: v.origen,
-      destino: v.destino,
-      precio: v.total || v.precio,
-      pago_chofer: pagoChofer,
-      estado: 'completado',
-      reserva_id: v.reserva_id || '',
-      fecha: now.toISOString().slice(0,10),
-      hora: now.toTimeString().slice(0,5),
-      timestamp: Date.now()
-    });
-    var chofer = await dbGet('choferes', choferId);
-    var nuevoDisp = (chofer.saldo_disponible || 0) + pagoChofer;
-    var nuevoProc = (chofer.saldo_en_proceso || 0) + Math.round(pagoChofer * 0.1);
-    await dbUpdate('choferes', choferId, { saldo_disponible: nuevoDisp, saldo_en_proceso: nuevoProc, estado: 'en linea' });
-    if (v.reserva_id) {
-      await dbUpdate('reservas', v.reserva_id, { estado: 'completado', saldo_acreditado: true });
-    }
+    if (result && result.data && result.data.chofer) choferData = result.data.chofer;
     notify('Viaje completado. +$' + formatNum(pagoChofer) + ' añadidos a tu saldo.', 'ok');
     viajesPendientes = {};
     borrarRutaLiveMap();
@@ -1841,7 +1891,7 @@ async function guardarPerfil() {
     hotel: document.getElementById('edit-hotel').value.trim()
   };
   try {
-    await SUPABASE.from('choferes').update(data).eq('id', choferId);
+    await dbUpdate('choferes', choferId, data);
     notify('Información actualizada', 'ok');
     editandoPerfil = false;
     cargarPerfil();
@@ -1897,20 +1947,8 @@ function subirFotoSeleccionada(event) {
 async function guardarFotoPerfil(dataUrl) {
   if (!choferId) return;
   try {
-    var fotoUrl = dataUrl;
-    if (SUPABASE && SUPABASE.storage) {
-      try {
-        var blob = await (await fetch(dataUrl)).blob();
-        var ext = 'jpg';
-        var fileName = 'chofer_' + choferId + '_' + Date.now() + '.' + ext;
-        var res = await SUPABASE.storage.from('choferes').upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
-        if (!res.error) {
-          var publicUrl = SUPABASE.storage.from('choferes').getPublicUrl(fileName);
-          if (publicUrl && publicUrl.data && publicUrl.data.publicUrl) fotoUrl = publicUrl.data.publicUrl;
-        }
-      } catch(e) { console.warn('Storage fallback, usando base64:', e); }
-    }
-    await SUPABASE.from('choferes').update({ foto_url: fotoUrl }).eq('id', choferId);
+    var res = await driverApi('/api/driver/photo', { method: 'POST', body: { dataUrl: dataUrl } });
+    var fotoUrl = (res && res.data && res.data.foto_url) || dataUrl;
     choferData.foto_url = fotoUrl;
     notify('Foto de perfil actualizada', 'ok');
     cargarPerfil();
@@ -2006,13 +2044,17 @@ async function procesarPagoStripe(monto) {
 function confirmarCerrarSesion() {
   if (!confirm('¿Cerrar sesión?\n\nTu ID de chofer se eliminará de este dispositivo. Tus datos (saldo y vehículo) permanecen en el servidor.')) return;
   try {
-    if (typeof choferId !== 'undefined' && choferId && typeof SUPABASE !== 'undefined') {
-      SUPABASE.from('choferes').update({ estado: 'offline', ultima_conexion: new Date().toISOString() }).eq('id', choferId).then(function(){}).catch(function(){});
+    if (typeof choferId !== 'undefined' && choferId) {
+      driverApi('/api/driver/logout', { method: 'POST' }).catch(function() {});
     }
   } catch(e) {}
   setTimeout(function() {
     try { localStorage.removeItem('luxrides_chofer_id'); } catch(e) {}
     try { localStorage.removeItem('luxrides_chofer_nombre'); } catch(e) {}
+    try { localStorage.removeItem('luxrides_driver_session_token'); } catch(e) {}
+    driverSessionToken = '';
+    choferId = null;
+    choferData = null;
     try { sessionStorage.clear(); } catch(e) {}
     location.reload();
   }, 500);
@@ -2021,23 +2063,17 @@ function confirmarCerrarSesion() {
 function confirmarBorrarDatos() {
   if (!confirm('⚠️ BORRAR TODOS LOS DATOS\n\nEsto eliminará:\n• Tu sesión en este dispositivo\n• Datos del vehículo (tipo, marca, modelo, placa)\n• Saldo disponible y en proceso\n\nNo se puede deshacer. ¿Continuar?')) return;
   try {
-    if (typeof choferId !== 'undefined' && choferId && typeof SUPABASE !== 'undefined') {
-      SUPABASE.from('choferes').update({
-        estado: 'offline',
-        vehiculo: '',
-        marca: '',
-        modelo: '',
-        placa: '',
-        color: '',
-        saldo_disponible: 0,
-        saldo_en_proceso: 0,
-        ultima_conexion: new Date().toISOString()
-      }).eq('id', choferId).then(function(){}).catch(function(){});
+    if (typeof choferId !== 'undefined' && choferId) {
+      driverApi('/api/driver/reset', { method: 'POST' }).catch(function() {});
     }
   } catch(e) {}
   setTimeout(function() {
     try { localStorage.removeItem('luxrides_chofer_id'); } catch(e) {}
     try { localStorage.removeItem('luxrides_chofer_nombre'); } catch(e) {}
+    try { localStorage.removeItem('luxrides_driver_session_token'); } catch(e) {}
+    driverSessionToken = '';
+    choferId = null;
+    choferData = null;
     try { sessionStorage.clear(); } catch(e) {}
     location.reload();
   }, 700);
@@ -2139,6 +2175,8 @@ if ('serviceWorker' in navigator) {
 (function() {
   var storedId = localStorage.getItem('luxrides_chofer_id');
   var storedNom = localStorage.getItem('luxrides_chofer_nombre');
+  var storedToken = localStorage.getItem('luxrides_driver_session_token');
+  if (storedToken) driverSessionToken = storedToken;
   if (storedId && storedNom) {
     document.getElementById('inp-id').value = storedId;
     document.getElementById('inp-nombre').value = storedNom;
@@ -2147,6 +2185,26 @@ if ('serviceWorker' in navigator) {
   var installed = localStorage.getItem('pwa_shown_choferes');
   if (installed) document.getElementById('install-modal').style.display = 'none';
 })();
+
+async function restaurarSesionChofer() {
+  if (!getDriverSessionToken()) return;
+  try {
+    var ses = await driverApi('/api/driver/session');
+    if (!ses || !ses.ok) return;
+    var me = await refreshChoferDesdeBackend();
+    if (me) {
+      choferId = me.id;
+      choferData = me;
+      iniciarApp();
+    }
+  } catch (e) {
+    console.warn('No se pudo restaurar sesion de chofer:', e);
+  }
+}
+
+if (driverSessionToken) {
+  setTimeout(restaurarSesionChofer, 150);
+}
 
 var origIniciarApp = iniciarApp;
 iniciarApp = function() {

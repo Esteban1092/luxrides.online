@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://luxrides.online/api/$1" },
+    { "source": "/guias", "destination": "/guias.html" }
+  ]
+}

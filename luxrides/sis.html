@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Despacho LuxRides</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"/>
-  <script src="config.js?v=20260801a"></script>
+  <script src="config.js?v=20260802b"></script>
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -262,6 +262,11 @@
       <button class="btn-link-panel btn-gold" onclick="refrescarReservas(this)">🔄 Refrescar</button>
       <button class="btn-link-panel btn-gold" onclick="autoAsignarPendientes()">⚡ Autoasignar cercanos</button>
       <button class="btn-link-panel btn-danger" onclick="borrarClientesPendientesAdmin()">🗑️ Borrar pendientes</button>
+      <select id="filtro-cliente-tipo" class="sel-filter" onchange="aplicarFiltroClienteTipo(this.value)">
+        <option value="TODOS">📋 Todos</option>
+        <option value="RESERVA">🚘 Reservas</option>
+        <option value="TOUR">🧳 Tours catálogo</option>
+      </select>
     </div>
     <div id="lista-clientes">
       <div class="empty"><span>⏳</span>Conectando con Supabase…</div>
@@ -275,13 +280,19 @@
       <div class="sb-linea"></div>
     </div>
     <div class="panel-title">
-      🚕 Flota de Choferes
+      🚕 Personal de Ruta
       <span class="count" id="cnt-choferes">0</span>
     </div>
     <div class="panel-actions">
-      <button class="btn-link-panel btn-gold" onclick="toggleQuickChoferForm()">➕ Agregar chofer</button>
+      <button class="btn-link-panel btn-gold" onclick="abrirAltaRapida('chofer')">➕ Agregar chofer</button>
+      <button class="btn-link-panel btn-gold" onclick="abrirAltaRapida('guia')">🧭 Agregar guía</button>
       <button class="btn-link-panel btn-gold" onclick="abrirModalVehiculo(null)">🚗 Asignar vehículo</button>
       <button class="btn-link-panel btn-danger" onclick="borrarChoferesAdmin()">🗑️ Borrar choferes</button>
+      <select id="filtro-personal" class="sel-filter" onchange="aplicarFiltroPersonal(this.value)">
+        <option value="TODOS">👥 Todo el personal</option>
+        <option value="CHOFER">🚕 Solo choferes</option>
+        <option value="GUIA">🧭 Solo guías</option>
+      </select>
       <select id="filtro-hotel" class="sel-filter" onchange="aplicarFiltroHotel(this.value)">
         <option value="TODOS">🏨 Todos los hoteles</option>
       </select>
@@ -292,10 +303,11 @@
         style="width:100%;padding:9px 12px;background:#0f0f0f;border:1px solid var(--border);color:var(--fg);border-radius:8px;font-family:'Outfit',sans-serif;font-size:.88rem;outline:none;box-sizing:border-box;"/>
     </div>
     <div id="quick-chofer-form" class="quick-form">
+      <div id="quick-form-tipo-label" style="font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:#f5d57b;margin-bottom:8px;">Alta rápida: chofer</div>
       <div class="quick-row">
         <input id="nuevo-chofer-id" type="text" placeholder="ID chofer (ej: 009)"/>
         <input id="nuevo-chofer-nombre" type="text" placeholder="Nombre del chofer"/>
-        <input id="nuevo-chofer-hotel" type="text" placeholder="Hotel (opcional)"/>
+        <input id="nuevo-chofer-hotel" type="text" placeholder="Hotel / Base (opcional)"/>
         <button class="btn-small" onclick="confirmarNuevoChofer()">Confirmar</button>
       </div>
     </div>
@@ -521,6 +533,9 @@ var choferesLista = [];
 var reservasActivas = {};
 var reservaEstadosPrevios = {};
 var filtroHotelActivo = 'TODOS';
+var filtroClientesTipo = 'TODOS';
+var filtroPersonalActivo = 'TODOS';
+var quickAltaTipo = 'chofer';
 var mapaFiltroVehiculo = 'todos';
 var flotaFiltro = 'todos';
 var tipoVehiculoSeleccionado = 'carro';
@@ -536,6 +551,8 @@ var channels = [];
 var autoAssignTimers = {};
 var autoAssignIntentos = {};
 var autoAssignEnProceso = false;
+var choferesRefreshEnCurso = false;
+var choferesUltimoRefreshMs = 0;
 
 function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -562,6 +579,20 @@ function setBadge(id, type, text) {
 }
 
 function formatNum(n) { return Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+
+function esReservaTour(r) {
+  if (!r) return false;
+  var servicio = String(r.servicio || '').trim().toUpperCase();
+  var vehiculo = String(r.vehiculo || '').toLowerCase();
+  var origen = String(r.origen || '').toLowerCase();
+  return servicio === 'G' || vehiculo.indexOf('tour') !== -1 || origen.indexOf('tour') !== -1;
+}
+
+function esGuiaRegistro(ch, id) {
+  var tipo = String(ch && ch.vehiculo_tipo || '').trim().toLowerCase();
+  var idStr = String(id || (ch && ch.id) || '').trim().toLowerCase();
+  return tipo === 'guia' || tipo === 'guía' || idStr.indexOf('guia') === 0 || idStr.indexOf('g-') === 0;
+}
 
 function dbGet(table, id) {
   if (table === 'choferes') {
@@ -719,24 +750,33 @@ function initMapaChoferes() {
         el.appendChild(ts);
       } catch(e) {}
     }, 300);
-    setInterval(function() { if (mapChoferes) refrescarUbicacionesChoferes(); }, 3000);
+    setInterval(function() {
+      if (!mapChoferes) return;
+      if (document.visibilityState && document.visibilityState !== 'visible') return;
+      if (Date.now() - choferesUltimoRefreshMs < 15000) return;
+      refrescarUbicacionesChoferes();
+    }, 15000);
   } catch(e) { console.error('Error initMapa:', e); }
 }
 
 async function refrescarUbicacionesChoferes() {
+  if (choferesRefreshEnCurso) return;
   if (!SUPABASE) return;
+  choferesRefreshEnCurso = true;
   try {
     var data = await dbGetAll('choferes');
     if (!data) return;
     data.forEach(function(ch) { choferesDisponibles[ch.id] = ch; });
     choferesLista = data.map(function(ch) { return formatearChofer(ch.id, ch); });
     actualizarMapaChoferes();
+    choferesUltimoRefreshMs = Date.now();
     var _ts = document.getElementById('mapa-timestamp');
     if (_ts) {
       var _ahora = new Date();
       _ts.textContent = '🔴 En vivo · ' + _ahora.getHours().toString().padStart(2,'0') + ':' + _ahora.getMinutes().toString().padStart(2,'0') + ':' + _ahora.getSeconds().toString().padStart(2,'0');
     }
   } catch(e) { console.error('refrescarUbicaciones:', e); }
+  finally { choferesRefreshEnCurso = false; }
 }
 
 function actualizarMapaChoferes() {
@@ -1206,6 +1246,7 @@ async function cargarChoferesIniciales() {
   if (!data) return;
   data.forEach(function(ch) { choferesDisponibles[ch.id] = ch; });
   choferesLista = data.map(function(ch) { return formatearChofer(ch.id, ch); });
+  choferesUltimoRefreshMs = Date.now();
   renderizarChoferes();
   renderFlota();
   refrescarOpcionesHoteles();
@@ -1248,11 +1289,36 @@ function _choferOcupadoEnReservaActiva(choferId) {
 }
 
 function _choferDisponibleParaAuto(ch, choferId) {
+  if (esGuiaRegistro(ch, choferId)) return false;
   var est = String(ch && ch.estado || '').toLowerCase();
   var enLinea = /en linea|online|libre|demo/i.test(est);
   if (!enLinea) return false;
   if (_choferOcupadoEnReservaActiva(choferId)) return false;
   return !!_parseUbicacion(ch.ubicacion);
+}
+
+function _guiaDisponibleParaAuto(ch, guiaId) {
+  if (!esGuiaRegistro(ch, guiaId)) return false;
+  if (_choferOcupadoEnReservaActiva(guiaId)) return false;
+  var est = String(ch && ch.estado || '').toLowerCase();
+  return /en linea|online|libre|demo|offline|desconectado/i.test(est);
+}
+
+function obtenerGuiaDisponible() {
+  var guias = Object.entries(choferesDisponibles)
+    .filter(function(entry) { return _guiaDisponibleParaAuto(entry[1], entry[0]); })
+    .map(function(entry) {
+      return {
+        guiaId: entry[0],
+        guiaNombre: entry[1].nombre || entry[0],
+        enLinea: /en linea|online|libre|demo/i.test(String(entry[1].estado || '').toLowerCase())
+      };
+    })
+    .sort(function(a, b) {
+      if (a.enLinea !== b.enLinea) return a.enLinea ? -1 : 1;
+      return a.guiaNombre.localeCompare(b.guiaNombre, 'es');
+    });
+  return guias[0] || null;
 }
 
 function obtenerChoferMasCercano(reserva) {
@@ -1282,6 +1348,19 @@ async function autoAsignarReserva(reservaId, silencioso) {
   if (!r) return false;
   var estado = String(r.estado || '').toLowerCase();
   if (estado !== 'pendiente') return false;
+
+  if (esReservaTour(r)) {
+    var guia = obtenerGuiaDisponible();
+    if (!guia) {
+      if (!silencioso) showToast('⚠️ No hay guías disponibles para este tour.', true);
+      return false;
+    }
+    csdSeleccionar(reservaId, guia.guiaId, guia.guiaNombre);
+    await despachar(reservaId);
+    if (!silencioso) showToast('🧭 Guía asignado: ' + guia.guiaNombre);
+    autoAssignIntentos[reservaId] = Date.now();
+    return true;
+  }
 
   if ((!r.origen_lat || !r.origen_lng) && r.origen) {
     var pos = await geocodificarDireccion(r.origen);
@@ -1387,6 +1466,9 @@ function renderizarClientes() {
     var r = reservasActivas[reservaId];
     var estado = String(r.estado || '').toLowerCase();
     if (!['pendiente', 'asignado', 'en curso', 'en_curso'].includes(estado)) return;
+    var esTour = esReservaTour(r);
+    if (filtroClientesTipo === 'TOUR' && !esTour) return;
+    if (filtroClientesTipo === 'RESERVA' && esTour) return;
     if (estado === 'pendiente') pendientes++;
 
     var borderColor = estado === 'pendiente' ? 'var(--gold)' : estado === 'asignado' ? 'rgba(59,130,246,0.7)' : 'rgba(34,197,94,0.7)';
@@ -1404,9 +1486,17 @@ function renderizarClientes() {
     var avisoReembolso = r.reembolso_automatico ? '<p style="color:#86efac"><b>💸 Reembolso:</b> ' + escHtml(r.reembolso_estado || 'registrado') + '</p>' : '';
     var vlNum = r.numero_vuelo ? ' · Vuelo: ' + escHtml(r.numero_vuelo) : '';
     var choferInfoHTML = (estado === 'asignado' || estado === 'en curso' || estado === 'en_curso') && r.chofer_id ? buildDriverInfoHTML(r) : '';
+    var tipoChip = esTour
+      ? '<span style="background:rgba(16,185,129,.12);color:#6ee7b7;padding:3px 8px;border-radius:999px;font-size:0.68rem;font-weight:700;margin-left:6px;">🧳 TOUR</span>'
+      : '<span style="background:rgba(59,130,246,.12);color:#93c5fd;padding:3px 8px;border-radius:999px;font-size:0.68rem;font-weight:700;margin-left:6px;">🚘 RESERVA</span>';
+    var labelAsignacion = esTour ? 'Asignar guía:' : 'Asignar a:';
+    var btnEnviarTxt = esTour ? 'ASIGNAR GUÍA 🧭' : 'ENVIAR 🚀';
+    var btnAutoTxt = esTour ? 'AUTO GUÍA 🧭' : 'AUTO CERCANO ⚡';
+    var placeholderAsignar = esTour ? '🔍 Nombre o ID del guía…' : '🔍 Nombre, ID o vehículo…';
 
     div.innerHTML += '<div class="tarjeta" style="border-left-color:' + borderColor + ';">'
       + estadoBadge
+      + tipoChip
       + choferInfoHTML
       + '<p style="margin-top:6px;"><b>👤 ' + escHtml(r.cliente || 'Sin nombre') + '</b></p>'
       + '<p>📍 <b>' + escHtml(r.origen) + '</b>' + (r.destino && r.destino !== 'Por tiempo' ? ' ➔ <b>' + escHtml(r.destino) + '</b>' : '') + '</p>'
@@ -1415,8 +1505,8 @@ function renderizarClientes() {
       + (r.distancia_km ? '<p>📏 ' + r.distancia_km + ' km · ⏱️ ' + r.duracion_min + ' min</p>' : '')
       + avisoReasignacion + avisoReembolso + califHtml
       + '<div class="precio">$' + formatNum(r.total || 0) + ' MXN</div><hr>'
-      + (estado === 'pendiente' ? '<div class="assign-row"><label>Asignar a:</label><div class="csd-wrap"><input type="text" class="csd-input" id="si-' + reservaId + '" placeholder="🔍 Nombre, ID o vehículo…" oninput="csdFiltrar(\'' + reservaId + '\',this.value)" onfocus="csdAbrir(\'' + reservaId + '\')" autocomplete="off"/><div class="csd-list" id="sd-' + reservaId + '"></div><input type="hidden" id="sel-' + reservaId + '" value=""/></div><button class="btn-despachar" onclick="despachar(\'' + reservaId + '\')">ENVIAR 🚀</button><button class="btn-despachar" style="background:#2563eb;color:#fff;" onclick="autoAsignarReserva(\'' + reservaId + '\', false)">AUTO CERCANO ⚡</button></div>' : '')
-      + (estado === 'asignado' ? '<div class="assign-row" style="margin-top:8px;"><label>↻ Reasignar a:</label><div class="csd-wrap"><input type="text" class="csd-input" id="si-' + reservaId + '" placeholder="🔍 Nombre, ID o vehículo…" oninput="csdFiltrar(\'' + reservaId + '\',this.value)" onfocus="csdAbrir(\'' + reservaId + '\')" autocomplete="off"/><div class="csd-list" id="sd-' + reservaId + '"></div><input type="hidden" id="sel-' + reservaId + '" value=""/></div><button class="btn-despachar" style="background:#3B82F6;color:#fff;" onclick="reasignarChofer(\'' + reservaId + '\')">REASIGNAR ↻</button></div>' : '')
+      + (estado === 'pendiente' ? '<div class="assign-row"><label>' + labelAsignacion + '</label><div class="csd-wrap"><input type="text" class="csd-input" id="si-' + reservaId + '" placeholder="' + placeholderAsignar + '" oninput="csdFiltrar(\'' + reservaId + '\',this.value)" onfocus="csdAbrir(\'' + reservaId + '\')" autocomplete="off"/><div class="csd-list" id="sd-' + reservaId + '"></div><input type="hidden" id="sel-' + reservaId + '" value=""/></div><button class="btn-despachar" onclick="despachar(\'' + reservaId + '\')">' + btnEnviarTxt + '</button><button class="btn-despachar" style="background:#2563eb;color:#fff;" onclick="autoAsignarReserva(\'' + reservaId + '\', false)">' + btnAutoTxt + '</button></div>' : '')
+      + (estado === 'asignado' ? '<div class="assign-row" style="margin-top:8px;"><label>↻ Reasignar ' + (esTour ? 'guía:' : 'a:') + '</label><div class="csd-wrap"><input type="text" class="csd-input" id="si-' + reservaId + '" placeholder="' + placeholderAsignar + '" oninput="csdFiltrar(\'' + reservaId + '\',this.value)" onfocus="csdAbrir(\'' + reservaId + '\')" autocomplete="off"/><div class="csd-list" id="sd-' + reservaId + '"></div><input type="hidden" id="sel-' + reservaId + '" value=""/></div><button class="btn-despachar" style="background:#3B82F6;color:#fff;" onclick="reasignarChofer(\'' + reservaId + '\')">REASIGNAR ↻</button></div>' : '')
       + '<div style="display:flex;gap:8px;margin-top:10px;">'
       + '<button onclick="compartirEnlace(\'' + reservaId + '\')" style="flex:1;padding:9px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:#86efac;border-radius:10px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .2s;" onmouseover="this.style.background=\'rgba(34,197,94,.22)\'" onmouseout="this.style.background=\'rgba(34,197,94,.12)\'">🔗 Copiar enlace</button>'
       + '<button onclick="compartirWhatsApp(\'' + reservaId + '\',\'' + escHtml(r.cliente || '') + '\')" style="flex:1;padding:9px;background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.4);color:#4ade80;border-radius:10px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .2s;" onmouseover="this.style.background=\'rgba(37,211,102,.22)\'" onmouseout="this.style.background=\'rgba(37,211,102,.12)\'">📲 WhatsApp</button>'
@@ -1468,16 +1558,24 @@ function csdRender(reservaId, q) {
   var lista = document.getElementById('sd-' + reservaId);
   if (!lista) return;
   var filtro = (q || '').trim().toLowerCase();
+  var reserva = reservasActivas[reservaId] || null;
+  var requiereGuia = esReservaTour(reserva);
+  var baseItems = Object.entries(choferesDisponibles).filter(function(e) {
+    var id = e[0];
+    var ch = e[1] || {};
+    return requiereGuia ? esGuiaRegistro(ch, id) : !esGuiaRegistro(ch, id);
+  });
   var items = filtro
-    ? Object.entries(choferesDisponibles).filter(function(e) { var ch = e[1]; return ch.nombre.toLowerCase().indexOf(filtro) !== -1 || e[0].toLowerCase().indexOf(filtro) !== -1 || (ch.vehiculo_tipo || '').toLowerCase().indexOf(filtro) !== -1; })
-    : Object.entries(choferesDisponibles);
+    ? baseItems.filter(function(e) { var ch = e[1]; return ch.nombre.toLowerCase().indexOf(filtro) !== -1 || e[0].toLowerCase().indexOf(filtro) !== -1 || (ch.vehiculo_tipo || '').toLowerCase().indexOf(filtro) !== -1; })
+    : baseItems;
 
   if (!items.length) { lista.innerHTML = '<div class="csd-item">Sin resultados</div>'; lista.classList.add('open'); return; }
   var selVal = document.getElementById('sel-' + reservaId) ? document.getElementById('sel-' + reservaId).value : '';
   lista.innerHTML = items.map(function(e) {
     var id = e[0], ch = e[1];
-    var emoji = ch.vehiculo_tipo === 'camioneta' ? '🚙' : ch.vehiculo_tipo === 'carro' ? '🚗' : '❓';
-    var vLabel = ch.vehiculo_tipo === 'camioneta' ? 'Camioneta' : ch.vehiculo_tipo === 'carro' ? 'Carro' : 'Sin vehículo';
+    var isGuia = esGuiaRegistro(ch, id);
+    var emoji = isGuia ? '🧭' : (ch.vehiculo_tipo === 'camioneta' ? '🚙' : ch.vehiculo_tipo === 'carro' ? '🚗' : '❓');
+    var vLabel = isGuia ? 'Guía' : (ch.vehiculo_tipo === 'camioneta' ? 'Camioneta' : ch.vehiculo_tipo === 'carro' ? 'Carro' : 'Sin vehículo');
     var activo = id === selVal ? ' sel' : '';
     return '<div class="csd-item' + activo + '" onclick="csdSeleccionar(\'' + reservaId + '\',\'' + id + '\',\'' + escHtml(ch.nombre) + '\')"><span>' + emoji + '</span><span style="flex:1">' + escHtml(ch.nombre) + '</span><span style="font-size:.72rem;color:var(--muted);">' + vLabel + '</span></div>';
   }).join('');
@@ -1726,34 +1824,42 @@ function renderizarChoferes() {
   var q = (document.getElementById('buscador-choferes') ? document.getElementById('buscador-choferes').value : '').trim().toLowerCase();
 
   var filtrados = choferesLista.filter(function(ch) {
+    var isGuia = esGuiaRegistro(ch, ch.id);
+    if (filtroPersonalActivo === 'GUIA' && !isGuia) return false;
+    if (filtroPersonalActivo === 'CHOFER' && isGuia) return false;
     if (filtroHotelActivo !== 'TODOS' && (ch.hotel || 'Sin asignar') !== filtroHotelActivo) return false;
     if (!q) return true;
     return ch.nombre.toLowerCase().indexOf(q) !== -1 || ch.id.toLowerCase().indexOf(q) !== -1 || (ch.vehiculo_tipo || '').toLowerCase().indexOf(q) !== -1;
   });
 
   filtrados.forEach(function(ch) {
+    var isGuia = esGuiaRegistro(ch, ch.id);
     var estadoLower = ch.estado.toLowerCase();
     var dotClass = (estadoLower.indexOf('en linea') !== -1 || estadoLower.indexOf('online') !== -1 || estadoLower.indexOf('libre') !== -1 || estadoLower.indexOf('demo') !== -1) ? 'libre'
       : (estadoLower.indexOf('ocupado') !== -1 || estadoLower.indexOf('en_viaje') !== -1 || estadoLower.indexOf('en viaje') !== -1) ? 'ocupado' : 'desconectado';
     var estadoLabel = (estadoLower.indexOf('en linea') !== -1 || estadoLower.indexOf('online') !== -1 || estadoLower.indexOf('libre') !== -1 || estadoLower.indexOf('demo') !== -1) ? '🟢 En línea'
       : (estadoLower.indexOf('ocupado') !== -1 || estadoLower.indexOf('en_viaje') !== -1 || estadoLower.indexOf('en viaje') !== -1) ? '🟡 En viaje' : '🔴 Desconectado';
 
-    div.innerHTML += '<div class="chofer-card"><div class="chofer-avatar">' + (ch.vehiculo_tipo === 'camioneta' ? '🚙' : '🚗') + '</div><div class="chofer-info">'
+    div.innerHTML += '<div class="chofer-card"><div class="chofer-avatar">' + (isGuia ? '🧭' : (ch.vehiculo_tipo === 'camioneta' ? '🚙' : '🚗')) + '</div><div class="chofer-info">'
       + '<div class="chofer-nombre">' + escHtml(ch.nombre) + '</div><div class="chofer-id">ID: ' + escHtml(ch.id) + '</div>'
       + '<div class="chofer-estado"><span class="dot ' + dotClass + '"></span>' + estadoLabel + '</div>'
-      + '<div class="chofer-hotel">🏨 Hotel: <b>' + escHtml(ch.hotel || 'Sin asignar') + '</b></div>'
-      + (ch.vehiculo_tipo ? '<div class="chofer-vehiculo">' + (ch.vehiculo_tipo === 'camioneta' ? '🚙 Camioneta' : '🚗 Carro') + '</div>' : '<div class="chofer-vehiculo" style="color:#666;">Sin vehículo</div>')
+      + '<div class="chofer-hotel">' + (isGuia ? '📍 Base' : '🏨 Hotel') + ': <b>' + escHtml(ch.hotel || 'Sin asignar') + '</b></div>'
+      + (isGuia
+        ? '<div class="chofer-vehiculo" style="color:#6ee7b7;">🧳 Guía de tours</div>'
+        : (ch.vehiculo_tipo ? '<div class="chofer-vehiculo">' + (ch.vehiculo_tipo === 'camioneta' ? '🚙 Camioneta' : '🚗 Carro') + '</div>' : '<div class="chofer-vehiculo" style="color:#666;">Sin vehículo</div>'))
       + (ch.viajeActual ? '<div class="viaje-actual">🗺️ ' + escHtml(ch.viajeActual) + '</div>' : '')
       + (!ch.ubicacion && LuxCfg.choferActivoEnMapa(ch.estado) ? '<div class="viaje-actual" style="color:#fde68a;">📡 En línea — sin GPS (usa Demo en ses o activa ubicación)</div>' : '')
       + (ch.ubicacion ? '<div class="viaje-actual" style="color:#86efac;">📍 GPS activo</div>' : '')
-      + '<div class="chofer-actions"><button class="btn-small" onclick="editarNombreChofer(\'' + ch.id + '\')">✏️ Nombre</button><button class="btn-small" onclick="asignarHotel(\'' + ch.id + '\')">🏨 Hotel</button><button class="btn-small" onclick="abrirModalVehiculo(\'' + ch.id + '\')">🚗 Vehículo</button><button class="btn-small" onclick="abrirPanelChofer(\'' + ch.id + '\')">📍 Ubicación</button><button class="btn-small" onclick="borrarChoferIndividual(\'' + ch.id + '\')">🗑️ Borrar</button></div></div></div>';
+      + '<div class="chofer-actions"><button class="btn-small" onclick="editarNombreChofer(\'' + ch.id + '\')">✏️ Nombre</button><button class="btn-small" onclick="asignarHotel(\'' + ch.id + '\')">' + (isGuia ? '📍 Base' : '🏨 Hotel') + '</button>'
+      + (isGuia ? '' : '<button class="btn-small" onclick="abrirModalVehiculo(\'' + ch.id + '\')">🚗 Vehículo</button>')
+      + '<button class="btn-small" onclick="abrirPanelChofer(\'' + ch.id + '\')">📍 Ubicación</button><button class="btn-small" onclick="borrarChoferIndividual(\'' + ch.id + '\')">🗑️ Borrar</button></div></div></div>';
   });
 
   document.getElementById('cnt-choferes').textContent = filtrados.length;
   var online = filtrados.filter(function(c) { return /en linea|libre/i.test(c.estado); }).length;
   var ocup = filtrados.filter(function(c) { return /ocupado/i.test(c.estado); }).length;
   var off = filtrados.filter(function(c) { return /desconectado|offline/i.test(c.estado); }).length;
-  setBadge('badge-choferes', filtrados.length > 0 ? 'ok' : 'warn', 'Choferes: ' + filtrados.length + ' | 🟢' + online + ' 🟡' + ocup + ' 🔴' + off);
+  setBadge('badge-choferes', filtrados.length > 0 ? 'ok' : 'warn', 'Personal: ' + filtrados.length + ' | 🟢' + online + ' 🟡' + ocup + ' 🔴' + off);
 
   if (filtrados.length === 0) div.innerHTML = '<div class="empty"><span>🏨</span>No hay choferes para este filtro</div>';
 }
@@ -1774,11 +1880,19 @@ async function confirmarNuevoChofer() {
   } catch(e) { /* si no se puede leer, intentamos insertar de todas formas */ }
 
   try {
-    var res = await dbInsert('choferes', { id: id, nombre: nombre, hotel: hotelInput || 'Sin hotel', estado: 'offline', creado_en: new Date().toISOString() });
+    var esGuia = quickAltaTipo === 'guia';
+    var res = await dbInsert('choferes', {
+      id: id,
+      nombre: nombre,
+      hotel: hotelInput || (esGuia ? 'Guias' : 'Sin hotel'),
+      vehiculo_tipo: esGuia ? 'guia' : null,
+      estado: 'offline',
+      creado_en: new Date().toISOString()
+    });
     document.getElementById('nuevo-chofer-id').value = '';
     document.getElementById('nuevo-chofer-nombre').value = '';
     document.getElementById('nuevo-chofer-hotel').value = '';
-    showToast('✅ Chofer ' + nombre + ' agregado');
+    showToast('✅ ' + (esGuia ? 'Guía' : 'Chofer') + ' ' + nombre + ' agregado');
     console.log('[chofer agregado]', res.data);
   } catch (err) {
     console.error('[confirmarNuevoChofer error]', err);
@@ -1800,7 +1914,7 @@ async function editarNombreChofer(choferID) {
   var actual = choferesDisponibles[choferID] ? choferesDisponibles[choferID].nombre : '';
   var nuevo = window.prompt('Nombre para chofer ' + choferID + ':', actual);
   if (nuevo === null || !nuevo.trim()) return;
-  try { await dbUpdate('choferes', choferID, { nombre: nuevo.trim(), updated_at: new Date().toISOString() }); showToast('✏️ Nombre actualizado'); }
+  try { await dbUpdate('choferes', choferID, { nombre: nuevo.trim() }); showToast('✏️ Nombre actualizado'); }
   catch (err) { showToast('❌ ' + (err.message || err), true); }
 }
 
@@ -1808,7 +1922,7 @@ async function asignarHotel(choferID) {
   var actual = choferesDisponibles[choferID] ? choferesDisponibles[choferID].hotel : '';
   var nuevo = window.prompt('Hotel para chofer ' + choferID + ':', actual);
   if (nuevo === null || !nuevo.trim()) return;
-  try { await dbUpdate('choferes', choferID, { hotel: nuevo.trim(), updated_at: new Date().toISOString() }); showToast('🏨 Hotel guardado'); }
+  try { await dbUpdate('choferes', choferID, { hotel: nuevo.trim() }); showToast('🏨 Hotel guardado'); }
   catch (err) { showToast('❌ ' + (err.message || err), true); }
 }
 
@@ -1862,9 +1976,57 @@ async function borrarReservaForzada(reservaId) {
   }
 }
 
-function toggleQuickChoferForm() {
+function toggleQuickChoferForm(tipo) {
+  if (tipo) quickAltaTipo = tipo;
+  refrescarEtiquetasAltaRapida();
   var form = document.getElementById('quick-chofer-form');
   if (form) form.style.display = form.style.display === 'block' ? 'none' : 'block';
+}
+
+function abrirAltaRapida(tipo) {
+  quickAltaTipo = tipo === 'guia' ? 'guia' : 'chofer';
+  var form = document.getElementById('quick-chofer-form');
+  if (!form) return;
+  refrescarEtiquetasAltaRapida();
+  form.style.display = 'block';
+  var idEl = document.getElementById('nuevo-chofer-id');
+  if (idEl) idEl.focus();
+}
+
+function refrescarEtiquetasAltaRapida() {
+  var isGuia = quickAltaTipo === 'guia';
+  var lbl = document.getElementById('quick-form-tipo-label');
+  var idInp = document.getElementById('nuevo-chofer-id');
+  var nomInp = document.getElementById('nuevo-chofer-nombre');
+  if (lbl) lbl.textContent = 'Alta rápida: ' + (isGuia ? 'guía de tours' : 'chofer');
+  if (idInp) idInp.placeholder = isGuia ? 'ID guía (ej: G-009)' : 'ID chofer (ej: 009)';
+  if (nomInp) nomInp.placeholder = isGuia ? 'Nombre del guía' : 'Nombre del chofer';
+}
+
+function aplicarFiltroClienteTipo(valor) {
+  filtroClientesTipo = valor || 'TODOS';
+  renderizarClientes();
+  scheduleActualizarMapa();
+}
+
+function aplicarFiltroPersonal(valor) {
+  filtroPersonalActivo = valor || 'TODOS';
+  renderizarChoferes();
+  renderFlota();
+
+  var hayVisibles = choferesLista.some(function(ch) {
+    var isGuia = esGuiaRegistro(ch, ch.id);
+    if (filtroPersonalActivo === 'GUIA' && !isGuia) return false;
+    if (filtroPersonalActivo === 'CHOFER' && isGuia) return false;
+    if (filtroHotelActivo !== 'TODOS' && (ch.hotel || 'Sin asignar') !== filtroHotelActivo) return false;
+    return true;
+  });
+  if (!hayVisibles && filtroHotelActivo !== 'TODOS') {
+    filtroHotelActivo = 'TODOS';
+    var sel = document.getElementById('filtro-hotel');
+    if (sel) sel.value = 'TODOS';
+    renderizarChoferes();
+  }
 }
 
 function aplicarFiltroHotel(valor) {
@@ -1930,6 +2092,7 @@ function renderFlota() {
   var lista = document.getElementById('lista-flota');
   if (!lista) return;
   var filtrados = choferesLista.filter(function(ch) {
+    if (esGuiaRegistro(ch, ch.id)) return false;
     if (flotaFiltro === 'todos') return true;
     if (flotaFiltro === 'sin') return !ch.vehiculo_tipo;
     return ch.vehiculo_tipo === flotaFiltro;
@@ -1967,7 +2130,8 @@ function abrirModalVehiculo(choferId) {
 function renderChoferesModal(filtroTexto, seleccionado) {
   var lista = document.getElementById('mv-chofer-lista');
   var q = filtroTexto.trim().toLowerCase();
-  var filtrados = q ? choferesLista.filter(function(ch) { return ch.nombre.toLowerCase().indexOf(q) !== -1 || ch.id.toLowerCase().indexOf(q) !== -1; }) : choferesLista;
+  var base = choferesLista.filter(function(ch) { return !esGuiaRegistro(ch, ch.id); });
+  var filtrados = q ? base.filter(function(ch) { return ch.nombre.toLowerCase().indexOf(q) !== -1 || ch.id.toLowerCase().indexOf(q) !== -1; }) : base;
   if (!filtrados.length) { lista.innerHTML = '<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:8px;">Sin resultados</div>'; return; }
   lista.innerHTML = filtrados.map(function(ch) {
     var activo = document.getElementById('mv-chofer-select').value === ch.id;
@@ -2159,6 +2323,7 @@ async function _callIA(messages) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  refrescarEtiquetasAltaRapida();
   if (SUPABASE) {
     setBadge('badge-supabase', 'ok', 'Supabase: activo ✓');
     cargarReservasIniciales();
