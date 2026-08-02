@@ -1,6 +1,9 @@
 Options -Indexes
 RewriteEngine On
 
+# Ruta limpia para la pagina de guias
+RewriteRule ^guias/?$ /guias.html [L,NC]
+
 # Proxy /api/* -> PHP proxy -> Node.js :8787
 RewriteCond %{REQUEST_URI} ^/api(/|$)
 RewriteCond %{REQUEST_FILENAME} !-f
