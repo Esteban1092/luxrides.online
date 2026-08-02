@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LuxRides Guias</title>
+  <script src="config.js?v=20260802a"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #090909;
+      --card: #151515;
+      --card-2: #1c1c1c;
+      --gold: #d4af37;
+      --gold-soft: rgba(212, 175, 55, 0.2);
+      --text: #f4f4f4;
+      --muted: rgba(255, 255, 255, 0.6);
+      --border: rgba(255, 255, 255, 0.12);
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --blue: #3b82f6;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #161616, var(--bg) 58%);
+      color: var(--text);
+      font-family: "Outfit", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      padding: 20px;
+    }
+
+    .screen {
+      width: 100%;
+      min-height: calc(100vh - 40px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: linear-gradient(145deg, var(--card), #101010);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 14px 48px rgba(0, 0, 0, 0.45);
+    }
+
+    .title {
+      color: var(--gold);
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.84rem;
+      line-height: 1.4;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .input {
+      width: 100%;
+      padding: 13px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0d0d0d;
+      color: #fff;
+      font-size: 0.96rem;
+      outline: none;
+      margin-bottom: 12px;
+    }
+
+    .input:focus { border-color: var(--gold); }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.94rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .btn:active { transform: scale(0.98); }
+    .btn[disabled] { opacity: 0.65; cursor: not-allowed; }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #d4af37, #f2d070);
+      color: #050505;
+    }
+
+    .btn-dark {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+
+    .error {
+      margin-top: 10px;
+      display: none;
+      font-size: 0.82rem;
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: 8px;
+      padding: 9px 10px;
+      text-align: center;
+    }
+
+    #app {
+      display: none;
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .brand {
+      color: var(--gold);
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      font-size: 1.12rem;
+    }
+
+    .guide-chip {
+      background: var(--gold-soft);
+      border: 1px solid rgba(212, 175, 55, 0.45);
+      color: #f7db86;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-inline {
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: #fff;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .panel-title {
+      font-size: 0.9rem;
+      color: #f5d57b;
+      margin-bottom: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.5;
+    }
+
+    .tour-card {
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--gold);
+      border-radius: 11px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .tour-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .tour-meta {
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .status {
+      display: inline-block;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      margin-bottom: 8px;
+    }
+
+    .status.pending { background: rgba(245, 158, 11, 0.16); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .status.assigned { background: rgba(59, 130, 246, 0.16); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .status.progress { background: rgba(34, 197, 94, 0.16); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .status.done { background: rgba(255, 255, 255, 0.1); color: #d4d4d4; border: 1px solid rgba(255, 255, 255, 0.22); }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+      padding: 20px 8px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 14px; }
+      .screen { min-height: calc(100vh - 28px); }
+      .card { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen" id="login-screen">
+    <div class="card">
+      <div class="title">LUXRIDES GUIAS</div>
+      <div class="subtitle">Ingresa con el ID asignado por administración.<br/>Si no tienes ID, solicítalo al despacho.</div>
+      <input id="inp-id" class="input" type="text" autocomplete="off" placeholder="ID de guia (ej: G-009)"/>
+      <button id="btn-login" class="btn btn-gold" onclick="loginGuia()">INGRESAR</button>
+      <div id="login-error" class="error"></div>
+    </div>
+  </div>
+
+  <main id="app">
+    <div class="topbar">
+      <div>
+        <div class="brand">LUXRIDES ONLINE / GUIAS</div>
+        <div id="guide-chip" class="guide-chip">ID: —</div>
+      </div>
+      <div class="actions">
+        <button class="btn-inline" onclick="refrescarTodo()">REFRESCAR</button>
+        <button class="btn-inline" onclick="logoutGuia()">CERRAR SESION</button>
+      </div>
+    </div>
+
+    <section class="panel">
+      <div class="panel-title">Perfil de guia</div>
+      <div id="perfil" class="meta">Cargando...</div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">Tours asignados</div>
+      <div id="lista-tours">
+        <div class="empty">Sin tours por ahora.</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const LS_GUIA_ID = 'luxrides_guia_id';
+    const SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
+    const SUPABASE_ANON = (window.LuxCfg && LuxCfg.supabaseAnonKey()) || '';
+
+    let sb = null;
+    let guia = null;
+    let channel = null;
+
+    try {
+      sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    } catch (e) {
+      mostrarError('No se pudo iniciar la conexion.');
+    }
+
+    function mostrarError(msg) {
+      const err = document.getElementById('login-error');
+      err.style.display = 'block';
+      err.textContent = msg;
+    }
+
+    function limpiarError() {
+      const err = document.getElementById('login-error');
+      err.style.display = 'none';
+      err.textContent = '';
+    }
+
+    function esRegistroGuia(row) {
+      if (!row) return false;
+      const tipo = String(row.vehiculo_tipo || '').toLowerCase().trim();
+      const id = String(row.id || '').toLowerCase().trim();
+      return tipo === 'guia' || tipo === 'guia' || id.startsWith('g-') || id.startsWith('guia');
+    }
+
+    function estadoClass(estado) {
+      const st = String(estado || '').toLowerCase();
+      if (st === 'pendiente') return 'pending';
+      if (st === 'asignado') return 'assigned';
+      if (st === 'en curso' || st === 'en_curso') return 'progress';
+      return 'done';
+    }
+
+    function estadoLabel(estado) {
+      const st = String(estado || '').toLowerCase();
+      if (st === 'pendiente') return 'PENDIENTE';
+      if (st === 'asignado') return 'ASIGNADO';
+      if (st === 'en curso' || st === 'en_curso') return 'EN CURSO';
+      if (st === 'completado') return 'COMPLETADO';
+      return (estado || 'N/D').toUpperCase();
+    }
+
+    async function loginGuia() {
+      limpiarError();
+      if (!sb) { mostrarError('Supabase no inicializado.'); return; }
+      const id = (document.getElementById('inp-id').value || '').trim();
+      if (!id) { mostrarError('Ingresa tu ID de guia.'); return; }
+
+      const btn = document.getElementById('btn-login');
+      btn.disabled = true;
+      btn.textContent = 'VALIDANDO...';
+
+      try {
+        const { data, error } = await sb
+          .from('choferes')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) throw new Error('ID no encontrado.');
+        if (!esRegistroGuia(data)) throw new Error('Este ID no corresponde a un guia.');
+
+        guia = data;
+        localStorage.setItem(LS_GUIA_ID, guia.id);
+        await abrirApp();
+      } catch (e) {
+        mostrarError(e.message || 'No se pudo iniciar sesion.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'INGRESAR';
+      }
+    }
+
+    async function restaurarSesion() {
+      const id = localStorage.getItem(LS_GUIA_ID);
+      if (!id || !sb) return;
+      try {
+        const { data, error } = await sb
+          .from('choferes')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (error || !data || !esRegistroGuia(data)) {
+          localStorage.removeItem(LS_GUIA_ID);
+          return;
+        }
+
+        guia = data;
+        await abrirApp();
+      } catch (_) {}
+    }
+
+    async function abrirApp() {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('guide-chip').textContent = 'ID: ' + (guia.id || '—') + ' · ' + (guia.nombre || 'Guia');
+      renderPerfil();
+      await cargarTours();
+      iniciarSubscripciones();
+    }
+
+    function renderPerfil() {
+      const estado = guia ? (guia.estado || 'offline') : 'offline';
+      const base = guia ? (guia.hotel || 'Sin base asignada') : 'Sin base';
+      const el = document.getElementById('perfil');
+      el.innerHTML =
+        '<div><b>Nombre:</b> ' + escapeHtml(guia && guia.nombre ? guia.nombre : '—') + '</div>' +
+        '<div><b>ID:</b> ' + escapeHtml(guia && guia.id ? guia.id : '—') + '</div>' +
+        '<div><b>Base:</b> ' + escapeHtml(base) + '</div>' +
+        '<div><b>Estado:</b> ' + escapeHtml(estado) + '</div>';
+    }
+
+    async function cargarTours() {
+      if (!guia || !sb) return;
+      const target = document.getElementById('lista-tours');
+      target.innerHTML = '<div class="empty">Cargando tours...</div>';
+
+      try {
+        const { data, error } = await sb
+          .from('reservas')
+          .select('*')
+          .eq('chofer_id', guia.id)
+          .eq('servicio', 'G')
+          .order('timestamp', { ascending: false })
+          .limit(80);
+
+        if (error) throw error;
+
+        const rows = data || [];
+        if (!rows.length) {
+          target.innerHTML = '<div class="empty">No tienes tours asignados en este momento.</div>';
+          return;
+        }
+
+        target.innerHTML = rows.map(function(r) {
+          const st = estadoLabel(r.estado);
+          const cls = estadoClass(r.estado);
+          return '<article class="tour-card">'
+            + '<span class="status ' + cls + '">' + st + '</span>'
+            + '<div class="tour-title">' + escapeHtml(r.cliente || 'Cliente sin nombre') + '</div>'
+            + '<div class="tour-meta">'
+            + '🗓️ ' + escapeHtml(r.fecha || '—') + ' · ⏰ ' + escapeHtml(r.hora_recogida || '—') + '<br/>'
+            + '📍 ' + escapeHtml(r.origen || '—') + '<br/>'
+            + (r.destino ? '🏁 ' + escapeHtml(r.destino) + '<br/>' : '')
+            + '💰 $' + Number(r.total || 0).toLocaleString('es-MX') + ' MXN · 🧳 Tour'
+            + '</div>'
+            + '</article>';
+        }).join('');
+      } catch (e) {
+        target.innerHTML = '<div class="empty">No se pudo cargar la lista de tours.</div>';
+      }
+    }
+
+    function iniciarSubscripciones() {
+      if (!sb || !guia) return;
+      if (channel) {
+        try { sb.removeChannel(channel); } catch (_) {}
+      }
+
+      channel = sb
+        .channel('guias-reservas-' + guia.id + '-' + Date.now())
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'reservas',
+          filter: 'chofer_id=eq.' + guia.id
+        }, function() {
+          cargarTours();
+        })
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'choferes',
+          filter: 'id=eq.' + guia.id
+        }, function(payload) {
+          if (payload && payload.new) {
+            guia = payload.new;
+            renderPerfil();
+            document.getElementById('guide-chip').textContent = 'ID: ' + (guia.id || '—') + ' · ' + (guia.nombre || 'Guia');
+          }
+        })
+        .subscribe();
+    }
+
+    async function refrescarTodo() {
+      await cargarTours();
+      if (!sb || !guia) return;
+      const { data } = await sb.from('choferes').select('*').eq('id', guia.id).maybeSingle();
+      if (data) {
+        guia = data;
+        renderPerfil();
+      }
+    }
+
+    function logoutGuia() {
+      localStorage.removeItem(LS_GUIA_ID);
+      if (channel && sb) {
+        try { sb.removeChannel(channel); } catch (_) {}
+      }
+      location.reload();
+    }
+
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    document.getElementById('inp-id').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') loginGuia();
+    });
+
+    restaurarSesion();
+  </script>
+</body>
+</html>
