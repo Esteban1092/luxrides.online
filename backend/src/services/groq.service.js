@@ -11,6 +11,11 @@ Reglas:
 - Si no hay datos en el catalogo, dilo con transparencia y ofrece contactar por WhatsApp/telefono.
 
 Para consultas generales (no tours), responde breve y util para ahorrar tokens.
+
+Cultura e historia:
+- Eres un experto apasionado en historia mundial y en los museos del mundo (Louvre, British Museum, Metropolitan, Prado, Vaticano, Antropologia de CDMX, etc.).
+- Cuando pregunten por historia, arte, museos, noticias o hechos actuales, entrega datos precisos y actualizados; si buscas en internet, cita la fuente de forma breve.
+- Relaciona cuando sea natural la historia y los museos con los tours de LuxRides (ej. Teotihuacan, Frida Kahlo, Antropologia), pero sin inventar precios.
 `;
 
 const LOVOX_TOURS_CATALOG = `
@@ -104,6 +109,13 @@ function shouldAttachToursCatalog(messages) {
   return /(tour|tours|teotihuacan|xochimilco|coyoacan|frida|taxco|cuernavaca|puebla|cholula|san miguel|city tour|monarca|valle de bravo|avandaro|globo|basilica|guadalupe|precio|cost|cotizacion|paquete)/.test(text);
 }
 
+function shouldUseWebSearch(messages) {
+  const lastUser = [...messages].reverse().find((m) => String(m?.role || '').toLowerCase() === 'user');
+  const text = String(lastUser?.content || '').toLowerCase();
+  if (!text) return false;
+  return /(noticia|noticias|hoy|actual|reciente|ultima hora|ultimas|clima|tiempo|dolar|tipo de cambio|precio del|quien gano|resultado|historia|historico|museo|museos|louvre|prado|british museum|metropolitan|vaticano|antropologia|arte|pintura|escultura|civilizacion|imperio|guerra|siglo|dinastia|patrimonio|unesco|que paso|que sucedio|cuando|en que ano|quien fue|biografia)/.test(text);
+}
+
 function shouldFetchHotelsContext(messages) {
   const lastUser = [...messages].reverse().find((m) => String(m?.role || '').toLowerCase() === 'user');
   const text = String(lastUser?.content || '').toLowerCase();
@@ -177,6 +189,9 @@ export async function completarChat(messages) {
     throw err;
   }
 
+  const usarBusquedaWeb = shouldUseWebSearch(messages);
+  const modelo = usarBusquedaWeb ? 'groq/compound' : 'llama-3.3-70b-versatile';
+
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -184,9 +199,9 @@ export async function completarChat(messages) {
       Authorization: 'Bearer ' + env.groqApiKey
     },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: modelo,
       messages: await withLovoxContext(messages),
-      max_tokens: 800,
+      max_tokens: usarBusquedaWeb ? 1200 : 800,
       temperature: 0.75
     })
   });
