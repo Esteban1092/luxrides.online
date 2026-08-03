@@ -182,16 +182,7 @@ async function withLovoxContext(messages) {
   ];
 }
 
-export async function completarChat(messages) {
-  if (!Array.isArray(messages) || messages.length === 0) {
-    const err = new Error('messages must be a non-empty array');
-    err.status = 400;
-    throw err;
-  }
-
-  const usarBusquedaWeb = shouldUseWebSearch(messages);
-  const modelo = usarBusquedaWeb ? 'groq/compound' : 'llama-3.3-70b-versatile';
-
+async function llamarGroq(model, contextMessages, maxTokens) {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -199,9 +190,9 @@ export async function completarChat(messages) {
       Authorization: 'Bearer ' + env.groqApiKey
     },
     body: JSON.stringify({
-      model: modelo,
-      messages: await withLovoxContext(messages),
-      max_tokens: usarBusquedaWeb ? 1200 : 800,
+      model,
+      messages: contextMessages,
+      max_tokens: maxTokens,
       temperature: 0.75
     })
   });
@@ -212,6 +203,28 @@ export async function completarChat(messages) {
     err.status = res.status;
     throw err;
   }
-
   return data?.choices?.[0]?.message?.content || '';
+}
+
+export async function completarChat(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    const err = new Error('messages must be a non-empty array');
+    err.status = 400;
+    throw err;
+  }
+
+  const contextMessages = await withLovoxContext(messages);
+  const usarBusquedaWeb = shouldUseWebSearch(messages);
+
+  if (usarBusquedaWeb) {
+    try {
+      const reply = await llamarGroq('groq/compound', contextMessages, 1200);
+      if (reply) return reply;
+    } catch (error) {
+      // Busquedas amplias pueden desbordar el contexto de compound (413). Se reintenta sin web.
+      console.warn('[lovox] compound fallo, fallback a modelo rapido:', error.message);
+    }
+  }
+
+  return llamarGroq('llama-3.3-70b-versatile', contextMessages, 800);
 }
