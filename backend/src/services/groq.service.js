@@ -218,7 +218,7 @@ export async function completarChat(messages) {
 
   if (usarBusquedaWeb) {
     try {
-      const reply = await llamarGroq('groq/compound', contextMessages, 1200);
+      const reply = await llamarGroq('groq/compound-mini', contextMessages, 1200);
       if (reply) return reply;
     } catch (error) {
       // Busquedas amplias pueden desbordar el contexto de compound (413). Se reintenta sin web.
