@@ -8,48 +8,18 @@
     STRIPE_PUBLISHABLE_KEY: 'pk_live_51TSJFbRsMQje2ZkMG6tpwzSwf8HsmPkQmP45tH2wXb6CVEsa3sSJMPrFyDyPu4vVQH4OBOVDeMYYqitKLy3DJhfU00Fqd0xLIC',
     WHATSAPP_CENTRAL:       '+525527729551',
     VAPID_PUBLIC_KEY:       'BLX6MhsrRUOf_m5So0bt1RtQeyQtsvq_UQpokto6XL8frM66o-kIW-AVQbcnT1PWOOIo_-yU7pOok6L2BmPpsnY',
-    HOSTINGER_ORIGIN:       '',
-    BACKEND_URL:            'https://congenial-space-goldfish-g4944pp4vj6hv5wr-8787.app.github.dev'
+    HOSTINGER_ORIGIN:       'https://luxrides.online',
+    BACKEND_URL:            'https://luxrides.online'
   };
 
-  function get(k) {
-    return CFG[k];
-  }
-
-  function sameOrigin() {
-    if (typeof window !== 'undefined' && window.location && window.location.origin) {
-      return String(window.location.origin).replace(/\/+$/, '');
-    }
-    return '';
-  }
-
-  function isVercelHost() {
-    if (typeof window === 'undefined' || !window.location) return false;
-    var host = String(window.location.hostname || '').toLowerCase();
-    return host.endsWith('.vercel.app') || host.endsWith('.vercel.dev');
-  }
+  function get(k) { return CFG[k]; }
 
   function backendUrl() {
-    var configured = (CFG.BACKEND_URL || '').replace(/\/+$/, '');
-    if (configured) return configured;
-    if (isVercelHost()) return 'https://luxrides.online';
-    var origin = sameOrigin();
-    if (origin) return origin;
-    if (typeof window !== 'undefined' && window.location) {
-      var host = (window.location.hostname || '').toLowerCase();
-      if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
-        return 'http://localhost:8787';
-      }
-    }
     return 'https://luxrides.online';
   }
 
   function apiBaseUrl() {
-    var configured = (CFG.HOSTINGER_ORIGIN || '').replace(/\/+$/, '');
-    if (configured) return configured;
-    if ((CFG.BACKEND_URL || '').trim()) return backendUrl();
-    if (isVercelHost()) return 'https://luxrides.online';
-    return backendUrl();
+    return 'https://luxrides.online';
   }
 
   function loadGoogleMaps(callbackName) {
