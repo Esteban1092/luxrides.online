@@ -1454,9 +1454,6 @@
               <button class="btn-toggle active" data-svc="I" onclick="setServicio('I')">🧭 Por Kilometraje</button>
               <button class="btn-toggle" data-svc="T" onclick="setServicio('T')">⏱️ Por Tiempo</button>
             </div>
-            <div class="trip-help" id="trip-time-help" title="El servicio por tiempo incluye chofer a disposición dentro de CDMX (mínimo 2 horas). No aplica para rutas interurbanas">
-              El servicio por tiempo incluye chofer a disposición dentro de CDMX (mínimo 2 horas). No aplica para rutas interurbanas.
-            </div>
           </div>
 
           <div class="field">
@@ -2777,6 +2774,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       let _directionsRenderer = null;
       let _infoOrigen = null;
       let _infoDestino = null;
+      let _markersStops = [];
       let _rutaChoferPolyline = null;
       let _rutaChoferPolylineGlow = null;
       let _rutaChoferPolylineSombra = null;
@@ -2888,6 +2886,18 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const idx = autocompletesStops.findIndex(function(it) { return it && it.id === sid; });
         if (idx < 0) return;
         autocompletesStops[idx].coord = { lat: Number(lat), lon: Number(lng), display: String(display || '') };
+        // Colocar o actualizar marcador de parada en el mapa
+        if (_mapaInstance) {
+          if (_markersStops[idx]) { try { _markersStops[idx].setMap(null); } catch(e){} }
+          _markersStops[idx] = new google.maps.Marker({
+            position: _gmapsLatLng(Number(lat), Number(lng)),
+            map: _mapaInstance,
+            zIndex: 8,
+            icon: { url: _svgPin('#e11d48', 'Stop', String(idx + 1)), scaledSize: new google.maps.Size(40, 54), anchor: new google.maps.Point(20, 52) },
+            title: display || ('Parada ' + (idx + 1))
+          });
+        }
+        if (coordOrigen && coordDestino) dibujarRutaSiCompleta();
       }
 
       function setupGoogleAutocomplete(inputId, tipo, stopId){
@@ -3355,9 +3365,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         field.className = "field";
         field.dataset.stopId = String(stopId);
         field.innerHTML = `
-          <label class="lbl">Parada</label>
+          <label class="lbl">Parada ${stopId}</label>
           <div class="icon-wrap">
-            <span class="ico">ð</span>
+            <span class="ico">&#x1F6D1;</span>
             <input type="text" id="inp-stop-${stopId}" data-stop-id="${stopId}" placeholder="Ej: Centro Histórico"/>
           </div>
         `;
@@ -3384,24 +3394,26 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           showToast('No hay paradas para eliminar.', true);
           return;
         }
-
         container.removeChild(container.lastElementChild);
         if (autocompletesStops.length > 0) {
           autocompletesStops.pop();
+          const lastMarker = _markersStops.pop();
+          if (lastMarker) try { lastMarker.setMap(null); } catch(e){}
         }
+        if (coordOrigen && coordDestino) dibujarRutaSiCompleta();
         refreshRapidoUI();
       }
 
       function mostrarError(msg){
         const el=document.getElementById('error-msg');
-        el.textContent='âš ï¸ '+msg;
+        el.textContent='\u26a0\ufe0f '+msg;
         el.style.display='block';
       }
 
       function resetBtn(){
         document.getElementById('btn-calc').disabled=false;
         document.getElementById('spin').style.display='none';
-        document.getElementById('btn-calc-txt').textContent='ð Calcular Precio y Ruta';
+        document.getElementById('btn-calc-txt').textContent='🔍 Calcular Precio y Ruta';
       }
 
       function calcDistanceKm(lat1,lon1,lat2,lon2){
@@ -3677,8 +3689,14 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         _rutaId = null;
         _routeCounter++;
       }
+      function _limpiarMarcadoresStops() {
+        _markersStops.forEach(function(m) { if (m) try { m.setMap(null); } catch(e){} });
+        _markersStops = [];
+      }
+
       function limpiarRuta() {
         _limpiarCapasRuta();
+        _limpiarMarcadoresStops();
         if (_markerOrigen) { _markerOrigen.setMap(null); _markerOrigen = null; }
         if (_markerDestino) { _markerDestino.setMap(null); _markerDestino = null; }
         if (_infoOrigen) { _infoOrigen.close(); }
