@@ -89,6 +89,8 @@
     });
   </script>
       <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
+      <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
       <script>
       (function(){
         var build = '2026-07-20-b';
@@ -232,15 +234,26 @@
       }
       .btn-toggle.active{background:rgba(212,175,55,0.15);border-color:var(--gold);color:var(--gold);}
       .btn-toggle:hover:not(.active){background:rgba(255,255,255,0.05);}
+      .trip-help{margin-top:8px;padding:9px 11px;background:#f6f1d9;border:1px solid #d6bf6a;color:#3f2f03;font-size:.79rem;line-height:1.35;border-radius:8px;}
       .hours-box{background:rgba(255,255,255,0.02);padding:12px;border:1px dashed var(--border);margin-bottom:12px;}
       .service-note{margin-top:8px;padding:10px 12px;background:rgba(212,175,55,0.10);border:1px solid rgba(212,175,55,0.45);color:#7a5d10;font-size:0.82rem;line-height:1.4;border-radius:8px;}
+      .time-service-info-box{margin-top:12px;padding:13px 15px;background:rgba(212,175,55,0.08);border:1.5px solid rgba(212,175,55,0.38);border-radius:10px;font-size:.8rem;line-height:1.55;color:#5a4200;}
+      .time-service-info-box h4{margin:0 0 8px;font-size:.85rem;font-weight:700;color:#3d2c00;letter-spacing:.01em;}
+      .time-service-info-box ul{margin:0;padding-left:18px;}
+      .time-service-info-box li{margin-bottom:5px;}
+      .time-service-info-box li:last-child{margin-bottom:0;}
+      .time-service-info-box strong{color:#3d2c00;font-weight:700;}
       .hours-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:6px;}
       .btn-hour{padding:10px 4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:0.85rem;cursor:pointer;transition:all .2s;}
       .btn-hour.active{background:var(--gold);border-color:var(--gold);color:#050505;font-weight:600;}
       .pax-row{display:flex;gap:6px;margin-top:6px;}
       .btn-pax{flex:1;padding:10px 4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:0.85rem;cursor:pointer;transition:all .2s;}
-      .btn-pax.active{background:var(--gold);border-color:var(--gold);color:#050505;font-weight:600;}
-      .vehicle-hint{text-align:center;font-size:0.75rem;color:var(--gold);margin-top:6px;}
+      .btn-pax.active{font-weight:700;box-shadow:0 0 0 1px rgba(0,0,0,0.08) inset;}
+      .pax-row.sedan-selected .btn-pax.active{background:#d4af37;border-color:#8f6a09;color:#201500;box-shadow:0 0 0 2px rgba(212,175,55,0.22),0 10px 18px rgba(212,175,55,0.18);} 
+      .pax-row.suv-selected .btn-pax.active{background:#0f172a;border-color:#1d4ed8;color:#e2e8f0;box-shadow:0 0 0 2px rgba(29,78,216,0.22),0 10px 18px rgba(15,23,42,0.18);} 
+      .vehicle-hint{text-align:center;font-size:0.75rem;margin-top:6px;padding:8px 10px;border-radius:8px;border:1px solid transparent;font-weight:700;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.28);}
+      .vehicle-hint.sedan{color:#5a4308;background:#f6ecd0;border-color:#d6bf6a;}
+      .vehicle-hint.suv{color:#dbeafe;background:#0f172a;border-color:#1d4ed8;}
       .tag-row{display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);margin-bottom:12px;}
       .tag-label{display:flex;align-items:center;gap:10px;font-size:0.875rem;color:var(--fg);}
       .switch{position:relative;width:46px;height:26px;border-radius:999px;border:none;cursor:pointer;transition:background .2s;background:rgba(255,255,255,0.1);}
@@ -257,10 +270,10 @@
       #btn-calc{width:100%;padding:14px;margin-top:8px;background:var(--gold);border:none;color:#050505;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s;}
       #btn-calc:hover{background:var(--gold-hover);}
       #btn-calc:disabled{opacity:0.5;cursor:not-allowed;}
-      #tyc-mini{display:flex;align-items:flex-start;gap:9px;margin-top:18px;padding:11px 13px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.35);border-radius:10px;cursor:pointer;}
+      #tyc-mini{display:flex;align-items:flex-start;gap:9px;margin-top:18px;padding:12px 13px;background:#fefdf6;border:1.5px solid #c9a93f;border-radius:10px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.08);}
       #tyc-mini input[type=checkbox]{width:17px;height:17px;accent-color:var(--gold);flex-shrink:0;margin-top:1px;cursor:pointer;}
-      #tyc-mini label{font-size:.78rem;color:var(--muted);line-height:1.45;cursor:pointer;}
-      #tyc-mini a{color:var(--gold);text-decoration:underline;white-space:nowrap;}
+      #tyc-mini label{font-size:.78rem;color:#2b2110;line-height:1.45;cursor:pointer;font-weight:500;}
+      #tyc-mini a{color:#6a4f06;text-decoration:underline;white-space:nowrap;font-weight:700;}
       .spin{width:18px;height:18px;border:2px solid rgba(5,5,5,0.3);border-top-color:#050505;border-radius:50%;animation:spin .7s linear infinite;display:none;}
       @keyframes spin{to{transform:rotate(360deg);}}
       #results{margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:none;}
@@ -311,7 +324,13 @@
       .date-time-row{display:flex;gap:12px;margin-bottom:12px;}
       .date-time-row .date-wrap{flex:1;}
       .date-time-row .time-wrap{flex:1;}
-      .error-msg{background:rgba(239,68,68,0.12);border:1px solid var(--red);color:#fca5a5;padding:10px 12px;margin-top:8px;font-size:0.85rem;display:none;border-radius:2px;}
+      .error-msg{background:#7f1d1d;border:1.5px solid #ef4444;color:#fff;padding:12px 13px;margin-top:10px;font-size:0.87rem;display:none;border-radius:10px;position:sticky;bottom:10px;z-index:40;box-shadow:0 10px 24px rgba(0,0,0,0.28);font-weight:700;line-height:1.45;max-width:100%;min-height:44px;opacity:1;}
+      .date-picker-input{letter-spacing:.04em;}
+      .date-picker-input::placeholder{color:rgba(0,0,0,0.45);}
+      .flatpickr-calendar{font-family:'Outfit',sans-serif;}
+      .flatpickr-day.selected,.flatpickr-day.startRange,.flatpickr-day.endRange{background:#d4af37;border-color:#d4af37;}
+      .flatpickr-day.today{border-color:#d4af37;}
+      #field-stops[aria-hidden="true"],#quick-dirs[aria-hidden="true"],#field-origen[aria-hidden="true"],#field-destino[aria-hidden="true"]{display:none!important;}
       .status-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px;}
       .status-pill{font-size:0.72rem;letter-spacing:0.04em;padding:6px 10px;border:1px solid var(--border);background:rgba(255,255,255,0.55);color:var(--muted);border-radius:999px;}
       .status-pill.ok{border-color:rgba(34,197,94,0.5);color:#166534;background:rgba(34,197,94,0.12);}
@@ -1348,13 +1367,13 @@
           </div>
           <div id="tyc-body">
             <h3>1. Objeto</h3>
-            <p>luxridesreservas.com es un sistema digital que facilita la conexión entre usuarios que solicitan transporte ejecutivo y conductores independientes. No presta directamente el servicio de transporte.</p>
+            <p>luxrides.online es un sistema digital que facilita la conexión entre usuarios que solicitan transporte ejecutivo y conductores independientes. No presta directamente el servicio de transporte.</p>
 
             <h3>2. Naturaleza del Servicio</h3>
-            <p>Los conductores son profesionales independientes que operan bajo su propio riesgo. luxridesreservas.com actúa exclusivamente como intermediario tecnológico.</p>
+            <p>Los conductores son profesionales independientes que operan bajo su propio riesgo. luxrides.online actúa exclusivamente como intermediario tecnológico.</p>
 
             <h3>3. Ausencia de Relación Laboral</h3>
-            <p>El uso del sistema no crea relación laboral entre conductores y luxridesreservas.com, conductores y hoteles, ni conductores y usuarios. No existe subordinación ni dependencia económica.</p>
+            <p>El uso del sistema no crea relación laboral entre conductores y luxrides.online, conductores y hoteles, ni conductores y usuarios. No existe subordinación ni dependencia económica.</p>
 
             <h3>4. Responsabilidad del Conductor</h3>
             <p>Cada conductor es responsable de:</p>
@@ -1366,16 +1385,16 @@
             </ul>
 
             <h3>5. Responsabilidad del Usuario</h3>
-            <p>El usuario acepta que el servicio es prestado por un tercero independiente, que cualquier reclamación directa deberá realizarse al conductor, y que luxridesreservas.com actúa únicamente como medio de enlace.</p>
+            <p>El usuario acepta que el servicio es prestado por un tercero independiente, que cualquier reclamación directa deberá realizarse al conductor, y que luxrides.online actúa únicamente como medio de enlace.</p>
 
             <h3>6. Limitación de Responsabilidad</h3>
-            <p>luxridesreservas.com no será responsable por accidentes, daños materiales, lesiones, pérdidas o incumplimiento del conductor, salvo dolo comprobado.</p>
+            <p>luxrides.online no será responsable por accidentes, daños materiales, lesiones, pérdidas o incumplimiento del conductor, salvo dolo comprobado.</p>
 
             <h3>7. Comisiones</h3>
             <p>Se retendrá un porcentaje por gestión tecnológica.</p>
 
             <h3>8. Modificaciones</h3>
-            <p>luxridesreservas.com puede modificar estos términos en cualquier momento.</p>
+            <p>luxrides.online puede modificar estos términos en cualquier momento.</p>
 
             <h3>9. Ley Aplicable</h3>
             <p>Estos términos se rigen por las leyes civiles y mercantiles de México.</p>
@@ -1383,7 +1402,7 @@
           <div id="tyc-footer">
             <label id="tyc-checkbox-row">
               <input type="checkbox" id="tyc-check" onchange="_tycToggleBtn(this)" onclick="_tycToggleBtn(this)"/>
-              <span>He leído y acepto los Términos y Condiciones de luxridesreservas.com</span>
+              <span>He leído y acepto los Términos y Condiciones de luxrides.online</span>
             </label>
             <button id="btn-tyc-aceptar" disabled onclick="aceptarTyC()">ACEPTAR Y CONTINUAR</button>
           </div>
@@ -1435,6 +1454,9 @@
               <button class="btn-toggle active" data-svc="I" onclick="setServicio('I')">🧭 Por Kilometraje</button>
               <button class="btn-toggle" data-svc="T" onclick="setServicio('T')">⏱️ Por Tiempo</button>
             </div>
+            <div class="trip-help" id="trip-time-help" title="El servicio por tiempo incluye chofer a disposición dentro de CDMX (mínimo 2 horas). No aplica para rutas interurbanas">
+              El servicio por tiempo incluye chofer a disposición dentro de CDMX (mínimo 2 horas). No aplica para rutas interurbanas.
+            </div>
           </div>
 
           <div class="field">
@@ -1477,8 +1499,14 @@
           <div class="hours-box" id="hours-box" style="display:none;">
             <label class="lbl" data-i18n="form.horas">Horas de Servicio (Mínimo 2h)</label>
             <div class="hours-grid" id="hours-grid"></div>
-            <div class="service-note" style="background:rgba(239,68,68,0.10);border:1.5px solid #EF4444;color:#991b1b;margin-top:8px;">
-              <b>⚠️ Solo Ciudad de México:</b> El servicio por tiempo únicamente opera dentro de CDMX. No aplica para rutas interurbanas ni estado.
+            <div class="time-service-info-box">
+              <h4>⏱️ Información importante sobre traslados por tiempo:</h4>
+              <ul>
+                <li><strong>Mínimo requerido:</strong> 3 horas obligatorias de servicio continuo.</li>
+                <li><strong>Zona de cobertura:</strong> Válido exclusivamente dentro de CDMX y Estado de México.</li>
+                <li><strong>¿Qué incluye?:</strong> Chofer asignado, gasolina y paradas ilimitadas dentro del tiempo contratado.</li>
+                <li><strong>Restricción:</strong> No está diseñado para viajes rápidos de un solo destino (para eso usa la opción Normal, Pick Up o Drop Off). Si excedes el tiempo contratado, se cobrará una tarifa adicional por hora extra.</li>
+              </ul>
             </div>
           </div>
 
@@ -1500,10 +1528,12 @@
 
           <div id="quick-dirs" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;margin-top:-4px;"></div>
 
-          <div id="stops"></div>
-          <div style="display:flex;gap:8px;margin-bottom:12px;">
-            <button onclick="agregarParada()" style="flex:1;padding:11px;background:rgba(212,175,55,0.15);border:1px solid var(--gold);color:var(--gold);font-family:'Outfit',sans-serif;font-size:0.875rem;cursor:pointer;border-radius:8px;">+ Agregar parada</button>
-            <button onclick="eliminarParada()" style="flex:1;padding:11px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.55);color:#b91c1c;font-family:'Outfit',sans-serif;font-size:0.875rem;cursor:pointer;border-radius:8px;">− Eliminar parada</button>
+          <div id="field-stops">
+            <div id="stops"></div>
+            <div id="stops-actions" style="display:flex;gap:8px;margin-bottom:12px;">
+              <button onclick="agregarParada()" style="flex:1;padding:11px;background:rgba(212,175,55,0.15);border:1px solid var(--gold);color:var(--gold);font-family:'Outfit',sans-serif;font-size:0.875rem;cursor:pointer;border-radius:8px;">+ Agregar parada</button>
+              <button onclick="eliminarParada()" style="flex:1;padding:11px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.55);color:#b91c1c;font-family:'Outfit',sans-serif;font-size:0.875rem;cursor:pointer;border-radius:8px;">− Eliminar parada</button>
+            </div>
           </div>
 
           <div class="date-time-row">
@@ -1511,7 +1541,7 @@
               <label class="lbl">Fecha</label>
               <div class="icon-wrap">
                 <span class="ico">📅</span>
-                <input type="date" id="inp-fecha"/>
+                <input type="text" id="inp-fecha" class="date-picker-input" placeholder="DD/MM/YYYY" autocomplete="off"/>
               </div>
             </div>
             <div class="time-wrap">
@@ -1542,7 +1572,7 @@
             <input type="checkbox" id="tyc-mini-check" onchange="toggleBtnCalc()"/>
             <label for="tyc-mini-check">
               Acepto los <a href="#" onclick="event.preventDefault();abrirTyC()">Términos y Condiciones</a>
-              y el Aviso de Privacidad de luxridesreservas.com antes de continuar con mi reserva.
+              y el Aviso de Privacidad de luxrides.online antes de continuar con mi reserva.
             </label>
           </div>
           <button id="btn-calc" onclick="calcular()" disabled><span id="btn-calc-txt">🔍 Calcular Precio y Ruta</span><span id="spin" class="spin"></span></button>
@@ -2152,23 +2182,31 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       function guardarReserva(){
         const nombre=document.getElementById('inp-nombre').value.trim();
-        const fecha=document.getElementById('inp-fecha').value;
+        const fecha=getFechaISO();
         if(!nombre || !resultado) return;
+        const horaRecogida = (document.getElementById('inp-hora').value||'')+':'+(document.getElementById('inp-min').value||'')+' '+ampm;
         guardarViajeEnServidor({
           reserva_id: 'LUX-' + Date.now(),
+          customer: nombre,
           cliente: nombre,
+          passenger_name: nombre,
           origen: coordOrigen?.display || '',
           destino: coordDestino?.display || '',
           origen_lat: coordOrigen ? coordOrigen.lat : null,
           origen_lng: coordOrigen ? coordOrigen.lon : null,
           destino_lat: coordDestino ? coordDestino.lat : null,
           destino_lng: coordDestino ? coordDestino.lon : null,
+          extra_stops: autocompletesStops.filter(function(s){ return s && s.coord; }).map(function(s){ return s.coord; }),
           fecha,
-          hora_recogida: (document.getElementById('inp-hora').value||'')+':'+(document.getElementById('inp-min').value||'')+' '+ampm,
+          booking_date: fecha,
+          hora_recogida: horaRecogida,
+          pickup_time: horaRecogida,
           total: resultado.totalPrecio,
           estado: 'pendiente',
           servicio,
+          service_kind: servicio,
           vehiculo: pasajeros<=3?'Sedán VIP Diamond':'SUV Platinum Diamond',
+          trip_kind: 'normal',
           timestamp: new Date().toISOString(),
         });
       }
@@ -2183,6 +2221,15 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const stripeEl = document.getElementById('stripe-email');
         if (stripeEl && stripeEl.value.trim()) return stripeEl.value.trim();
         return '';
+      }
+
+      function generarConfirmationCode() {
+        const d = new Date();
+        const y = String(d.getFullYear()).slice(-2);
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const rnd = Math.random().toString(36).slice(2, 8).toUpperCase();
+        return 'CONF-' + y + m + day + '-' + rnd;
       }
 
       function rellenarEmailDesdeSesion() {
@@ -2252,26 +2299,40 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       async function guardarViajeEnServidor(datos) {
+        const nombreCliente = (document.getElementById('inp-nombre')?.value || '').trim();
         const emailCliente = obtenerEmailClienteReserva();
-        if (emailCliente) datos.email_cliente = emailCliente;
+        const payload = Object.assign({}, datos, {
+          customer: datos.customer || datos.cliente || nombreCliente,
+          cliente: datos.cliente || datos.customer || nombreCliente,
+          passenger_name: datos.passenger_name || datos.cliente || datos.customer || nombreCliente,
+          confirmation_code: datos.confirmation_code || generarConfirmationCode(),
+          email: datos.email || emailCliente,
+          email_cliente: datos.email_cliente || datos.email || emailCliente,
+          booking_date: datos.booking_date || datos.fecha || getFechaISO(),
+          pickup_time: datos.pickup_time || datos.hora_recogida || ((document.getElementById('inp-hora').value||'')+':'+(document.getElementById('inp-min').value||'')+' '+ampm),
+          service_kind: datos.service_kind || datos.servicio || servicio,
+          trip_kind: datos.trip_kind || 'normal'
+        });
         try {
           const base = (window.LuxCfg && LuxCfg.backendUrl ? LuxCfg.backendUrl() : '') || (window.LuxCfg && LuxCfg.apiBaseUrl ? LuxCfg.apiBaseUrl() : '');
-          const res = await fetch(base + '/api/reservas', {
+          const res = await fetch((base || '') + '/api/reservas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datos)
+            body: JSON.stringify(payload)
           });
           const body = await res.json().catch(function() { return {}; });
           if (!res.ok) {
             console.error('Error backend reservas:', body);
             mostrarToast('⚠️ Error al guardar reserva — ' + (body.error || body.message || 'Servidor no disponible'), 'err');
           } else {
-            console.log('Viaje guardado en backend');
+            console.log('Viaje guardado en backend', body);
             mostrarToast('✅ Reserva guardada en servidor');
-            enviarConfirmacionCorreo(datos);
-            if (datos.reserva_id) {
-              _ratingReservaId = datos.reserva_id;
-              iniciarSeguimientoReserva(datos.reserva_id);
+            if (body?.email_status === 'skipped' && payload.email_cliente) {
+              enviarConfirmacionCorreo(payload);
+            }
+            if (payload.reserva_id) {
+              _ratingReservaId = payload.reserva_id;
+              iniciarSeguimientoReserva(payload.reserva_id);
             }
           }
         } catch (err) {
@@ -2335,17 +2396,98 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       let coordDestino = null;
       let resultado    = null;
       let autocompletesStops = [];
+      let stopCounter = 0;
+      let flatpickrFecha = null;
       let fallbackSearchReady = false;
       const fallbackDebounceTimers = {};
       const MIN_FALLBACK_CHARS = 2;
       const fallbackSuggestionState = {};
+
+      function todayIsoDate() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+      }
+
+      function parseDisplayDateToISO(displayDate) {
+        const raw = String(displayDate || '').trim();
+        const match = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (!match) return '';
+        const dd = Number(match[1]);
+        const mm = Number(match[2]);
+        const yyyy = Number(match[3]);
+        const dt = new Date(yyyy, mm - 1, dd);
+        if (dt.getFullYear() !== yyyy || dt.getMonth() !== (mm - 1) || dt.getDate() !== dd) return '';
+        return String(yyyy) + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
+      }
+
+      function formatISOToDisplay(isoDate) {
+        const raw = String(isoDate || '').trim();
+        const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return '';
+        return match[3] + '/' + match[2] + '/' + match[1];
+      }
+
+      function getFechaISO() {
+        const inp = document.getElementById('inp-fecha');
+        if (!inp) return '';
+        if (inp.dataset.isoDate) return inp.dataset.isoDate;
+        return parseDisplayDateToISO(inp.value);
+      }
+
+      function setFechaDesdeISO(isoDate) {
+        const inp = document.getElementById('inp-fecha');
+        if (!inp) return;
+        const safeIso = String(isoDate || '').trim() || todayIsoDate();
+        inp.dataset.isoDate = safeIso;
+        inp.value = formatISOToDisplay(safeIso) || inp.value;
+      }
+
+      function initDatePicker() {
+        const inp = document.getElementById('inp-fecha');
+        if (!inp) return;
+        const minDateIso = todayIsoDate();
+        inp.setAttribute('min', '2026-08-03');
+        inp.dataset.isoDate = inp.dataset.isoDate || minDateIso;
+
+        if (typeof window.flatpickr === 'function') {
+          if (flatpickrFecha && typeof flatpickrFecha.destroy === 'function') {
+            flatpickrFecha.destroy();
+          }
+          flatpickrFecha = window.flatpickr(inp, {
+            dateFormat: 'd/m/Y',
+            allowInput: true,
+            disableMobile: false,
+            minDate: minDateIso,
+            defaultDate: formatISOToDisplay(inp.dataset.isoDate) || formatISOToDisplay(minDateIso),
+            onChange: function(selectedDates) {
+              if (!selectedDates || !selectedDates.length) return;
+              const d = selectedDates[0];
+              const iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+              inp.dataset.isoDate = iso;
+            },
+            onClose: function() {
+              const parsed = parseDisplayDateToISO(inp.value);
+              if (parsed) {
+                inp.dataset.isoDate = parsed;
+              } else {
+                setFechaDesdeISO(inp.dataset.isoDate || minDateIso);
+              }
+            }
+          });
+        }
+
+        setFechaDesdeISO(inp.dataset.isoDate || minDateIso);
+      }
 
       let stripeCardElement = null;   // cardNumber element
       let stripeCardExpiry = null;
       let stripeCardCvc = null;
       let stripeMontoActual = 0;
       let stripeQuoteToken = '';
-      const CLIP_PAYMENT_URL = 'https://clip.mx/@Luxridesreservas.com';
+      const CLIP_PAYMENT_URL = 'https://clip.mx/@Luxrides';
 
       const MEXICO_STATE_SUGGESTIONS = [
         { state: 'Aguascalientes', capital: 'Aguascalientes', lat: 21.8853, lon: -102.2916, aliases: ['aguascalientes'] },
@@ -2741,7 +2883,14 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         activarBusquedaFallback();
       }
 
-      function setupGoogleAutocomplete(inputId, tipo){
+      function setExtraStopCoord(stopId, lat, lng, display) {
+        const sid = Number(stopId);
+        const idx = autocompletesStops.findIndex(function(it) { return it && it.id === sid; });
+        if (idx < 0) return;
+        autocompletesStops[idx].coord = { lat: Number(lat), lon: Number(lng), display: String(display || '') };
+      }
+
+      function setupGoogleAutocomplete(inputId, tipo, stopId){
         const input = document.getElementById(inputId);
         if (!input || input.dataset.googleBound) return;
         if (typeof google === 'undefined' || !google.maps || !google.maps.places) return;
@@ -2762,6 +2911,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           input.value = label;
           if (tipo === 'origen') setOrigenCoord(lat, lng, label);
           if (tipo === 'destino') setDestinoCoord(lat, lng, label);
+          if (tipo === 'stop') setExtraStopCoord(stopId, lat, lng, label);
         });
       }
 
@@ -3050,14 +3200,65 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       function buildPax(){
         document.getElementById('pax-row').innerHTML =
           [1,2,3,4,5,6,7].map(p => `<button class="btn-pax${p===pasajeros?' active':''}" onclick="setPax(${p})">${p}</button>`).join('');
-        document.getElementById('vehicle-hint').textContent = pasajeros<=3 ? 'Sedán VIP Diamond' : 'SUV Platinum Diamond';
+        const row = document.getElementById('pax-row');
+        const hint = document.getElementById('vehicle-hint');
+        const isSedan = pasajeros <= 3;
+        if (row) {
+          row.classList.toggle('sedan-selected', isSedan);
+          row.classList.toggle('suv-selected', !isSedan);
+        }
+        if (hint) {
+          hint.textContent = isSedan ? 'Sedán VIP Diamond' : 'SUV Platinum Diamond';
+          hint.classList.toggle('sedan', isSedan);
+          hint.classList.toggle('suv', !isSedan);
+        }
+      }
+
+      function aplicarModoAeropuerto(val){
+        const isAirport = val === 'P' || val === 'D';
+        const originField = document.getElementById('field-origen');
+        const destinoField = document.getElementById('field-destino');
+        const stopsField = document.getElementById('field-stops');
+        const quickDirs = document.getElementById('quick-dirs');
+        const inpOrigen = document.getElementById('inp-origen');
+        const inpDestino = document.getElementById('inp-destino');
+        const inpVueloSalida = document.getElementById('inp-vuelo-salida');
+        const isTimeService = servicio === 'T';
+
+        if (originField) originField.setAttribute('aria-hidden', isAirport ? 'true' : 'false');
+        if (destinoField) destinoField.setAttribute('aria-hidden', (isAirport || isTimeService) ? 'true' : 'false');
+        if (stopsField) stopsField.setAttribute('aria-hidden', (isAirport || servicio !== 'I' || isTimeService) ? 'true' : 'false');
+        if (quickDirs) quickDirs.setAttribute('aria-hidden', (isAirport || servicio !== 'I' || isTimeService) ? 'true' : 'false');
+
+        if (inpOrigen) {
+          inpOrigen.disabled = isAirport || isTimeService;
+          inpOrigen.style.opacity = (isAirport || isTimeService) ? '0.5' : '1';
+        }
+        if (inpDestino) {
+          inpDestino.disabled = isAirport || isTimeService;
+          inpDestino.style.opacity = (isAirport || isTimeService) ? '0.5' : '1';
+        }
+
+        if (isAirport) {
+          coordOrigen = null;
+          coordDestino = null;
+          autocompletesStops = [];
+          stopCounter = 0;
+          const stops = document.getElementById('stops');
+          if (stops) stops.innerHTML = '';
+          limpiarRuta();
+        }
+
+        if (inpVueloSalida) {
+          inpVueloSalida.placeholder = val === 'P' ? 'Lugar de llegada del vuelo' : 'Lugar de salida del vuelo';
+        }
       }
 
       function setServicio(val){
         servicio = val;
         document.querySelectorAll('.btn-toggle').forEach(b => b.classList.toggle('active', b.dataset.svc===val));
         document.getElementById('hours-box').style.display = val==='T' ? 'block' : 'none';
-        document.getElementById('field-destino').style.display = val==='I' ? 'block' : 'none';
+        aplicarModoAeropuerto(tipoTraslado);
         refreshRapidoUI();
       }
 
@@ -3065,6 +3266,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         tipoTraslado = val;
         document.querySelectorAll('#trip-row .btn-toggle').forEach(b => b.classList.toggle('active', b.dataset.trip===val));
         document.getElementById('flight-box').style.display = (val === 'P' || val === 'D') ? 'block' : 'none';
+        aplicarModoAeropuerto(val);
         refreshRapidoUI();
       }
 
@@ -3077,7 +3279,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       function setPax(p){
         pasajeros = p;
         document.querySelectorAll('.btn-pax').forEach(b => b.classList.toggle('active', parseInt(b.textContent)===p));
-        document.getElementById('vehicle-hint').textContent = p<=3 ? 'Sedán VIP Diamond' : 'SUV Platinum Diamond';
+        buildPax();
         refreshRapidoUI();
       }
 
@@ -3131,7 +3333,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
       }
 
-      document.getElementById('inp-fecha').value=new Date().toISOString().split('T')[0];
+      initDatePicker();
       buildHours();
       buildPax();
       setTraslado('N');
@@ -3146,18 +3348,34 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         });
 
       function agregarParada() {
+        if (tipoTraslado === 'P' || tipoTraslado === 'D' || servicio !== 'I') return;
         const container = document.getElementById("stops");
+        const stopId = ++stopCounter;
         const field = document.createElement("div");
         field.className = "field";
+        field.dataset.stopId = String(stopId);
         field.innerHTML = `
           <label class="lbl">Parada</label>
           <div class="icon-wrap">
             <span class="ico">ð</span>
-            <input type="text" placeholder="Ej: Centro Histórico"/>
+            <input type="text" id="inp-stop-${stopId}" data-stop-id="${stopId}" placeholder="Ej: Centro Histórico"/>
           </div>
         `;
         container.appendChild(field);
-        autocompletesStops.push(null);
+        autocompletesStops.push({ id: stopId, coord: null });
+
+        const stopInputId = 'inp-stop-' + stopId;
+        setupGoogleAutocomplete(stopInputId, 'stop', stopId);
+
+        const stopInput = document.getElementById(stopInputId);
+        if (stopInput) {
+          stopInput.addEventListener('input', function() {
+            const idx = autocompletesStops.findIndex(function(it) { return it && it.id === stopId; });
+            if (idx >= 0) autocompletesStops[idx].coord = null;
+            refreshRapidoUI();
+          });
+          stopInput.addEventListener('change', refreshRapidoUI);
+        }
       }
 
       function eliminarParada() {
@@ -3220,7 +3438,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       function getWaypointsFromStops(){
-        return [];
+        if (!Array.isArray(autocompletesStops) || !autocompletesStops.length) return [];
+        return autocompletesStops
+          .map(function(s) { return s && s.coord ? s.coord : null; })
+          .filter(function(c) { return c && Number.isFinite(c.lat) && Number.isFinite(c.lon); })
+          .map(function(c) {
+            return { location: _gmapsLatLng(c.lat, c.lon), stopover: true };
+          });
       }
 
       function getRouteMetrics(response){
@@ -3274,9 +3498,19 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const nombre=document.getElementById('inp-nombre').value.trim();
         document.getElementById('error-msg').style.display='none';
         if(!nombre){mostrarError('Por favor ingresa el nombre del cliente');return;}
-        if(!coordOrigen){mostrarError('Por favor selecciona un origen de la lista desplegable');return;}
         const esFijo = tipoTraslado==='P' || tipoTraslado==='D';
+        if(!esFijo && !coordOrigen){mostrarError('Por favor selecciona un origen de la lista desplegable');return;}
+        if(esFijo && !coordOrigen){
+          coordOrigen = { lat: 19.4361, lon: -99.0719, display: 'Aeropuerto Internacional de la Ciudad de México' };
+        }
         if(servicio==='I' && !esFijo && !coordDestino){mostrarError('Por favor selecciona un destino de la lista desplegable');return;}
+        const waypoints = getWaypointsFromStops();
+        const stopInputs = document.querySelectorAll('#stops input[type="text"]');
+        const filledStops = Array.from(stopInputs).filter(function(inp){ return String(inp.value || '').trim(); }).length;
+        if (servicio === 'I' && !esFijo && filledStops > waypoints.length) {
+          mostrarError('Selecciona cada parada desde Autocomplete para trazar la ruta correctamente.');
+          return;
+        }
         if(tipoTraslado==='P' || tipoTraslado==='D'){
           const aerolinea=document.getElementById('inp-aerolinea').value.trim();
           const vuelo=document.getElementById('inp-vuelo').value.trim();
@@ -3294,24 +3528,45 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         let distanciaKm=0,duracionMin=0;
         const esFijoCalc = tipoTraslado==='P' || tipoTraslado==='D';
         if(servicio==='I' && !esFijoCalc){
-          try {
-            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordOrigen.lon},${coordOrigen.lat};${coordDestino.lon},${coordDestino.lat}?overview=false`;
-            const osrmResp = await fetch(osrmUrl, { signal: AbortSignal.timeout(6000) });
-            const osrmData = await osrmResp.json();
-            if (osrmData.code === 'Ok' && osrmData.routes?.[0]) {
-              distanciaKm = parseFloat((osrmData.routes[0].distance / 1000).toFixed(1));
-              duracionMin = Math.max(1, Math.round(osrmData.routes[0].duration / 60));
-            } else {
-              throw new Error('OSRM sin ruta');
+          if (_directionsService && waypoints.length) {
+            try {
+              const gm = await new Promise(function(resolve, reject){
+                _directionsService.route({
+                  origin: _gmapsLatLng(coordOrigen.lat, coordOrigen.lon),
+                  destination: _gmapsLatLng(coordDestino.lat, coordDestino.lon),
+                  waypoints: waypoints,
+                  optimizeWaypoints: false,
+                  travelMode: google.maps.TravelMode.DRIVING
+                }, function(resp, status){
+                  if (status !== 'OK' || !resp) return reject(new Error('Google route status: ' + status));
+                  resolve(getRouteMetrics(resp));
+                });
+              });
+              distanciaKm = gm.distanciaKm;
+              duracionMin = gm.duracionMin;
+            } catch (_) {}
+          }
+
+          if (!distanciaKm || !duracionMin) {
+            try {
+              const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordOrigen.lon},${coordOrigen.lat};${coordDestino.lon},${coordDestino.lat}?overview=false`;
+              const osrmResp = await fetch(osrmUrl, { signal: AbortSignal.timeout(6000) });
+              const osrmData = await osrmResp.json();
+              if (osrmData.code === 'Ok' && osrmData.routes?.[0]) {
+                distanciaKm = parseFloat((osrmData.routes[0].distance / 1000).toFixed(1));
+                duracionMin = Math.max(1, Math.round(osrmData.routes[0].duration / 60));
+              } else {
+                throw new Error('OSRM sin ruta');
+              }
+            } catch(_) {
+              const recta = calcDistanceKm(coordOrigen.lat,coordOrigen.lon,coordDestino.lat,coordDestino.lon);
+              distanciaKm = parseFloat((recta * 1.35).toFixed(1));
+              duracionMin = Math.max(1, Math.round(distanciaKm / 0.7));
             }
-          } catch(_) {
-            const recta = calcDistanceKm(coordOrigen.lat,coordOrigen.lon,coordDestino.lat,coordDestino.lon);
-            distanciaKm = parseFloat((recta * 1.35).toFixed(1));
-            duracionMin = Math.max(1, Math.round(distanciaKm / 0.7));
           }
           distanciaKm = aplicarReglasDistanciaKm(distanciaKm);
         }
-        const casetasTotal = calcCasetas(distanciaKm);
+        let casetasTotal = calcCasetas(distanciaKm);
         let totalPrecio = calcTotalPrecio(servicio, distanciaKm, casetasTotal);
 
         if (servicio === 'I' && !esFijoCalc) {
@@ -3348,6 +3603,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             hours: hSel,
             origin: coordOrigen ? { lat: coordOrigen.lat, lng: coordOrigen.lon } : null,
             destination: coordDestino ? { lat: coordDestino.lat, lng: coordDestino.lon } : null,
+            extra_stops: waypoints.map(function(wp){ return { lat: wp.location.lat, lng: wp.location.lng }; }),
             originText: coordOrigen?.display || document.getElementById('inp-origen')?.value || '',
             destinationText: coordDestino?.display || document.getElementById('inp-destino')?.value || ''
           });
@@ -3433,10 +3689,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         if (!_mapaInstance || !_directionsService) return;
         _limpiarCapasRuta();
         const reqId = ++_routeCounter;
+        const waypoints = getWaypointsFromStops();
 
         _directionsService.route({
           origin: _gmapsLatLng(latO, lngO),
           destination: _gmapsLatLng(latD, lngD),
+          waypoints: waypoints,
+          optimizeWaypoints: false,
           travelMode: google.maps.TravelMode.DRIVING
         }, function(response, status) {
           if (reqId !== _routeCounter) return;
@@ -3459,6 +3718,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           }
           const bounds = new google.maps.LatLngBounds();
           bounds.extend(_gmapsLatLng(latO, lngO));
+          waypoints.forEach(function(wp) {
+            if (wp && wp.location) bounds.extend(wp.location);
+          });
           bounds.extend(_gmapsLatLng(latD, lngD));
           _mapaInstance.fitBounds(bounds, 60);
         });
@@ -3497,11 +3759,15 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       function calcHoraLlegada(durMin){
-        let h=parseInt(document.getElementById('inp-hora').value)||9;
-        let m=parseInt(document.getElementById('inp-min').value)||0;
+        const dur = Number(durMin);
+        if (!Number.isFinite(dur) || dur < 0) return '--:--';
+        let h = Number.parseInt(document.getElementById('inp-hora').value, 10);
+        let m = Number.parseInt(document.getElementById('inp-min').value, 10);
+        if (!Number.isFinite(h) || h < 1 || h > 12) h = 9;
+        if (!Number.isFinite(m) || m < 0 || m > 59) m = 0;
         if(ampm==='PM'&&h!==12) h+=12;
         if(ampm==='AM'&&h===12) h=0;
-        let total=h*60+m+durMin;
+        let total=h*60+m+dur;
         let hl=Math.floor(total/60)%24;
         let ml=total%60;
         const ap=hl>=12?'PM':'AM';
@@ -3515,7 +3781,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const esMovil = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
         const waWindow = esMovil ? null : window.open('about:blank','_blank','noopener,noreferrer');
         const nombre=document.getElementById('inp-nombre').value.trim();
-        const fecha=document.getElementById('inp-fecha').value;
+        const fecha=getFechaISO();
         const hora=document.getElementById('inp-hora').value;
         const min=document.getElementById('inp-min').value.toString().padStart(2,'0');
         const vehiculo=pasajeros<=3?'Sedán VIP Diamond':'SUV Platinum Diamond';
@@ -3556,6 +3822,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           cliente: nombre,
           origen: coordOrigen?.display || '',
           destino: coordDestino?.display || '',
+          extra_stops: autocompletesStops.filter(function(s){ return s && s.coord; }).map(function(s){ return s.coord; }),
           fecha,
           hora_recogida: hora+':'+min+' '+ampm,
           total: resultado.totalPrecio,
@@ -3609,7 +3876,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const monto = resultado.totalPrecio.toLocaleString('es-MX');
         const confirmar = confirm('Serás redirigido a Clip.mx para pagar $' + monto + ' MXN.\n\n¿Deseas continuar?');
         if (!confirmar) return;
-        window.open('https://clip.mx/@Luxridesreservas.com', '_blank');
+        window.open('https://clip.mx/@Luxrides', '_blank');
       }
 
       function loadExternalScript(src){
@@ -3770,12 +4037,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               cliente: nombre,
               email_cliente: emailCliente,
               origen, destino,
-              fecha: document.getElementById('inp-fecha').value,
+              fecha: getFechaISO(),
               hora_recogida: document.getElementById('inp-hora').value + ':' + (document.getElementById('inp-min').value||'00').toString().padStart(2,'0') + ' ' + ampm,
               total: stripeMontoActual,
               estado: 'pagado',
               servicio: _stripeTourContext ? 'G' : servicio,
               vehiculo: _stripeTourContext ? ('Tour · ' + _stripeTourContext.tarifaLabel) : (pasajeros <= 3 ? 'Sedán VIP Diamond' : 'SUV Platinum Diamond'),
+              extra_stops: autocompletesStops.filter(function(s){ return s && s.coord; }).map(function(s){ return s.coord; }),
               timestamp: new Date().toISOString()
             });
             _stripeTourContext = null;
@@ -4934,10 +5202,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const inpMin = document.getElementById('inp-min');
         if (inpMin) inpMin.value = '00';
 
-        const now = new Date();
-        const fechaStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
         const fechaEl = document.getElementById('inp-fecha');
-        if (fechaEl) fechaEl.value = fechaStr;
+        if (fechaEl && !fechaEl.dataset.isoDate) fechaEl.dataset.isoDate = todayIsoDate();
+        initDatePicker();
 
         (function tick() {
           const now2 = new Date();
@@ -6223,6 +6490,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         if(typeof aplicarIdioma==='function'){aplicarIdioma(lang);}
         // Extras que aplicarIdioma no cubre
         applyExtras();
+        if (typeof aplicarModoAeropuerto === 'function') aplicarModoAeropuerto(tipoTraslado);
       }
 
       if(document.readyState==='loading'){
@@ -6567,10 +6835,10 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
       <div><div class="total-lbl">Total del Servicio</div></div>
       <div class="total-amt">${precio} <span style="font-size:.85rem;font-weight:400;color:rgba(0,0,0,.35)">MXN</span></div>
     </div>
-    <div class="note">⚠️ Este documento es un comprobante de servicio de transporte ejecutivo. <b>No es una factura fiscal (CFDI)</b>. Para factura fiscal con datos de empresa, comuníquese a través de luxridesreservas.com.</div>
+    <div class="note">⚠️ Este documento es un comprobante de servicio de transporte ejecutivo. <b>No es una factura fiscal (CFDI)</b>. Para factura fiscal con datos de empresa, comuníquese a través de luxrides.online.</div>
   </div>
   <div class="footer">
-    <div class="footer-txt">luxridesreservas.com<br/>Transporte Ejecutivo VIP · CDMX, México</div>
+    <div class="footer-txt">luxrides.online<br/>Transporte Ejecutivo VIP · CDMX, México</div>
     <div class="footer-txt" style="text-align:right;">Emitido: ${new Date().toLocaleDateString('es-MX')}<br/>${folio}</div>
   </div>
 </div>

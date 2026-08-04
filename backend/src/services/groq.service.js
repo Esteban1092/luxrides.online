@@ -12,6 +12,14 @@ Reglas:
 
 Para consultas generales (no tours), responde breve y util para ahorrar tokens.
 
+Flujo de reserva obligatorio (modo guiado):
+- Habla como asesor para usuario comun: una pregunta por turno, lenguaje simple, sin tecnicismos.
+- Para cerrar una reserva SIEMPRE debes recopilar y confirmar: nombre del pasajero, telefono, origen, destino o horas, fecha, hora, tipo de servicio y correo.
+- Nunca confirmes reserva si falta passenger_name (nombre del pasajero) o confirmation_code (codigo de confirmacion).
+- Si falta alguno, responde exactamente con una pregunta corta para pedir el dato faltante.
+- Al tener todos los datos, muestra resumen final y pregunta: "¿Confirmo tu reserva con estos datos?".
+- Si el usuario confirma, entrega mensaje final con formato: "RESERVA_CONFIRMADA" y repite confirmation_code.
+
 Cultura e historia:
 - Eres un experto apasionado en historia mundial y en los museos del mundo (Louvre, British Museum, Metropolitan, Prado, Vaticano, Antropologia de CDMX, etc.).
 - Cuando pregunten por historia, arte, museos, noticias o hechos actuales, entrega datos precisos y actualizados; si buscas en internet, cita la fuente de forma breve.
@@ -116,6 +124,38 @@ function shouldUseWebSearch(messages) {
   return /(noticia|noticias|hoy|actual|reciente|ultima hora|ultimas|clima|tiempo|dolar|tipo de cambio|precio del|quien gano|resultado|historia|historico|museo|museos|louvre|prado|british museum|metropolitan|vaticano|antropologia|arte|pintura|escultura|civilizacion|imperio|guerra|siglo|dinastia|patrimonio|unesco|que paso|que sucedio|cuando|en que ano|quien fue|biografia)/.test(text);
 }
 
+function isReservationIntent(messages) {
+  const lastUser = [...messages].reverse().find((m) => String(m?.role || '').toLowerCase() === 'user');
+  const text = String(lastUser?.content || '').toLowerCase();
+  if (!text) return false;
+  return /(reserva|reservar|book|booking|confirmar|agendar|cotizar traslado|quiero un viaje|pickup|drop off|por tiempo|por kilometraje)/.test(text);
+}
+
+function extractReservationFacts(messages) {
+  const text = messages
+    .filter((m) => String(m?.role || '').toLowerCase() === 'user')
+    .map((m) => String(m?.content || ''))
+    .join('\n');
+
+  const hasPassengerName = /(mi nombre es|pasajero|nombre[:\s]|soy\s+[a-záéíóúñ])/i.test(text);
+  const hasConfirmationCode = /(confirmation[_\s-]?code|codigo de confirmacion|c[oó]digo[:\s]|CONF-[A-Z0-9-]+)/i.test(text);
+  return { hasPassengerName, hasConfirmationCode };
+}
+
+function reservationGuardPrompt(messages) {
+  if (!isReservationIntent(messages)) return '';
+  const facts = extractReservationFacts(messages);
+  const missing = [];
+  if (!facts.hasPassengerName) missing.push('passenger_name');
+  if (!facts.hasConfirmationCode) missing.push('confirmation_code');
+
+  if (!missing.length) {
+    return 'Reserva en progreso: ya existe passenger_name y confirmation_code. Continua con resumen y cierre.';
+  }
+
+  return 'Reserva en progreso: faltan campos obligatorios -> ' + missing.join(', ') + '. No confirmes la reserva hasta recolectarlos.';
+}
+
 function shouldFetchHotelsContext(messages) {
   const lastUser = [...messages].reverse().find((m) => String(m?.role || '').toLowerCase() === 'user');
   const text = String(lastUser?.content || '').toLowerCase();
@@ -168,13 +208,18 @@ async function fetchHotelsContext(messages) {
 
 async function withLovoxContext(messages) {
   const hotelsContext = await fetchHotelsContext(messages);
+  const reservationGuard = reservationGuardPrompt(messages);
   const systemContent = shouldAttachToursCatalog(messages)
     ? (LOVOX_SYSTEM_PROMPT_BASE + '\n' + LOVOX_TOURS_CATALOG)
     : LOVOX_SYSTEM_PROMPT_BASE;
 
-  const finalSystem = hotelsContext
-    ? (systemContent + '\n\n' + hotelsContext + '\n\nSi el usuario pregunta por hoteles, prioriza esta informacion.')
-    : systemContent;
+  let finalSystem = systemContent;
+  if (hotelsContext) {
+    finalSystem += '\n\n' + hotelsContext + '\n\nSi el usuario pregunta por hoteles, prioriza esta informacion.';
+  }
+  if (reservationGuard) {
+    finalSystem += '\n\n' + reservationGuard;
+  }
 
   return [
     { role: 'system', content: finalSystem },

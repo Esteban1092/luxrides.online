@@ -28,7 +28,7 @@ export const env = {
   nodeEnv: optional('NODE_ENV', 'development'),
   frontendOrigin: optional('FRONTEND_ORIGIN', 'https://luxrides.online'),
 
-  groqApiKey: required('GROQ_API_KEY'),
+  groqApiKey: optional('GROQ_API_KEY', ''),
   hotelsApiKey: optional('HOTELS_API_KEY', ''),
   hotelsApiUrl: optional('HOTELS_API_URL', ''),
   stripeSecretKey: optional('STRIPE_SECRET_KEY', ''),
@@ -38,7 +38,7 @@ export const env = {
   edgeTtsPitch: optional('EDGE_TTS_PITCH', '-8Hz'),
   edgeTtsVolume: optional('EDGE_TTS_VOLUME', '+0%'),
 
-  supabaseUrl: required('SUPABASE_URL'),
+  supabaseUrl: optional('SUPABASE_URL', ''),
   supabaseServiceKey: optional('SUPABASE_SERVICE_KEY', optional('SUPABASE_ANON_KEY', '')),
 
   vapid: {
@@ -48,11 +48,11 @@ export const env = {
   },
 
   smtp: {
-    host: required('SMTP_HOST'),
+    host: optional('SMTP_HOST', ''),
     port: Number(optional('SMTP_PORT', '465')),
-    user: required('SMTP_USER'),
-    pass: required('SMTP_PASS'),
-    from: required('SMTP_FROM')
+    user: optional('SMTP_USER', ''),
+    pass: optional('SMTP_PASS', ''),
+    from: optional('SMTP_FROM', 'LuxRides <luxrides@luxrides.online>')
   },
 
   admin: {
