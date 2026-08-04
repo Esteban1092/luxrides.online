@@ -31,16 +31,17 @@ app.use(morgan('dev'));
 // Webhook de Stripe: raw body obligatorio antes de express.json()
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 
-// Rate limit general: 120 req / 15 min por IP
+// Rate limit general: 600 req / 15 min por IP (el panel admin hace peticiones frecuentes)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 120,
+  max: 600,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path === '/health',
   message: { ok: false, error: 'Demasiadas peticiones. Intenta en unos minutos.' }
 });
 
-// Rate limit estricto para endpoints de pago y login: 20 req / 15 min
+// Rate limit estricto para login: 20 intentos / 15 min
 const strictLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -49,10 +50,10 @@ const strictLimiter = rateLimit({
   message: { ok: false, error: 'Límite de intentos alcanzado. Espera antes de reintentar.' }
 });
 
-// Rate limit para chat IA: 60 req / 15 min
+// Rate limit para chat IA: 80 req / 15 min
 const chatLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 60,
+  max: 80,
   standardHeaders: true,
   legacyHeaders: false,
   message: { ok: false, error: 'Demasiadas solicitudes al asistente. Espera un momento.' }
