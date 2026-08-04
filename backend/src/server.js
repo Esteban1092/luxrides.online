@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import { rateLimit } from 'express-rate-limit';
 
 import { env } from './config/env.js';
 import healthRoutes from './routes/health.routes.js';
@@ -21,8 +22,40 @@ import { errorHandler, notFound } from './middleware/error.js';
 const app = express();
 
 app.disable('x-powered-by');
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false // Manejado por Hostinger/Nginx
+}));
 app.use(morgan('dev'));
+
+// Webhook de Stripe: raw body obligatorio antes de express.json()
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
+
+// Rate limit general: 120 req / 15 min por IP
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Demasiadas peticiones. Intenta en unos minutos.' }
+});
+
+// Rate limit estricto para endpoints de pago y login: 20 req / 15 min
+const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Límite de intentos alcanzado. Espera antes de reintentar.' }
+});
+
+// Rate limit para chat IA: 60 req / 15 min
+const chatLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Demasiadas solicitudes al asistente. Espera un momento.' }
+});
 
 function isOriginPermitido(origin) {
   if (!origin) return true;
@@ -49,7 +82,14 @@ app.use(cors({
   },
   credentials: true
 }));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '256kb' }));
+
+// Aplicar rate limits
+app.use('/api/', globalLimiter);
+app.use('/api/admin/login', strictLimiter);
+app.use('/api/stripe/pagar', strictLimiter);
+app.use('/api/chat', chatLimiter);
+app.use('/api/lovox/speak', chatLimiter);
 
 app.use('/api', healthRoutes);
 app.use('/api', emailRoutes);

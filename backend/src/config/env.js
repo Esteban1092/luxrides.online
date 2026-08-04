@@ -32,6 +32,7 @@ export const env = {
   hotelsApiKey: optional('HOTELS_API_KEY', ''),
   hotelsApiUrl: optional('HOTELS_API_URL', ''),
   stripeSecretKey: optional('STRIPE_SECRET_KEY', ''),
+  stripeWebhookSecret: optional('STRIPE_WEBHOOK_SECRET', ''),
   quoteSecret: optional('QUOTE_SECRET', ''),
   edgeTtsVoice: optional('EDGE_TTS_VOICE', 'es-MX-DaliaNeural'),
   edgeTtsRate: optional('EDGE_TTS_RATE', '-8%'),

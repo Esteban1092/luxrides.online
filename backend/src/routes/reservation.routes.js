@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { body, validationResult } from 'express-validator';
 import { env } from '../config/env.js';
 import { enviarCorreoReserva } from '../services/email.service.js';
 
@@ -42,8 +43,19 @@ function inferEmail(body) {
   return clean(body.email_cliente || body.email || body.email_cliente_reserva || body.email_user || body.emailUsuario);
 }
 
-router.post('/reservas', async (req, res, next) => {
-  try {
+router.post('/reservas',
+  body('passenger_name').optional().isString().isLength({ max: 120 }),
+  body('cliente').optional().isString().isLength({ max: 120 }),
+  body('nombre').optional().isString().isLength({ max: 120 }),
+  body('email_cliente').optional().isEmail().normalizeEmail(),
+  body('email').optional().isEmail().normalizeEmail(),
+  body('total').optional().isFloat({ min: 0, max: 1_000_000 }),
+  body('fecha').optional().isString().isLength({ max: 30 }),
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+
+    try {
     const body = req.body || {};
     const passengerName = inferPassengerName(body);
     const confirmationCode = inferConfirmationCode(body) || 'LUX-' + Date.now();
