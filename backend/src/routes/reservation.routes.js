@@ -67,10 +67,10 @@ router.post('/reservas',
     }
 
     const reservaId = clean(body.reserva_id || body.reservaId) || 'LUX-' + Date.now();
+    // Solo columnas que existen en la tabla Supabase (sin passenger_name, confirmation_code, customer, email)
     const payload = {
       reserva_id: reservaId,
       cliente: customerName,
-      customer: customerName,
       origen: clean(body.origen || body.origin),
       destino: clean(body.destino || body.destination),
       origen_lat: body.origen_lat ?? body.origin_lat ?? null,
@@ -85,14 +85,11 @@ router.post('/reservas',
       vehiculo: clean(body.vehiculo || body.vehicle),
       timestamp: body.timestamp || new Date().toISOString(),
       email_cliente: email,
-      email: email,
       pasajeros: body.pasajeros ?? null,
       traslado: clean(body.traslado || body.trip_kind || body.tripKind),
       numero_vuelo: clean(body.numero_vuelo || body.flight_number),
       distancia_km: body.distancia_km ?? body.distance_km ?? null,
-      duracion_min: body.duracion_min ?? body.duration_min ?? null,
-      passenger_name: passengerName || customerName,
-      confirmation_code: confirmationCode
+      duracion_min: body.duracion_min ?? body.duration_min ?? null
     };
 
     let persisted = null;

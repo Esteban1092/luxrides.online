@@ -33,7 +33,7 @@ router.get('/admin/reservas', async (req, res, next) => {
   try {
     if (!env.supabaseUrl) return res.json({ ok: true, data: [] });
     const estado = req.query.estado;
-    let path = 'reservas?order=created_at.desc&limit=500';
+    let path = 'reservas?order=timestamp.desc&limit=500';
     if (estado) path += '&estado=eq.' + encodeURIComponent(estado);
     const data = await supabaseRequest(path, { method: 'GET', headers: supabaseHeaders() });
     res.json({ ok: true, data: Array.isArray(data) ? data : [] });
