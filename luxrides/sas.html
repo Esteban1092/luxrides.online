@@ -5112,17 +5112,22 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const btn = document.getElementById('btn-enviar-codigo');
         btn.disabled = true; btn.textContent = 'Enviando…';
         try {
-          const redirectTo = window.location.href.split('#')[0];
-          const { error } = await sbAuth.auth.resetPasswordForEmail(email, { redirectTo });
-          if (error) { errEl.textContent = mensajeErrorAuth(error); return; }
+          const base = (window.LuxCfg && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
+          const res = await fetch(base + '/api/auth/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) { errEl.textContent = data.error || 'Error al enviar el código.'; return; }
           _recEmail = email;
           document.getElementById('rec-email-display').textContent = email;
           ['otp0','otp1','otp2','otp3','otp4','otp5'].forEach(function(id) { document.getElementById(id).value = ''; });
           irRecStep('code');
-          mostrarToast('📧 Revisa Gmail — código LuxRides enviado');
+          mostrarToast('📧 Código enviado — revisa Gmail y spam');
           setTimeout(function() { document.getElementById('otp0').focus(); }, 120);
         } catch(e) {
-          errEl.textContent = e.message || 'Error al enviar el código.';
+          errEl.textContent = 'No se pudo enviar el código. Intenta de nuevo.';
         } finally {
           btn.disabled = false; btn.textContent = 'Enviar código';
         }
@@ -5131,12 +5136,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       async function reenviarCodigo() {
         if (!_recEmail) return;
         try {
-          const redirectTo = window.location.href.split('#')[0];
-          const { error } = await sbAuth.auth.resetPasswordForEmail(_recEmail, { redirectTo });
-          if (error) { mostrarToast('⚠️ ' + mensajeErrorAuth(error), 'err'); return; }
+          const base = (window.LuxCfg && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
+          const res = await fetch(base + '/api/auth/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: _recEmail })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) { mostrarToast('\u26a0\ufe0f ' + (data.error || 'Error al reenviar'), 'err'); return; }
           mostrarToast('📧 Código reenviado a ' + _recEmail);
         } catch(e) {
-          mostrarToast('⚠️ No se pudo reenviar el código', 'err');
+          mostrarToast('\u26a0\ufe0f No se pudo reenviar el código', 'err');
         }
       }
 
@@ -5150,8 +5160,26 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const btn = document.getElementById('btn-verificar-codigo');
         btn.disabled = true; btn.textContent = 'Verificando…';
         try {
-          const { error } = await sbAuth.auth.verifyOtp({ email: _recEmail, token, type: 'recovery' });
-          if (error) { errEl.textContent = 'Código incorrecto o expirado. Revisa Gmail (también spam).'; return; }
+          const base = (window.LuxCfg && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
+          const res = await fetch(base + '/api/auth/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: _recEmail, code: token, purpose: 'recovery' })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) { errEl.textContent = data.error || 'Código incorrecto o expirado.'; return; }
+          // Si el backend devolvió un action_link de Supabase, seguirlo silenciosamente
+          if (data.action_link) {
+            try {
+              const linkRes = await fetch(data.action_link);
+              const linkUrl = new URL(linkRes.url || data.action_link);
+              const accessToken = linkUrl.hash.match(/access_token=([^&]+)/)?.[1];
+              const refreshToken = linkUrl.hash.match(/refresh_token=([^&]+)/)?.[1];
+              if (accessToken) {
+                await sbAuth.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' });
+              }
+            } catch(_) {}
+          }
           irRecStep('pass');
           document.getElementById('rec-pass').value = '';
           document.getElementById('rec-pass2').value = '';
