@@ -28,6 +28,20 @@ async function supabaseRequest(path, options = {}) {
 
 router.use('/admin', requireAdminSession);
 
+// Leer todas las reservas (usa service key para bypassear RLS)
+router.get('/admin/reservas', async (req, res, next) => {
+  try {
+    if (!env.supabaseUrl) return res.json({ ok: true, data: [] });
+    const estado = req.query.estado;
+    let path = 'reservas?order=created_at.desc&limit=500';
+    if (estado) path += '&estado=eq.' + encodeURIComponent(estado);
+    const data = await supabaseRequest(path, { method: 'GET', headers: supabaseHeaders() });
+    res.json({ ok: true, data: Array.isArray(data) ? data : [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/admin/viajes', async (req, res, next) => {
   try {
     const rows = await supabaseRequest('viajes', {

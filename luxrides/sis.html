@@ -610,6 +610,12 @@ function dbGetAll(table) {
       .then(function(res) { return res.data || []; })
       .catch(function(e) { console.warn('dbGetAll choferes:', e); return []; });
   }
+  if (table === 'reservas') {
+    // Usa el backend (service key) para bypassear RLS de Supabase
+    return adminApi('/admin/reservas', { method: 'GET' })
+      .then(function(res) { return res.data || []; })
+      .catch(function(e) { console.warn('dbGetAll reservas:', e); return []; });
+  }
   if (!SUPABASE) return Promise.resolve([]);
   return SUPABASE.from(table).select('*').then(function(res) { return res.data || []; }).catch(function(e) { console.warn('dbGetAll:', e); return []; });
 }
@@ -1115,6 +1121,24 @@ function iniciarAppSupabase() {
   setBadge('badge-supabase', 'ok', 'Supabase: activo ✓');
   suscribirReservas();
   suscribirChoferes();
+  // Polling de respaldo: recarga reservas cada 15 s para asegurar visibilidad aunque RLS bloquee realtime
+  setInterval(function() { refrescarReservasSilencioso(); }, 15000);
+}
+
+async function refrescarReservasSilencioso() {
+  try {
+    var data = await dbGetAll('reservas');
+    if (!data || !data.length) return;
+    var huboNueva = false;
+    data.forEach(function(r) {
+      var estado = String(r.estado || '').toLowerCase();
+      if (!['pendiente', 'asignado', 'en curso', 'en_curso'].includes(estado)) return;
+      if (!reservasActivas[r.reserva_id]) huboNueva = true;
+      reservasActivas[r.reserva_id] = r;
+      reservaEstadosPrevios[r.reserva_id] = estado;
+    });
+    if (huboNueva) { renderizarClientes(); scheduleActualizarMapa(); }
+  } catch (e) { /* silencioso */ }
 }
 
 function suscribirReservas() {
