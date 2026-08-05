@@ -1279,11 +1279,15 @@ async function loginChofer() {
   document.getElementById('login-error').textContent = '';
 
   try {
-    var res = await driverApi('/api/driver/login', {
+    var base = driverBackendBase();
+    var fetchRes = await fetch(base + '/api/driver/login', {
       method: 'POST',
-      body: { id: id, nombre: nom }
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, nombre: nom })
     });
-    if (!res || !res.ok || !res.sessionToken) {
+    var res = await fetchRes.json().catch(function(){ return {}; });
+    if (!fetchRes.ok || !res || !res.ok || !res.sessionToken) {
       throw new Error((res && res.error) || 'No se pudo iniciar sesión');
     }
     driverSessionToken = res.sessionToken;
