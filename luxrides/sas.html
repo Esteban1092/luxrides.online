@@ -1320,24 +1320,28 @@
       }
       .trip-status-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
       .trip-badge{
-        font-size:.58rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
-        padding:4px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;
+        font-size:.62rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+        padding:0;border-radius:0;display:inline-flex;align-items:center;gap:6px;
       }
-      .trip-badge.completado{background:rgba(34,197,94,0.11);color:#166534;border:1px solid rgba(34,197,94,0.35);}
-      .trip-badge.pendiente{background:rgba(212,175,55,0.12);color:#7a5d10;border:1px solid rgba(212,175,55,0.35);}
-      .trip-badge.en_camino{background:rgba(59,130,246,0.12);color:#1e40af;border:1px solid rgba(59,130,246,0.3);}
-      .trip-badge.cancelado{background:rgba(239,68,68,0.1);color:#991b1b;border:1px solid rgba(239,68,68,0.25);}
-      /* Punto de estado pulsante */
+      .trip-badge.estado-green{color:#166534;}
+      .trip-badge.estado-amber{color:#8A6A00;}
+      .trip-badge.estado-red{color:#B42318;}
+      .trip-badge.estado-blue{color:#1D4ED8;}
+      /* Dot de estado sin fondos en el texto */
       .status-dot{position:relative;display:inline-flex;width:8px;height:8px;flex-shrink:0;}
       .status-dot-ring{position:absolute;inset:0;border-radius:50%;opacity:.7;}
       .status-dot-core{position:relative;display:inline-flex;border-radius:50%;width:8px;height:8px;}
-      .status-dot.pendiente .status-dot-ring{background:#d4af37;animation:ping 1.2s cubic-bezier(0,0,.2,1) infinite;}
-      .status-dot.pendiente .status-dot-core{background:#d4af37;}
-      .status-dot.completado .status-dot-core{background:#22c55e;}
-      .status-dot.cancelado  .status-dot-core{background:#ef4444;}
-      .status-dot.en_camino  .status-dot-core{background:#3b82f6;}
-      .status-dot.default    .status-dot-core{background:#94a3b8;}
+      .status-dot.estado-amber .status-dot-ring{background:#D4AF37;animation:ping 1.2s cubic-bezier(0,0,.2,1) infinite;}
+      .status-dot.estado-amber .status-dot-core{background:#D4AF37;}
+      .status-dot.estado-green .status-dot-core{background:#22C55E;}
+      .status-dot.estado-red .status-dot-core{background:#EF4444;}
+      .status-dot.estado-blue .status-dot-core{background:#3B82F6;}
       @keyframes ping{75%,100%{transform:scale(2);opacity:0;}}
+      .trip-pay-alert{
+        margin-top:9px;padding:9px 11px;border-radius:9px;
+        background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.3);
+        color:#7a5d10;font-size:.73rem;line-height:1.35;
+      }
       .trip-price{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--gold);}
       .trip-route{display:flex;align-items:stretch;gap:9px;margin-bottom:8px;}
       .trip-route-dots{display:flex;flex-direction:column;align-items:center;padding-top:5px;}
@@ -5773,9 +5777,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           <div class="tpc-dd-item" onclick="closeTpcDropdown();switchTab('viajes')">
             <span class="tpc-dd-icon">🗺️</span> <span id="tpc-hist-label">Pestañas de Historial</span>
           </div>
-          <div class="tpc-dd-item" onclick="closeTpcDropdown();abrirPerfilFiscal()">
-            <span class="tpc-dd-icon">📊</span> <span id="tpc-tax-label">Mi Perfil Fiscal</span>
-          </div>
           <div class="tpc-dd-item" onclick="closeTpcDropdown();switchTab('facturas')">
             <span class="tpc-dd-icon">📄</span> <span id="tpc-cfdi-label">Descargar Factura CFDI</span>
           </div>
@@ -6090,9 +6091,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       _activeTab = tab;
       const panelEl   = document.getElementById('panel');
       const guiasEl   = document.getElementById('guias-panel');
+      const viajesEl  = document.getElementById('viajes-panel');
+      const factEl    = document.getElementById('facturas-panel');
 
-      if (panelEl)    panelEl.style.display    = tab === 'inicio' ? '' : 'none';
-      if (guiasEl)    guiasEl.classList.toggle('show',    tab === 'guias');
+      if (panelEl) panelEl.style.display = tab === 'inicio' ? '' : 'none';
+      if (guiasEl) guiasEl.classList.toggle('show', tab === 'guias');
+      if (viajesEl) viajesEl.classList.toggle('show', tab === 'viajes');
+      if (factEl) factEl.classList.toggle('show', tab === 'facturas');
 
       ['inicio','guias','iovox'].forEach(t => {
         const el = document.getElementById('nav-' + t);
@@ -6100,8 +6105,10 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       });
 
       closeTpcDropdown();
-      if (tab === 'guias')    reiniciarAnimacionGuias();
-      if (tab === 'iovox')    abrirAsistente();
+      if (tab === 'guias') reiniciarAnimacionGuias();
+      if (tab === 'iovox') abrirAsistente();
+      if (tab === 'viajes') cargarViajes();
+      if (tab === 'facturas') cargarFacturas();
     }
 
     document.addEventListener('lux:langchange', function() {
@@ -6517,12 +6524,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         q('#facturas-panel .vf-header-title',pt2.f);
 
         var uiT={
-          es:{h:'Pestañas de Historial',p:'Mi Perfil Fiscal',f:'Descargar Factura CFDI',ph:'Pregúntame lo que necesites…'},
-          en:{h:'History Tabs',p:'My Tax Profile',f:'Download CFDI Invoice',ph:'Ask me anything you need…'}
+          es:{h:'Pestañas de Historial',f:'Descargar Factura CFDI',ph:'Pregúntame lo que necesites…'},
+          en:{h:'History Tabs',f:'Download CFDI Invoice',ph:'Ask me anything you need…'}
         };
         var ut=uiT[lang]||uiT.es;
         q('#tpc-hist-label',ut.h);
-        q('#tpc-tax-label',ut.p);
         q('#tpc-cfdi-label',ut.f);
         sp('iovox-inp',ut.ph);
 
@@ -6697,7 +6703,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         if (user && user.email) query = query.eq('email_cliente', user.email);
         const { data, error } = await query;
         if (error) throw error;
-        renderViajes(data || []);
+        const trips = data || [];
+        _notificarPagoPendiente(trips);
+        renderViajes(trips);
       } catch(e) {
         el.innerHTML = '<div class="trip-empty"><div class="trip-empty-icon">⚠️</div><div class="trip-empty-txt">' + _luxMsg('errorLoad') + '</div></div>';
       }
@@ -6711,19 +6719,10 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         return;
       }
       el.innerHTML = trips.map(t => {
-        const rawEstado = (t.estado || 'pendiente').toLowerCase();
-        const estadoMap = {
-          completado: {key:'viajes.estado.completado', cls:'completado'},
-          completada: {key:'viajes.estado.completado', cls:'completado'},
-          finalizado: {key:'viajes.estado.completado', cls:'completado'},
-          pendiente: {key:'viajes.estado.pendiente', cls:'pendiente'},
-          en_camino: {key:'viajes.estado.encamino', cls:'en_camino'},
-          cancelado: {key:'viajes.estado.cancelado', cls:'cancelado'},
-          cancelada: {key:'viajes.estado.cancelado', cls:'cancelado'}
-        };
-        const estadoConf = estadoMap[rawEstado] || estadoMap.pendiente;
-        const estadoLabel = (typeof window._i18n === 'function') ? window._i18n(estadoConf.key) : rawEstado;
-        const estadoClass = estadoConf.cls;
+        const estado = _estadoBadgeLux(t.estado || 'pendiente');
+        const estadoLabel = estado.label;
+        const estadoClass = estado.cls;
+        const dotHtml = `<span class="status-dot ${estadoClass}"><span class="status-dot-ring"></span><span class="status-dot-core"></span></span>`;
         const fecha  = t.fecha ? _fmtFecha(t.fecha) : (t.timestamp ? _fmtISO(t.timestamp) : '—');
         const hora   = t.hora_recogida || '';
         const precio = t.total ? '$' + Number(t.total).toLocaleString('es-MX') + ' MXN' : '—';
@@ -6732,7 +6731,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         return `
           <div class="trip-card">
             <div class="trip-status-row">
-              <span class="trip-badge ${estadoClass}">${estadoLabel}</span>
+              <span class="trip-badge ${estadoClass}">${dotHtml}${estadoLabel}</span>
               <span class="trip-price">${precio}</span>
             </div>
             <div class="trip-route">
@@ -6752,7 +6751,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               ${chofer ? `<div class="trip-meta-item">🧑✈️ <b>${chofer}</b></div>` : ''}
               ${veh    ? `<div class="trip-meta-item">🚘 ${veh}</div>` : ''}
             </div>
-            ${rawEstado === 'pendiente' && t.total ? `
+            ${estado.pending ? `<div class="trip-pay-alert">⚠️ Pago pendiente: completa tu pago para confirmar esta reserva.</div>` : ''}
+            ${estado.pending && t.total ? `
             <button onclick="abrirStripeDesdeViaje(${t.total},'${(t.cliente||'').replace(/'/g,'')}')" style="width:100%;margin-top:10px;padding:11px;background:#635bff;border:none;border-radius:8px;color:#fff;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
               💳 Pagar con Stripe &nbsp;<span style="background:rgba(255,255,255,.2);border-radius:5px;padding:1px 7px;">${precio}</span>
             </button>` : ''}
@@ -6786,6 +6786,47 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       return `${d.getDate()} ${ms[d.getMonth()]} ${d.getFullYear()}`;
     }
 
+    function _normalizarEstadoLux(rawEstado) {
+      return String(rawEstado || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[_-]+/g, ' ')
+        .trim();
+    }
+
+    function _estadoBadgeLux(rawEstado) {
+      const st = _normalizarEstadoLux(rawEstado);
+      const has = function(list) { return list.includes(st); };
+
+      if (has(['cancelado','cancelada','rechazado','rechazada','pago fallido','fallido','failed','declined','rechazado por el banco'])) {
+        return { cls: 'estado-red', label: 'Cancelado / Pago fallido', pending: false };
+      }
+      if (has(['en espera','pendiente','pending','pendiente de pago','pendiente de confirmacion','por confirmar'])) {
+        return { cls: 'estado-amber', label: 'Pendiente de pago', pending: true };
+      }
+      if (has(['pagado','completado','completada','completed','confirmado','confirmada','finalizado'])) {
+        return { cls: 'estado-green', label: 'Pagado / Confirmado', pending: false };
+      }
+
+      const readable = st ? st.replace(/\b\w/g, function(c) { return c.toUpperCase(); }) : 'En curso';
+      return { cls: 'estado-blue', label: readable, pending: false };
+    }
+
+    function _notificarPagoPendiente(trips) {
+      const pendientes = (trips || []).filter(function(t) {
+        return _estadoBadgeLux(t.estado).pending;
+      });
+      if (!pendientes.length) return;
+
+      const now = Date.now();
+      const last = Number(sessionStorage.getItem('lux_pending_pay_notice_ts') || '0');
+      if (now - last < 120000) return;
+
+      sessionStorage.setItem('lux_pending_pay_notice_ts', String(now));
+      mostrarToast('⚠️ Tienes pagos pendientes. Completa el pago para confirmar tu reserva.', 'err');
+    }
+
     window._factStore = {};
 
     async function cargarFacturas() {
@@ -6808,9 +6849,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         if (user2 && user2.email) q2 = q2.eq('email_cliente', user2.email);
         const { data, error } = await q2;
         if (error) throw error;
-        const completados = (data || []).filter(r =>
-          ['completado','completada','finalizado'].includes((r.estado || '').toLowerCase())
-        );
+        const completados = (data || []).filter(function(r) {
+          return _estadoBadgeLux(r.estado).cls === 'estado-green';
+        });
         renderFacturas(completados);
       } catch(e) {
         el.innerHTML = '<div class="fact-empty"><div class="fact-empty-icon">⚠️</div><div class="fact-empty-txt">' + _luxMsg('errorLoad') + '</div></div>';
@@ -6835,21 +6876,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const chofer = t.chofer_nombre || t.driver_name || t.chofer || 'N/D';
         const veh    = t.vehiculo || '';
 
-        // Determinar clase y etiqueta según estado real
-        const rawEstado = String(t.estado || '').toLowerCase().trim();
-        const estadoClase = rawEstado === 'completado' || rawEstado === 'pagado' ? 'completado'
-          : rawEstado === 'pendiente' || rawEstado === 'por confirmar' ? 'pendiente'
-          : rawEstado === 'cancelado' || rawEstado === 'rechazado' || rawEstado === 'fallido' ? 'cancelado'
-          : rawEstado === 'asignado' || rawEstado === 'en curso' || rawEstado === 'en_curso' ? 'en_camino'
-          : 'completado';
-        const estadoLabel = rawEstado === 'completado' ? _luxMsg('badgeCompleted')
-          : rawEstado === 'pagado' ? '✓ Pagado'
-          : rawEstado === 'pendiente' ? '⏳ Pendiente de pago'
-          : rawEstado === 'cancelado' ? '✕ Cancelado'
-          : rawEstado === 'rechazado' || rawEstado === 'fallido' ? '✕ Pago fallido'
-          : rawEstado === 'asignado' ? '🚗 Asignado'
-          : rawEstado === 'en curso' || rawEstado === 'en_curso' ? '🚗 En curso'
-          : _luxMsg('badgeCompleted');
+        const estado = _estadoBadgeLux(t.estado);
+        const estadoClase = estado.cls;
+        const estadoLabel = estado.label;
         const dotHtml = `<span class="status-dot ${estadoClase}"><span class="status-dot-ring"></span><span class="status-dot-core"></span></span>`;
 
         return `
