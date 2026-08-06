@@ -12,7 +12,7 @@
     HERE_API_KEY:           'LIn8K-l1u4qiSUI7VGcRDJ__79o=',
     STRIPE_PUBLISHABLE_KEY: 'pk_live_51TSJFbRsMQje2ZkMG6tpwzSwf8HsmPkQmP45tH2wXb6CVEsa3sSJMPrFyDyPu4vVQH4OBOVDeMYYqitKLy3DJhfU00Fqd0xLIC',
     WHATSAPP_CENTRAL:       '+525527729551',
-    VAPID_PUBLIC_KEY:       'BLX6MhsrRUOf_m5So0bt1RtQeyQtsvq_UQpokto6XL8frM66o-kIW-AVQbcnT1PWOOIo_-yU7pOok6L2BmPpsnY',
+    VAPID_PUBLIC_KEY:       'BBsJe9xah2PJMkXNAW5NyDrafEZOroWdwrm1us9UWs776HBOdunUAejz4Ouz52CTz3_t6pTedvrWKK-brczYw1o',
     HOSTINGER_ORIGIN:       'https://luxrides.online',
     BACKEND_URL:            'https://luxrides.online'
   };

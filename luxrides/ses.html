@@ -7,7 +7,7 @@
 <meta name="description" content="Plataforma de conductores LuxRides"/>
 <link rel="icon" type="image/png" href="/logo-luxrides.png"/>
 <link rel="apple-touch-icon" href="/logo-luxrides.png"/>
-<script src="config.js?v=20260804c"></script>
+<script src="config.js?v=20260806d"></script>
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -110,10 +110,15 @@ html,body{width:100%;height:100%;background:#050505;color:#fff;overflow:hidden;-
 .tab-content.active{display:block;}
 .tab-header{position:sticky;top:0;z-index:10;padding:18px 20px 14px;background:rgba(8,8,8,.92);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;}
 .tab-header h2{font-family:'Playfair Display',serif;font-size:1.15rem;background:linear-gradient(135deg,var(--gold),var(--gold-light));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.tab-header-actions{display:flex;align-items:center;gap:10px;}
 .tab-header .state-badge{display:inline-block;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;padding:4px 12px;border-radius:999px;}
 .state-badge.online{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3);}
 .state-badge.offline{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.25);}
 .state-badge.en_viaje{background:rgba(212,175,55,.12);color:var(--gold);border:1px solid rgba(212,175,55,.3);}
+.push-btn{padding:8px 12px;border-radius:999px;border:1.5px solid rgba(212,175,55,.35);background:rgba(212,175,55,.08);color:var(--gold);font-size:.68rem;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:all .25s;white-space:nowrap;}
+.push-btn:hover{background:rgba(212,175,55,.16);border-color:rgba(212,175,55,.6);}
+.push-btn.is-on{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.3);color:var(--green);}
+.push-btn.is-blocked{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.25);color:var(--red);}
 
 .card{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.05);}
 .card-title{font-size:.85rem;font-weight:600;letter-spacing:.01em;}
@@ -429,7 +434,7 @@ html,body{width:100%;height:100%;background:#050505;color:#fff;overflow:hidden;-
 
 <div id="app">
   <div class="tab-content active" id="tab-viajes">
-    <div class="tab-header"><h2>Viajes</h2><div class="state-badge offline" id="state-badge">Desconectado</div></div>
+    <div class="tab-header"><h2>Viajes</h2><div class="tab-header-actions"><button class="push-btn" id="btn-push" onclick="activarNotificacionesChofer()">🔔 Activar notificaciones</button><div class="state-badge offline" id="state-badge">Desconectado</div></div></div>
     <div id="viajes-list"></div>
     <div id="searching-banner" class="searching-banner" style="display:none"><span class="spin"></span>Buscando viajes disponibles...</div>
   </div>
@@ -828,24 +833,62 @@ function urlBase64ToUint8Array(base64) {
   return output;
 }
 
+function actualizarEstadoBotonPush(estado) {
+  var btn = document.getElementById('btn-push');
+  if (!btn) return;
+  btn.classList.remove('is-on', 'is-blocked');
+  if (estado === 'on') {
+    btn.classList.add('is-on');
+    btn.textContent = '🔔 Notificaciones activas';
+    return;
+  }
+  if (estado === 'blocked') {
+    btn.classList.add('is-blocked');
+    btn.textContent = '🔕 Notificaciones bloqueadas';
+    return;
+  }
+  btn.textContent = '🔔 Activar notificaciones';
+}
+
+async function asegurarServiceWorkerLux() {
+  if (!('serviceWorker' in navigator)) return null;
+  var reg = await navigator.serviceWorker.register('/sw.js');
+  await navigator.serviceWorker.ready;
+  return reg;
+}
+
 async function registrarPush() {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      actualizarEstadoBotonPush('blocked');
       notify('⚠️ Push no soportado en este navegador', 'err'); return;
     }
+    if (!VAPID_PUBLIC_KEY) {
+      actualizarEstadoBotonPush('blocked');
+      notify('⚠️ Falta configurar la llave pública VAPID', 'err'); return;
+    }
     if (Notification.permission === 'denied') {
+      actualizarEstadoBotonPush('blocked');
       notify('🔕 Notificaciones bloqueadas — actívalas en ajustes del navegador', 'err'); return;
     }
-    var reg = await navigator.serviceWorker.register('/sw.js');
-    await navigator.serviceWorker.ready;
+    var reg = await asegurarServiceWorkerLux();
     var sub = await reg.pushManager.getSubscription();
+    var lastVapid = '';
+    try { lastVapid = localStorage.getItem('luxrides_push_vapid_public') || ''; } catch (e) {}
+    if (sub && lastVapid && lastVapid !== VAPID_PUBLIC_KEY) {
+      await sub.unsubscribe().catch(function() {});
+      sub = null;
+    }
     if (sub) {
       await guardarSuscripcionPush(sub);
+      try { localStorage.setItem('luxrides_push_vapid_public', VAPID_PUBLIC_KEY); } catch (e) {}
+      actualizarEstadoBotonPush('on');
       notify('🔔 Notificaciones en segundo plano activas', 'ok');
       return;
     }
     var permission = await Notification.requestPermission();
     if (permission !== 'granted') {
+      actualizarEstadoBotonPush(permission === 'denied' ? 'blocked' : 'off');
       notify('🔕 Permiso de notificaciones denegado', 'err'); return;
     }
     sub = await reg.pushManager.subscribe({
@@ -853,11 +896,18 @@ async function registrarPush() {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
     await guardarSuscripcionPush(sub);
+    try { localStorage.setItem('luxrides_push_vapid_public', VAPID_PUBLIC_KEY); } catch (e) {}
+    actualizarEstadoBotonPush('on');
     notify('✅ Notificaciones en segundo plano activadas', 'ok');
   } catch (e) {
     console.warn('Error registering push:', e);
+    actualizarEstadoBotonPush('off');
     notify('⚠️ No se pudo activar push: ' + (e.message || e), 'err');
   }
+}
+
+async function activarNotificacionesChofer() {
+  await registrarPush();
 }
 
 async function guardarSuscripcionPush(sub) {
@@ -1319,6 +1369,7 @@ function iniciarApp() {
   iniciarHeartbeat();
   iniciarNoSleep();
   iniciarWakeLock();
+  actualizarEstadoBotonPush(Notification.permission === 'granted' ? 'on' : (Notification.permission === 'denied' ? 'blocked' : 'off'));
   registrarPush();
   toggleBusquedaViajes(true);
   setOnline(true);
@@ -2133,10 +2184,6 @@ async function iniciarWakeLock() {
   } catch(e) { console.warn('WakeLock no disponible'); }
 }
 
-if ('Notification' in window && Notification.permission === 'default') {
-  Notification.requestPermission();
-}
-
 var pwaDeferredPrompt = null;
 window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
@@ -2174,7 +2221,7 @@ document.addEventListener('visibilitychange', function() {
 function mostrarToast(msg, tipo) { notify(msg, tipo); }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(function(e) { console.warn('SW registration failed:', e); });
+  asegurarServiceWorkerLux().catch(function(e) { console.warn('SW registration failed:', e); });
 }
 (function() {
   var storedId = localStorage.getItem('luxrides_chofer_id');
