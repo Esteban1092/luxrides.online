@@ -1303,12 +1303,23 @@
       .trip-status-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
       .trip-badge{
         font-size:.58rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
-        padding:4px 10px;border-radius:999px;
+        padding:4px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;
       }
       .trip-badge.completado{background:rgba(34,197,94,0.11);color:#166534;border:1px solid rgba(34,197,94,0.35);}
       .trip-badge.pendiente{background:rgba(212,175,55,0.12);color:#7a5d10;border:1px solid rgba(212,175,55,0.35);}
       .trip-badge.en_camino{background:rgba(59,130,246,0.12);color:#1e40af;border:1px solid rgba(59,130,246,0.3);}
       .trip-badge.cancelado{background:rgba(239,68,68,0.1);color:#991b1b;border:1px solid rgba(239,68,68,0.25);}
+      /* Punto de estado pulsante */
+      .status-dot{position:relative;display:inline-flex;width:8px;height:8px;flex-shrink:0;}
+      .status-dot-ring{position:absolute;inset:0;border-radius:50%;opacity:.7;}
+      .status-dot-core{position:relative;display:inline-flex;border-radius:50%;width:8px;height:8px;}
+      .status-dot.pendiente .status-dot-ring{background:#d4af37;animation:ping 1.2s cubic-bezier(0,0,.2,1) infinite;}
+      .status-dot.pendiente .status-dot-core{background:#d4af37;}
+      .status-dot.completado .status-dot-core{background:#22c55e;}
+      .status-dot.cancelado  .status-dot-core{background:#ef4444;}
+      .status-dot.en_camino  .status-dot-core{background:#3b82f6;}
+      .status-dot.default    .status-dot-core{background:#94a3b8;}
+      @keyframes ping{75%,100%{transform:scale(2);opacity:0;}}
       .trip-price{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--gold);}
       .trip-route{display:flex;align-items:stretch;gap:9px;margin-bottom:8px;}
       .trip-route-dots{display:flex;flex-direction:column;align-items:center;padding-top:5px;}
@@ -6788,12 +6799,30 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const ruta   = (t.origen || '—') + ' → ' + (t.destino || '—');
         const chofer = t.chofer_nombre || t.driver_name || t.chofer || 'N/D';
         const veh    = t.vehiculo || '';
+
+        // Determinar clase y etiqueta según estado real
+        const rawEstado = String(t.estado || '').toLowerCase().trim();
+        const estadoClase = rawEstado === 'completado' || rawEstado === 'pagado' ? 'completado'
+          : rawEstado === 'pendiente' || rawEstado === 'por confirmar' ? 'pendiente'
+          : rawEstado === 'cancelado' || rawEstado === 'rechazado' || rawEstado === 'fallido' ? 'cancelado'
+          : rawEstado === 'asignado' || rawEstado === 'en curso' || rawEstado === 'en_curso' ? 'en_camino'
+          : 'completado';
+        const estadoLabel = rawEstado === 'completado' ? _luxMsg('badgeCompleted')
+          : rawEstado === 'pagado' ? '✓ Pagado'
+          : rawEstado === 'pendiente' ? '⏳ Pendiente de pago'
+          : rawEstado === 'cancelado' ? '✕ Cancelado'
+          : rawEstado === 'rechazado' || rawEstado === 'fallido' ? '✕ Pago fallido'
+          : rawEstado === 'asignado' ? '🚗 Asignado'
+          : rawEstado === 'en curso' || rawEstado === 'en_curso' ? '🚗 En curso'
+          : _luxMsg('badgeCompleted');
+        const dotHtml = `<span class="status-dot ${estadoClase}"><span class="status-dot-ring"></span><span class="status-dot-core"></span></span>`;
+
         return `
           <div class="fact-card">
             <div class="fact-id">Folio: ${folio}</div>
             <div class="fact-main">
               <span class="fact-monto">${precio} <small style="font-size:.6rem;color:rgba(0,0,0,.4);font-family:'Outfit',sans-serif;font-weight:400">MXN</small></span>
-              <span class="trip-badge completado">${_luxMsg('badgeCompleted')}</span>
+              <span class="trip-badge ${estadoClase}">${dotHtml}${estadoLabel}</span>
             </div>
             <div class="fact-route">📍 ${ruta}</div>
             <div class="fact-meta">📅 ${fecha}&nbsp;&nbsp;🧑✈️ ${chofer}${veh ? '&nbsp;&nbsp;🚘 '+veh : ''}</div>
