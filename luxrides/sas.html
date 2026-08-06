@@ -637,6 +637,10 @@
         border-color:var(--gold) !important;
         box-shadow:0 0 0 2px rgba(212,175,55,0.14) !important;
       }
+      /* Wrapper para campo con ojito */
+      .auth-pass-wrap{position:relative;width:100%;}
+      .auth-pass-wrap .auth-input{padding-right:42px !important;}
+      .auth-eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:rgba(0,0,0,0.4);font-size:1rem;line-height:1;width:auto !important;}
       #auth-overlay .auth-lada,#perfil-overlay .auth-lada{
         padding:11px 8px !important;border:1.5px solid rgba(0,0,0,0.12) !important;
         border-radius:10px !important;background:#fff !important;color:#333 !important;
@@ -724,7 +728,7 @@
       .rec-step.active{display:block;}
       .rec-info{font-size:.8rem;color:var(--muted);text-align:center;margin-bottom:14px;line-height:1.5;}
       .otp-row{display:flex;gap:8px;justify-content:center;margin:14px 0;}
-      .otp-box{width:44px;height:52px;border:1.5px solid rgba(0,0,0,0.15);border-radius:10px;text-align:center;font-size:1.5rem;font-weight:700;font-family:'Outfit',sans-serif;color:#1a1a1a;outline:none;background:#fff;transition:border-color .2s;box-sizing:border-box;}
+      .otp-box{width:44px;height:52px;border:1.5px solid rgba(0,0,0,0.15);border-radius:10px;text-align:center;font-size:1.5rem;font-weight:700;font-family:'Outfit',sans-serif;color:#1a1a1a !important;outline:none;background:#fff !important;transition:border-color .2s;box-sizing:border-box;-webkit-text-fill-color:#1a1a1a !important;caret-color:#1a1a1a;}
       .otp-box:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(212,175,55,0.14);}
       #auth-overlay .rec-back{width:100% !important;padding:10px !important;background:none !important;border:none !important;color:var(--gold) !important;font-family:'Outfit',sans-serif !important;font-size:.82rem !important;cursor:pointer !important;margin-top:6px !important;font-weight:600 !important;}
       #btn-perfil{position:absolute;top:0;right:0;background:none !important;border:none !important;cursor:pointer;padding:4px;width:auto !important;}
@@ -1906,7 +1910,10 @@
             </div>
             <div class="auth-field">
               <label class="auth-label">Contraseña</label>
-              <input type="password" id="log-pass" class="auth-input" placeholder="Tu contraseña" autocomplete="current-password"/>
+              <div class="auth-pass-wrap">
+                <input type="password" id="log-pass" class="auth-input" placeholder="Tu contraseña" autocomplete="current-password"/>
+                <button type="button" class="auth-eye-btn" onclick="_togglePass('log-pass',this)" tabindex="-1">👁️</button>
+              </div>
             </div>
             <div class="auth-err" id="log-err"></div>
             <button id="btn-login" class="auth-btn-primary" onclick="iniciarSesion()">Iniciar sesión</button>
@@ -1953,11 +1960,17 @@
             </div>
             <div class="auth-field">
               <label class="auth-label">Contraseña</label>
-              <input type="password" id="reg-pass" class="auth-input" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+              <div class="auth-pass-wrap">
+                <input type="password" id="reg-pass" class="auth-input" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+                <button type="button" class="auth-eye-btn" onclick="_togglePass('reg-pass',this)" tabindex="-1">👁️</button>
+              </div>
             </div>
             <div class="auth-field">
               <label class="auth-label">Confirmar contraseña</label>
-              <input type="password" id="reg-pass2" class="auth-input" placeholder="Repite tu contraseña" autocomplete="new-password"/>
+              <div class="auth-pass-wrap">
+                <input type="password" id="reg-pass2" class="auth-input" placeholder="Repite tu contraseña" autocomplete="new-password"/>
+                <button type="button" class="auth-eye-btn" onclick="_togglePass('reg-pass2',this)" tabindex="-1">👁️</button>
+              </div>
             </div>
             <div class="auth-err" id="reg-err"></div>
             <button id="btn-registrar" class="auth-btn-primary" onclick="registrarUsuario()">Crear cuenta</button>
@@ -4852,6 +4865,14 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       function cerrarAuth() {
         document.getElementById('auth-overlay').classList.remove('show');
+      }
+
+      function _togglePass(id, btn) {
+        var inp = document.getElementById(id);
+        if (!inp) return;
+        var show = inp.type === 'password';
+        inp.type = show ? 'text' : 'password';
+        btn.textContent = show ? '🙈' : '👁️';
       }
 
       function setAuthTab(tab) {
