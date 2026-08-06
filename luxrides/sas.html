@@ -7342,7 +7342,22 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
           'Fecha hoy: '+fechaHoy+'. Hora: '+horaAhora+'. '+
           (nombre ? 'Cliente: '+nombre+'. ' : '')+
           'Maximo 3 parrafos por respuesta. Si preguntan por un tour especifico, da todos los detalles del catalogo.\n\n'+
-          catalogo;
+          catalogo+
+          '\n\n## FLUJO DE RESERVA (OBLIGATORIO)\n'+
+          'Cuando el usuario quiera reservar un servicio o tour, recopila UNO POR UNO: nombre completo, correo electronico, telefono, origen/lugar de recogida, destino o tour elegido, fecha, hora.\n'+
+          'Al tener todos esos datos, muestra un resumen claro y pregunta: "¿Confirmas tu reserva con estos datos?"\n'+
+          'Si el usuario confirma con "si", "confirmo", "adelante" o similar, responde EXACTAMENTE con este bloque (sin cambiar nada):\n'+
+          'RESERVA_CONFIRMADA\n'+
+          'Nombre: [nombre del pasajero]\n'+
+          'Correo: [correo electronico]\n'+
+          'Origen: [lugar de recogida]\n'+
+          'Destino: [destino o tour]\n'+
+          'Fecha: [fecha]\n'+
+          'Hora: [hora]\n'+
+          'Telefono: [numero]\n'+
+          'ID: LUX-'+Date.now()+'\n'+
+          'Luego agrega un mensaje amable de confirmacion.\n'+
+          'IMPORTANTE: NO confirmes la reserva si falta el correo electronico del cliente.';
       }
 
       window.abrirAsistente = async function(){
