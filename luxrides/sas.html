@@ -7397,6 +7397,65 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
         }
       };
 
+      // Extrae datos de reserva del historial de conversación
+      function _extraerDatosReservaDeChat(history) {
+        var texto = history.map(function(m){ return String(m.content||''); }).join('\n').toLowerCase();
+        function buscar(patrones) {
+          for (var i=0; i<patrones.length; i++) {
+            var m = texto.match(patrones[i]);
+            if (m && m[1]) return m[1].trim();
+          }
+          return '';
+        }
+        var nombre = buscar([/nombre[:\s]+([^\n,\.]+)/,/pasajero[:\s]+([^\n,\.]+)/,/me llamo[:\s]+([^\n,\.]+)/,/soy[:\s]+([^\n,\.]+)/]);
+        var origen  = buscar([/origen[:\s]+([^\n,\.]+)/,/recogida[:\s]+([^\n,\.]+)/,/salgo de[:\s]+([^\n,\.]+)/,/desde[:\s]+([^\n,\.]+)/]);
+        var destino = buscar([/destino[:\s]+([^\n,\.]+)/,/voy a[:\s]+([^\n,\.]+)/,/llego a[:\s]+([^\n,\.]+)/,/hacia[:\s]+([^\n,\.]+)/]);
+        var fecha   = buscar([/fecha[:\s]+([^\n,\.]+)/,/el d[ií]a[:\s]+([^\n,\.]+)/,/el[:\s]+(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/]);
+        var hora    = buscar([/hora[:\s]+([^\n,\.]+)/,/a las[:\s]+([^\n,\.]+)/,/time[:\s]+([^\n,\.]+)/]);
+        var tel     = buscar([/tel[eé]fono[:\s]+([\d\s\+\-]{7,15})/,/cel[ular]*[:\s]+([\d\s\+\-]{7,15})/,/whatsapp[:\s]+([\d\s\+\-]{7,15})/,/número[:\s]+([\d\s\+\-]{7,15})/]);
+        return { nombre: nombre||'Cliente Lovox', origen: origen, destino: destino, fecha: fecha, hora_recogida: hora, telefono: tel };
+      }
+
+      function _procesarReservaConfirmadaLovox(reply, history) {
+        if (!reply || !reply.includes('RESERVA_CONFIRMADA')) return;
+        var datos = _extraerDatosReservaDeChat(history);
+        var reservaId = 'LUX-LOV-' + Date.now();
+        var ts = new Date().toISOString();
+        // Guardar en backend/Supabase
+        guardarViajeEnServidor({
+          reserva_id: reservaId,
+          cliente: datos.nombre,
+          customer: datos.nombre,
+          passenger_name: datos.nombre,
+          origen: datos.origen,
+          destino: datos.destino,
+          fecha: datos.fecha,
+          hora_recogida: datos.hora_recogida,
+          total: 0,
+          estado: 'pendiente',
+          servicio: 'Lovox',
+          vehiculo: 'Por confirmar',
+          timestamp: ts,
+          email_cliente: '',
+          source: 'lovox'
+        });
+        // Enviar WhatsApp al número central
+        var numeroCentral = ((window.LuxCfg && LuxCfg.whatsapp && LuxCfg.whatsapp()) || '+525527729551').replace(/\D/g,'');
+        var resumen = [
+          '🤖 *RESERVA VÍA LOVOX*',
+          '👤 *Pasajero:* ' + datos.nombre,
+          datos.origen  ? '📍 *Origen:* '  + datos.origen  : '',
+          datos.destino ? '🏁 *Destino:* ' + datos.destino : '',
+          datos.fecha   ? '📅 *Fecha:* '   + datos.fecha   : '',
+          datos.hora_recogida ? '⏰ *Hora:* ' + datos.hora_recogida : '',
+          datos.telefono ? '📱 *Tel:* '    + datos.telefono : '',
+          '🆔 *ID:* ' + reservaId
+        ].filter(Boolean).join('\n');
+        var waUrl = 'https://api.whatsapp.com/send?phone=' + numeroCentral + '&text=' + encodeURIComponent(resumen);
+        window.open(waUrl, '_blank', 'noopener,noreferrer');
+        mostrarToast('✅ Reserva enviada al despacho y WhatsApp');
+      }
+
       window.iovoxEnviar = async function(){
         var inp = document.getElementById('iovox-inp');
         var texto = (inp.value||'').trim();
@@ -7419,6 +7478,7 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
           _msg('bot', reply);
           _iovoxHistory.push({role:'assistant', content:reply});
           _speak(reply);
+          _procesarReservaConfirmadaLovox(reply, _iovoxHistory);
         } catch(e){
           _hideTyping(); _iovoxBusy=false; document.getElementById('iovox-send').disabled=false;
           _setIovoxConnStatus('sin conexión');
