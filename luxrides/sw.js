@@ -1,6 +1,13 @@
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', event => event.waitUntil(clients.claim()));
 
+// No cachear HTML — siempre red para tener la última versión
+self.addEventListener('fetch', event => {
+  if (event.request.destination === 'document' || event.request.url.endsWith('.html')) {
+    event.respondWith(fetch(event.request));
+  }
+});
+
 self.addEventListener('push', event => {
   if (!event.data) return;
 

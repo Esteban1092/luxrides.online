@@ -728,10 +728,20 @@
       .rec-step.active{display:block;}
       .rec-info{font-size:.8rem;color:var(--muted);text-align:center;margin-bottom:14px;line-height:1.5;}
       .otp-row{display:flex;gap:8px;justify-content:center;margin:14px 0;}
-      .otp-box{width:44px;height:52px;border:1.5px solid rgba(0,0,0,0.15);border-radius:10px;text-align:center;font-size:1.5rem;font-weight:700;font-family:'Outfit',sans-serif;color:#1a1a1a !important;outline:none;background:#fff !important;transition:border-color .2s;box-sizing:border-box;-webkit-text-fill-color:#1a1a1a !important;caret-color:#1a1a1a;color-scheme:light;}
-      .otp-box:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(212,175,55,0.14);}
-      /* Forzar texto oscuro en todos los inputs del auth overlay independientemente del tema */
-      #auth-overlay input, #auth-overlay .otp-box{color:#1a1a1a !important;-webkit-text-fill-color:#1a1a1a !important;background:#fff !important;color-scheme:light;}
+      .otp-box{
+        width:44px;height:52px;border:2px solid #D4AF37;border-radius:10px;
+        text-align:center;font-size:1.6rem;font-weight:700;
+        font-family:'Outfit',sans-serif;outline:none;
+        transition:border-color .2s,box-shadow .2s;box-sizing:border-box;
+        /* Fondo oscuro + texto dorado: visible en cualquier tema/dispositivo */
+        background:#1a1a1a !important;
+        color:#D4AF37 !important;
+        -webkit-text-fill-color:#D4AF37 !important;
+        caret-color:#D4AF37;
+        color-scheme:dark;
+      }
+      .otp-box::placeholder{color:rgba(212,175,55,0.3);}
+      .otp-box:focus{border-color:#fff;box-shadow:0 0 0 3px rgba(212,175,55,0.4);}
       #auth-overlay .rec-back{width:100% !important;padding:10px !important;background:none !important;border:none !important;color:var(--gold) !important;font-family:'Outfit',sans-serif !important;font-size:.82rem !important;cursor:pointer !important;margin-top:6px !important;font-weight:600 !important;}
       #btn-perfil{position:absolute;top:0;right:0;background:none !important;border:none !important;cursor:pointer;padding:4px;width:auto !important;}
       #mini-avatar{
@@ -1993,12 +2003,12 @@
             <div class="rec-step" id="rec-step-code">
               <div class="rec-info">Revisa Gmail (y spam). El código son 6 números, por ejemplo <b>123456</b>.<br/>Enviado a <b id="rec-email-display"></b></div>
               <div class="otp-row">
-                <input class="otp-box" id="otp0" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" style="color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important;background:#fff!important;"/>
-                <input class="otp-box" id="otp1" type="text" inputmode="numeric" maxlength="1" style="color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important;background:#fff!important;"/>
-                <input class="otp-box" id="otp2" type="text" inputmode="numeric" maxlength="1" style="color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important;background:#fff!important;"/>
-                <input class="otp-box" id="otp3" type="text" inputmode="numeric" maxlength="1" style="color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important;background:#fff!important;"/>
-                <input class="otp-box" id="otp4" type="text" inputmode="numeric" maxlength="1" style="color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important;background:#fff!important;"/>
-                <input class="otp-box" id="otp5" type="text" inputmode="numeric" maxlength="1" style="color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important;background:#fff!important;"/>
+                <input class="otp-box" id="otp0" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code"/>
+                <input class="otp-box" id="otp1" type="text" inputmode="numeric" maxlength="1"/>
+                <input class="otp-box" id="otp2" type="text" inputmode="numeric" maxlength="1"/>
+                <input class="otp-box" id="otp3" type="text" inputmode="numeric" maxlength="1"/>
+                <input class="otp-box" id="otp4" type="text" inputmode="numeric" maxlength="1"/>
+                <input class="otp-box" id="otp5" type="text" inputmode="numeric" maxlength="1"/>
               </div>
               <div class="auth-err" id="rec-err-code"></div>
               <button id="btn-verificar-codigo" class="auth-btn-primary" onclick="verificarCodigoRecuperacion()">Verificar código</button>
