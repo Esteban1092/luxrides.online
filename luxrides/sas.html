@@ -7413,7 +7413,8 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
         var fecha   = buscar([/fecha[:\s]+([^\n,\.]+)/,/el d[ií]a[:\s]+([^\n,\.]+)/,/el[:\s]+(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/]);
         var hora    = buscar([/hora[:\s]+([^\n,\.]+)/,/a las[:\s]+([^\n,\.]+)/,/time[:\s]+([^\n,\.]+)/]);
         var tel     = buscar([/tel[eé]fono[:\s]+([\d\s\+\-]{7,15})/,/cel[ular]*[:\s]+([\d\s\+\-]{7,15})/,/whatsapp[:\s]+([\d\s\+\-]{7,15})/,/número[:\s]+([\d\s\+\-]{7,15})/]);
-        return { nombre: nombre||'Cliente Lovox', origen: origen, destino: destino, fecha: fecha, hora_recogida: hora, telefono: tel };
+        var email   = buscar([/correo[:\s]+([\w\.\+\-]+@[\w\.]+)/,/email[:\s]+([\w\.\+\-]+@[\w\.]+)/,/e-mail[:\s]+([\w\.\+\-]+@[\w\.]+)/]);
+        return { nombre: nombre||'Cliente Lovox', origen: origen, destino: destino, fecha: fecha, hora_recogida: hora, telefono: tel, email: email };
       }
 
       function _procesarReservaConfirmadaLovox(reply, history) {
@@ -7421,7 +7422,7 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
         var datos = _extraerDatosReservaDeChat(history);
         var reservaId = 'LUX-LOV-' + Date.now();
         var ts = new Date().toISOString();
-        // Guardar en backend/Supabase
+        // Guardar en backend/Supabase — email_cliente dispara correo de confirmación
         guardarViajeEnServidor({
           reserva_id: reservaId,
           cliente: datos.nombre,
@@ -7436,7 +7437,8 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
           servicio: 'Lovox',
           vehiculo: 'Por confirmar',
           timestamp: ts,
-          email_cliente: '',
+          email_cliente: datos.email || '',
+          email: datos.email || '',
           source: 'lovox'
         });
         // Enviar WhatsApp al número central
@@ -7449,6 +7451,7 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
           datos.fecha   ? '📅 *Fecha:* '   + datos.fecha   : '',
           datos.hora_recogida ? '⏰ *Hora:* ' + datos.hora_recogida : '',
           datos.telefono ? '📱 *Tel:* '    + datos.telefono : '',
+          datos.email   ? '✉️ *Email:* '   + datos.email   : '',
           '🆔 *ID:* ' + reservaId
         ].filter(Boolean).join('\n');
         var waUrl = 'https://api.whatsapp.com/send?phone=' + numeroCentral + '&text=' + encodeURIComponent(resumen);
