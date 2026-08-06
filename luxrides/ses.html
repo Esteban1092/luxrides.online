@@ -1309,6 +1309,14 @@ function updateDriverMarker(pos) {
   liveMap.panTo(latLng);
 }
 
+function roundMoney(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+}
+
+function calcularPagoChofer(totalViaje) {
+  return roundMoney(Number(totalViaje || 0) * 0.78);
+}
+
 document.getElementById('inp-id').addEventListener('input', toggleLoginBtn);
 document.getElementById('inp-nombre').addEventListener('input', toggleLoginBtn);
 document.getElementById('inp-id').addEventListener('keydown', function(e) { if (e.key === 'Enter') loginChofer(); });
@@ -1836,12 +1844,12 @@ async function finalizarViaje() {
   if (!viajeActual) return;
   var v = viajeActual;
   try {
-    var pagoChofer = Math.round((v.total || v.precio || 0) * 0.8);
+    var pagoChofer = calcularPagoChofer(v.total || v.precio || 0);
     var result = await driverApi('/api/driver/trips/' + encodeURIComponent(v.id) + '/finalize', {
-      method: 'PATCH',
-      body: { pago_chofer: pagoChofer }
+      method: 'PATCH'
     });
     if (result && result.data && result.data.chofer) choferData = result.data.chofer;
+    if (result && result.data && Number.isFinite(Number(result.data.pago_chofer))) pagoChofer = Number(result.data.pago_chofer);
     notify('Viaje completado. +$' + formatNum(pagoChofer) + ' añadidos a tu saldo.', 'ok');
     viajesPendientes = {};
     borrarRutaLiveMap();

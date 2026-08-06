@@ -4,6 +4,14 @@ import { clearDriverSessionCookie, createDriverSessionCookieValue, requireDriver
 
 const router = Router();
 
+function roundMoney(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+}
+
+function calcularPagoChofer(totalViaje) {
+  return roundMoney(Number(totalViaje || 0) * 0.78);
+}
+
 const CHOFER_UPDATE_FIELDS = new Set([
   'nombre',
   'hotel',
@@ -245,9 +253,7 @@ router.patch('/driver/trips/:id/finalize', requireDriverSession, async (req, res
       return res.status(403).json({ ok: false, error: 'El viaje no pertenece a esta sesion.' });
     }
 
-    const pagoChofer = Number.isFinite(Number(req.body?.pago_chofer))
-      ? Math.round(Number(req.body.pago_chofer))
-      : Math.round((Number(trip.total || trip.precio || 0) * 0.8));
+    const pagoChofer = calcularPagoChofer(totalViaje);
 
     const completedAt = new Date().toISOString();
     const viajeActualizado = await updateChofer(req.driverSession.choferId, {
@@ -281,8 +287,8 @@ router.patch('/driver/trips/:id/finalize', requireDriverSession, async (req, res
     });
 
     const chofer = await getChoferById(req.driverSession.choferId);
-    const saldoDisponible = Number(chofer?.saldo_disponible || 0) + pagoChofer;
-    const saldoProceso = Number(chofer?.saldo_en_proceso || 0) + Math.round(pagoChofer * 0.1);
+    const saldoDisponible = roundMoney(Number(chofer?.saldo_disponible || 0) + pagoChofer);
+    const saldoProceso = roundMoney(Number(chofer?.saldo_en_proceso || 0) + roundMoney(pagoChofer * 0.1));
     await updateChofer(req.driverSession.choferId, {
       saldo_disponible: saldoDisponible,
       saldo_en_proceso: saldoProceso,

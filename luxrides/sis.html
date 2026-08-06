@@ -2200,7 +2200,7 @@ function obtenerPagoChofer(item) {
   if (Number.isFinite(pago) && pago >= 0) return pago;
   var precio = Number(item && (item.precio || item.total || 0));
   if (!Number.isFinite(precio) || precio <= 0) return 0;
-  return Math.round(precio * 0.78);
+  return Math.round((precio * 0.78 + Number.EPSILON) * 100) / 100;
 }
 
 function cargarHistorialChofer(choferId) {
