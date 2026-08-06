@@ -728,8 +728,10 @@
       .rec-step.active{display:block;}
       .rec-info{font-size:.8rem;color:var(--muted);text-align:center;margin-bottom:14px;line-height:1.5;}
       .otp-row{display:flex;gap:8px;justify-content:center;margin:14px 0;}
-      .otp-box{width:44px;height:52px;border:1.5px solid rgba(0,0,0,0.15);border-radius:10px;text-align:center;font-size:1.5rem;font-weight:700;font-family:'Outfit',sans-serif;color:#1a1a1a !important;outline:none;background:#fff !important;transition:border-color .2s;box-sizing:border-box;-webkit-text-fill-color:#1a1a1a !important;caret-color:#1a1a1a;}
+      .otp-box{width:44px;height:52px;border:1.5px solid rgba(0,0,0,0.15);border-radius:10px;text-align:center;font-size:1.5rem;font-weight:700;font-family:'Outfit',sans-serif;color:#1a1a1a !important;outline:none;background:#fff !important;transition:border-color .2s;box-sizing:border-box;-webkit-text-fill-color:#1a1a1a !important;caret-color:#1a1a1a;color-scheme:light;}
       .otp-box:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(212,175,55,0.14);}
+      /* Forzar texto oscuro en todos los inputs del auth overlay independientemente del tema */
+      #auth-overlay input, #auth-overlay .otp-box{color:#1a1a1a !important;-webkit-text-fill-color:#1a1a1a !important;background:#fff !important;color-scheme:light;}
       #auth-overlay .rec-back{width:100% !important;padding:10px !important;background:none !important;border:none !important;color:var(--gold) !important;font-family:'Outfit',sans-serif !important;font-size:.82rem !important;cursor:pointer !important;margin-top:6px !important;font-weight:600 !important;}
       #btn-perfil{position:absolute;top:0;right:0;background:none !important;border:none !important;cursor:pointer;padding:4px;width:auto !important;}
       #mini-avatar{
