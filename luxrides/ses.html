@@ -8,26 +8,6 @@
 <link rel="icon" type="image/png" href="/logo-luxrides.png"/>
 <link rel="apple-touch-icon" href="/logo-luxrides.png"/>
 <script src="config.js?v=20260806d"></script>
-  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-  <script>
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: "3b1b174b-aa37-4ce6-b3f1-2dab7accc4e2",
-        serviceWorkerPath: "/OneSignalSDKWorker.js",
-        notifyButton: { enable: false },
-        promptOptions: {
-          slidedown: {
-            enabled: true,
-            actionMessage: "LuxRides necesita permiso para notificarte de tus viajes.",
-            acceptButtonText: "Permitir",
-            cancelButtonText: "No gracias"
-          }
-        }
-      });
-      window._oneSignalReady = true;
-    });
-  </script>
 <script src="js/lux-core.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.stripe.com/v3/"></script>
@@ -1357,7 +1337,7 @@ async function loginChofer() {
     choferId = (res.data && res.data.id) || id;
     choferData = res.data || { id: id, nombre: nom };
     try { localStorage.setItem('luxrides_chofer_id', choferId); localStorage.setItem('luxrides_chofer_nombre', choferData.nombre || nom); } catch(e) {}
-    iniciarApp();
+    await iniciarApp();
   } catch (e) {
     console.error(e);
     document.getElementById('login-error').textContent = 'No se pudo iniciar sesión. ' + (e.message || 'Intenta de nuevo.');
@@ -1365,7 +1345,7 @@ async function loginChofer() {
   }
 }
 
-function iniciarApp() {
+async function iniciarApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   var badge = document.getElementById('state-badge');
@@ -1382,7 +1362,7 @@ function iniciarApp() {
   iniciarNoSleep();
   iniciarWakeLock();
   actualizarEstadoBotonPush(Notification.permission === 'granted' ? 'on' : (Notification.permission === 'denied' ? 'blocked' : 'off'));
-  registrarPush();
+  await registrarPush();
   toggleBusquedaViajes(true);
   setOnline(true);
   mostrarToast('Bienvenido ' + choferData.nombre);
