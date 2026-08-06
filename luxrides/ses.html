@@ -1753,11 +1753,9 @@ function renderViajesPendientes() {
     var v = viajesPendientes[k];
     var totalViaje = Number(v.total || v.precio || 0);
     var pagoChofer = calcularPagoChofer(totalViaje);
-    var comisionLux = calcularComisionLux(totalViaje);
     html += '<div class="viaje-card" data-id="' + k + '">';
     html += '<div class="head"><span class="name">' + escHtml(v.cliente) + '</span><span class="price">$' + formatMoney(pagoChofer) + '</span></div>';
     html += '<div class="detail"><span>' + escHtml(v.origen || '') + ' → ' + escHtml(v.destino || '') + '</span></div>';
-    html += '<div class="detail" style="margin-top:6px;"><span class="badge ok">Chofer 78%: $' + formatMoney(pagoChofer) + '</span><span class="badge warn">LuxRides 22%: $' + formatMoney(comisionLux) + '</span></div>';
     html += '<div class="detail" style="margin-top:8px;"><span class="badge gold">' + (v.distancia_km || '—') + ' km</span><span class="badge gold">' + (v.duracion_min || '—') + ' min</span></div>';
     html += '<div style="margin-top:8px;display:flex;gap:8px;">';
     html += '<button class="btn-sm gold" onclick="aceptarViaje(\'' + k + '\')">✓ Aceptar</button>';
