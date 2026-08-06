@@ -1317,6 +1317,10 @@ function calcularPagoChofer(totalViaje) {
   return roundMoney(Number(totalViaje || 0) * 0.78);
 }
 
+function calcularComisionLux(totalViaje) {
+  return roundMoney(Number(totalViaje || 0) * 0.22);
+}
+
 document.getElementById('inp-id').addEventListener('input', toggleLoginBtn);
 document.getElementById('inp-nombre').addEventListener('input', toggleLoginBtn);
 document.getElementById('inp-id').addEventListener('keydown', function(e) { if (e.key === 'Enter') loginChofer(); });
@@ -1730,8 +1734,10 @@ function mostrarNuevoViaje(v) {
 }
 
 function mostrarNotificacionNuevoViaje(v) {
+  var totalViaje = Number(v.total || v.precio || 0);
+  var pagoChofer = calcularPagoChofer(totalViaje);
   if (Notification.permission === 'granted') {
-    new Notification('Nuevo viaje disponible', { body: 'Cliente: ' + v.cliente + ' - $' + (v.total || v.precio) });
+    new Notification('Nuevo viaje disponible', { body: 'Cliente: ' + v.cliente + ' - Tu pago: $' + formatMoney(pagoChofer) });
   }
 }
 
@@ -1745,9 +1751,13 @@ function renderViajesPendientes() {
   var html = '';
   for (var k in viajesPendientes) {
     var v = viajesPendientes[k];
+    var totalViaje = Number(v.total || v.precio || 0);
+    var pagoChofer = calcularPagoChofer(totalViaje);
+    var comisionLux = calcularComisionLux(totalViaje);
     html += '<div class="viaje-card" data-id="' + k + '">';
-    html += '<div class="head"><span class="name">' + escHtml(v.cliente) + '</span><span class="price">$' + formatNum(v.total || v.precio) + '</span></div>';
+    html += '<div class="head"><span class="name">' + escHtml(v.cliente) + '</span><span class="price">$' + formatMoney(pagoChofer) + '</span></div>';
     html += '<div class="detail"><span>' + escHtml(v.origen || '') + ' → ' + escHtml(v.destino || '') + '</span></div>';
+    html += '<div class="detail" style="margin-top:6px;"><span class="badge ok">Chofer 78%: $' + formatMoney(pagoChofer) + '</span><span class="badge warn">LuxRides 22%: $' + formatMoney(comisionLux) + '</span></div>';
     html += '<div class="detail" style="margin-top:8px;"><span class="badge gold">' + (v.distancia_km || '—') + ' km</span><span class="badge gold">' + (v.duracion_min || '—') + ' min</span></div>';
     html += '<div style="margin-top:8px;display:flex;gap:8px;">';
     html += '<button class="btn-sm gold" onclick="aceptarViaje(\'' + k + '\')">✓ Aceptar</button>';
@@ -1758,6 +1768,7 @@ function renderViajesPendientes() {
 
 function escHtml(s) { if (!s) return ''; return String(s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];}); }
 function formatNum(n) { return Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+function formatMoney(n) { return Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 function aceptarViaje(id) {
   var v = id ? viajesPendientes[id] : viajeActual;
@@ -1802,6 +1813,9 @@ function rechazarViaje(id) {
 
 function mostrarViajeScreen() {
   if (!viajeActual) return;
+  var totalViaje = Number(viajeActual.total || viajeActual.precio || 0);
+  var pagoChofer = calcularPagoChofer(totalViaje);
+  var comisionLux = calcularComisionLux(totalViaje);
   var s = document.getElementById('viaje-screen');
   s.classList.add('active');
   document.getElementById('viaje-screen-title').textContent = 'Viaje a ' + (viajeActual.destino || '');
@@ -1809,7 +1823,9 @@ function mostrarViajeScreen() {
   info.innerHTML = '<div class="item"><span class="ico">👤</span><div><div class="lbl">Cliente</div><div class="val">' + escHtml(viajeActual.cliente) + '</div></div></div>';
   info.innerHTML += '<div class="item"><span class="ico">📍</span><div><div class="lbl">Origen</div><div class="val">' + escHtml(viajeActual.origen || '') + '</div></div></div>';
   info.innerHTML += '<div class="item"><span class="ico">🏁</span><div><div class="lbl">Destino</div><div class="val">' + escHtml(viajeActual.destino || '') + '</div></div></div>';
-  info.innerHTML += '<div class="item"><span class="ico">💰</span><div><div class="lbl">Total</div><div class="val">$' + formatNum(viajeActual.total || viajeActual.precio) + '</div></div></div>';
+  info.innerHTML += '<div class="item"><span class="ico">💵</span><div><div class="lbl">Pago chofer 78%</div><div class="val">$' + formatMoney(pagoChofer) + '</div></div></div>';
+  info.innerHTML += '<div class="item"><span class="ico">🏦</span><div><div class="lbl">Comisión LuxRides 22%</div><div class="val">$' + formatMoney(comisionLux) + '</div></div></div>';
+  info.innerHTML += '<div class="item"><span class="ico">💰</span><div><div class="lbl">Tarifa total</div><div class="val">$' + formatMoney(totalViaje) + '</div></div></div>';
   var actions = document.getElementById('viaje-actions');
   actions.innerHTML = '<button class="btn-finalize" onclick="finalizarViaje()">✅ Finalizar viaje</button>';
   var origLat = parseFloat(viajeActual.lat_origen || viajeActual.origen_lat);
