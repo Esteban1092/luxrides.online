@@ -728,20 +728,22 @@
       .rec-step.active{display:block;}
       .rec-info{font-size:.8rem;color:var(--muted);text-align:center;margin-bottom:14px;line-height:1.5;}
       .otp-row{display:flex;gap:8px;justify-content:center;margin:14px 0;}
-      .otp-box{
-        width:44px;height:52px;border:2px solid #D4AF37;border-radius:10px;
-        text-align:center;font-size:1.6rem;font-weight:700;
-        font-family:'Outfit',sans-serif;outline:none;
-        transition:border-color .2s,box-shadow .2s;box-sizing:border-box;
-        /* Fondo oscuro + texto dorado: visible en cualquier tema/dispositivo */
-        background:#1a1a1a !important;
-        color:#D4AF37 !important;
-        -webkit-text-fill-color:#D4AF37 !important;
-        caret-color:#D4AF37;
-        color-scheme:dark;
+      #auth-overlay .otp-box,.otp-box{
+        width:44px !important;height:52px !important;border:2px solid #D4AF37 !important;border-radius:10px !important;
+        text-align:center !important;font-size:1.6rem !important;font-weight:700 !important;
+        font-family:'Outfit',sans-serif !important;outline:none !important;
+        padding:0 !important;
+        transition:border-color .2s,box-shadow .2s;box-sizing:border-box !important;
+        /* Fondo claro + texto oscuro: máxima visibilidad en cualquier dispositivo */
+        background:#ffffff !important;
+        color:#1a1a1a !important;
+        -webkit-text-fill-color:#1a1a1a !important;
+        opacity:1 !important;
+        caret-color:#D4AF37 !important;
+        color-scheme:light !important;
       }
-      .otp-box::placeholder{color:rgba(212,175,55,0.3);}
-      .otp-box:focus{border-color:#fff;box-shadow:0 0 0 3px rgba(212,175,55,0.4);}
+      .otp-box::placeholder{color:rgba(0,0,0,0.25) !important;-webkit-text-fill-color:rgba(0,0,0,0.25) !important;}
+      #auth-overlay .otp-box:focus,.otp-box:focus{border-color:#D4AF37 !important;box-shadow:0 0 0 3px rgba(212,175,55,0.4) !important;}
       #auth-overlay .rec-back{width:100% !important;padding:10px !important;background:none !important;border:none !important;color:var(--gold) !important;font-family:'Outfit',sans-serif !important;font-size:.82rem !important;cursor:pointer !important;margin-top:6px !important;font-weight:600 !important;}
       #btn-perfil{position:absolute;top:0;right:0;background:none !important;border:none !important;cursor:pointer;padding:4px;width:auto !important;}
       #mini-avatar{
