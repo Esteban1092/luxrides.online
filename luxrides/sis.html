@@ -2088,16 +2088,21 @@ function refrescarSelectPagos() {
 async function enviarPushChofer(choferId, cliente, origen, destino, reservaId) {
   try {
     const base = window.LuxCfg ? LuxCfg.apiBaseUrl() : 'https://luxrides.online';
-    await fetch(base + '/api/push/notificar', {
+    const res = await fetch(base + '/api/push/enviar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        external_user_ids: [choferId],
+        chofer_id: choferId,
         titulo: 'Nuevo viaje asignado',
         cuerpo: (cliente || 'Cliente') + ' · ' + (origen || '') + ' → ' + (destino || ''),
+        url: '/ses.html?reserva=' + encodeURIComponent(reservaId || ''),
         datos: { reservaId, tipo: 'viaje_asignado' }
       })
     });
+    if (!res.ok) {
+      const data = await res.json().catch(function() { return {}; });
+      throw new Error(data.error || data.message || ('HTTP ' + res.status));
+    }
   } catch(e) {
     console.warn('[Push]', e);
   }

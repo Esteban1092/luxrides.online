@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { env } from '../config/env.js';
 import { requireAdminSession } from '../middleware/admin-auth.js';
+import { enviarPushAChofer, enviarPush } from '../services/push.service.js';
 
 const router = Router();
 
@@ -71,6 +72,20 @@ router.post('/admin/push-notifications', async (req, res, next) => {
       headers: supabaseHeaders(true),
       body: JSON.stringify(payload)
     });
+
+    if (payload.chofer_id && payload.titulo) {
+      try {
+        const subscription = await enviarPushAChofer(payload.chofer_id);
+        await enviarPush(subscription, {
+          title: payload.titulo,
+          body: payload.cuerpo || '',
+          tag: 'luxrides-viaje',
+          url: '/ses.html'
+        });
+      } catch (pushError) {
+        console.warn('[admin-push-notifications] web push no enviado:', pushError.message);
+      }
+    }
 
     res.status(201).json({ ok: true, data: rows?.[0] || null });
   } catch (error) {
