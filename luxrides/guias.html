@@ -245,8 +245,9 @@
   <div class="screen" id="login-screen">
     <div class="card">
       <div class="title">LUXRIDES GUIAS</div>
-      <div class="subtitle">Ingresa con el ID asignado por administración.<br/>Si no tienes ID, solicítalo al despacho.</div>
+      <div class="subtitle">Ingresa con tu ID y contraseña asignados por administración.<br/>Si no tienes acceso, solicítalo al despacho.</div>
       <input id="inp-id" class="input" type="text" autocomplete="off" placeholder="ID de guia (ej: G-009)"/>
+      <input id="inp-pass" class="input" type="password" autocomplete="current-password" placeholder="Contraseña"/>
       <button id="btn-login" class="btn btn-gold" onclick="loginGuia()">INGRESAR</button>
       <div id="login-error" class="error"></div>
     </div>
@@ -332,21 +333,27 @@
       limpiarError();
       if (!sb) { mostrarError('Supabase no inicializado.'); return; }
       const id = (document.getElementById('inp-id').value || '').trim();
-      if (!id) { mostrarError('Ingresa tu ID de guia.'); return; }
+      const pass = (document.getElementById('inp-pass').value || '').trim();
+      if (!id || !pass) { mostrarError('Ingresa tu ID y contraseña.'); return; }
 
       const btn = document.getElementById('btn-login');
       btn.disabled = true;
       btn.textContent = 'VALIDANDO...';
 
       try {
-        const { data, error } = await sb
-          .from('choferes')
-          .select('*')
-          .eq('id', id)
-          .maybeSingle();
+        const base = (window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
+        const res = await fetch(base + '/api/driver/login', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: id, pass: pass })
+        });
+        const out = await res.json().catch(function(){ return {}; });
+        if (!res.ok || !out.ok || !out.data) {
+          throw new Error((out && out.error) || 'Credenciales inválidas.');
+        }
 
-        if (error) throw error;
-        if (!data) throw new Error('ID no encontrado.');
+        const data = out.data;
         if (!esRegistroGuia(data)) throw new Error('Este ID no corresponde a un guia.');
 
         guia = data;
@@ -500,6 +507,13 @@
     }
 
     document.getElementById('inp-id').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const passEl = document.getElementById('inp-pass');
+        if (passEl) passEl.focus();
+      }
+    });
+
+    document.getElementById('inp-pass').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') loginGuia();
     });
 

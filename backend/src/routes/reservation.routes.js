@@ -43,14 +43,24 @@ function inferEmail(body) {
   return clean(body.email_cliente || body.email || body.email_cliente_reserva || body.email_user || body.emailUsuario);
 }
 
+function normalizePaymentMethod(value) {
+  const raw = clean(value).toLowerCase();
+  if (!raw) return 'tarjeta';
+  if (raw === 'efectivo' || raw === 'cash') return 'efectivo';
+  if (raw === 'tarjeta' || raw === 'card') return 'tarjeta';
+  return 'tarjeta';
+}
+
 router.post('/reservas',
   body('passenger_name').optional().isString().isLength({ max: 120 }),
   body('cliente').optional().isString().isLength({ max: 120 }),
   body('nombre').optional().isString().isLength({ max: 120 }),
-  body('email_cliente').optional().isEmail().normalizeEmail(),
-  body('email').optional().isEmail().normalizeEmail(),
+  body('email_cliente').optional({ checkFalsy: true }).isEmail().normalizeEmail(),
+  body('email').optional({ checkFalsy: true }).isEmail().normalizeEmail(),
   body('total').optional().isFloat({ min: 0, max: 1_000_000 }),
   body('fecha').optional().isString().isLength({ max: 30 }),
+  body('metodo_pago').optional().isString().isLength({ max: 20 }),
+  body('payment_method').optional().isString().isLength({ max: 20 }),
   async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
@@ -61,6 +71,7 @@ router.post('/reservas',
     const confirmationCode = inferConfirmationCode(body) || 'LUX-' + Date.now();
     const email = inferEmail(body);
     const customerName = clean(body.customer || body.cliente || body.nombre || passengerName);
+    const paymentMethod = normalizePaymentMethod(body.metodo_pago || body.payment_method);
 
     if (!passengerName && !customerName) {
       return res.status(400).json({ ok: false, error: 'passenger_name es obligatorio' });
@@ -86,6 +97,8 @@ router.post('/reservas',
       timestamp: body.timestamp || new Date().toISOString(),
       email_cliente: email,
       pasajeros: body.pasajeros ?? null,
+      metodo_pago: paymentMethod,
+      payment_method: paymentMethod,
       traslado: clean(body.traslado || body.trip_kind || body.tripKind),
       numero_vuelo: clean(body.numero_vuelo || body.flight_number),
       distancia_km: body.distancia_km ?? body.distance_km ?? null,

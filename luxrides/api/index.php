@@ -29,12 +29,11 @@ if ($configuredUpstream !== '') {
     $backendCandidates[] = $configuredUpstream;
 }
 
-// Backend publico activo (Codespaces). Primer intento cuando no hay upstream configurado.
-$backendCandidates[] = 'https://congenial-space-goldfish-g4944pp4vj6hv5wr-8787.app.github.dev';
-
 if ($isVercel) {
+    // En Vercel se usa backend publico.
     $backendCandidates[] = 'https://luxrides.online';
 } else {
+    // En Hostinger el backend corre local en el mismo servidor.
     $backendCandidates[] = 'http://127.0.0.1:8787';
     $backendCandidates[] = 'http://localhost:8787';
 }

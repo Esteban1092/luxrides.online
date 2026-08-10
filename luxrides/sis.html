@@ -308,6 +308,7 @@
         <input id="nuevo-chofer-id" type="text" placeholder="ID chofer (ej: 009)"/>
         <input id="nuevo-chofer-nombre" type="text" placeholder="Nombre del chofer"/>
         <input id="nuevo-chofer-hotel" type="text" placeholder="Hotel / Base (opcional)"/>
+        <input id="nuevo-chofer-pass" type="password" placeholder="Contraseña guía" style="display:none;" autocomplete="new-password"/>
         <button class="btn-small" onclick="confirmarNuevoChofer()">Confirmar</button>
       </div>
     </div>
@@ -592,6 +593,13 @@ function esGuiaRegistro(ch, id) {
   var tipo = String(ch && ch.vehiculo_tipo || '').trim().toLowerCase();
   var idStr = String(id || (ch && ch.id) || '').trim().toLowerCase();
   return tipo === 'guia' || tipo === 'guía' || idStr.indexOf('guia') === 0 || idStr.indexOf('g-') === 0;
+}
+
+function normalizarMetodoPagoReserva(r) {
+  var raw = String((r && (r.metodo_pago || r.payment_method)) || '').trim().toLowerCase();
+  if (raw === 'efectivo' || raw === 'cash') return 'Efectivo';
+  if (raw === 'tarjeta' || raw === 'card') return 'Tarjeta';
+  return 'Tarjeta';
 }
 
 function dbGet(table, id) {
@@ -1440,6 +1448,8 @@ function agendarAutoAsignacion(reservaId) {
 }
 
 function formatearChofer(id, ch) {
+  var wallet = Number(ch.wallet_balance);
+  var walletBalance = Number.isFinite(wallet) ? wallet : Number(ch.saldo_disponible || 0);
   return {
     id: id,
     nombre: ch.nombre || id,
@@ -1452,7 +1462,10 @@ function formatearChofer(id, ch) {
     vehiculo_modelo: ch.vehiculo_modelo || '',
     vehiculo_color: ch.vehiculo_color || '',
     vehiculo_anio: ch.vehiculo_anio || '',
-    placa: ch.placa || ''
+    placa: ch.placa || '',
+    wallet_balance: walletBalance,
+    cash_debt_limit: Number.isFinite(Number(ch.cash_debt_limit)) ? Number(ch.cash_debt_limit) : -300,
+    cash_blocked: Boolean(ch.cash_blocked)
   };
 }
 
@@ -1508,6 +1521,7 @@ function renderizarClientes() {
       : '';
     var avisoReasignacion = r.reasignacion_pendiente ? '<p style="color:#fca5a5"><b>↻ Reasignación:</b> ' + escHtml(r.reasignacion_motivo || '') + '</p>' : '';
     var avisoReembolso = r.reembolso_automatico ? '<p style="color:#86efac"><b>💸 Reembolso:</b> ' + escHtml(r.reembolso_estado || 'registrado') + '</p>' : '';
+    var metodoPago = normalizarMetodoPagoReserva(r);
     var vlNum = r.numero_vuelo ? ' · Vuelo: ' + escHtml(r.numero_vuelo) : '';
     var choferInfoHTML = (estado === 'asignado' || estado === 'en curso' || estado === 'en_curso') && r.chofer_id ? buildDriverInfoHTML(r) : '';
     var tipoChip = esTour
@@ -1526,6 +1540,7 @@ function renderizarClientes() {
       + '<p>📍 <b>' + escHtml(r.origen) + '</b>' + (r.destino && r.destino !== 'Por tiempo' ? ' ➔ <b>' + escHtml(r.destino) + '</b>' : '') + '</p>'
       + '<p>📅 ' + escHtml(r.fecha || '—') + ' · ⏰ ' + escHtml(r.hora_recogida || '—') + '</p>'
       + '<p>🚘 ' + escHtml(r.vehiculo || '—') + ' · 👥 ' + (r.pasajeros || 1) + ' pax · ' + escHtml(r.servicio || '—') + ' · ' + escHtml(r.traslado || 'Normal') + escHtml(vlNum) + '</p>'
+      + '<p>💳 <b>Método de pago:</b> ' + metodoPago + '</p>'
       + (r.distancia_km ? '<p>📏 ' + r.distancia_km + ' km · ⏱️ ' + r.duracion_min + ' min</p>' : '')
       + avisoReasignacion + avisoReembolso + califHtml
       + '<div class="precio">$' + formatNum(r.total || 0) + ' MXN</div><hr>'
@@ -1650,6 +1665,8 @@ async function despachar(reservaID) {
     await dbInsert('viajes', {
       chofer_id: choferID,
       reserva_id: reservaID,
+      metodo_pago: r.metodo_pago || r.payment_method || 'tarjeta',
+      payment_method: r.payment_method || r.metodo_pago || 'tarjeta',
       estado: 'pendiente',
       cliente: r.cliente || '',
       origen: r.origen || '',
@@ -1771,6 +1788,8 @@ async function reasignarChofer(reservaID) {
     await dbInsert('viajes', {
       chofer_id: nuevoChoferID,
       reserva_id: reservaID,
+      metodo_pago: r.metodo_pago || r.payment_method || 'tarjeta',
+      payment_method: r.payment_method || r.metodo_pago || 'tarjeta',
       estado: 'pendiente',
       cliente: r.cliente || '',
       origen: r.origen || '',
@@ -1863,11 +1882,21 @@ function renderizarChoferes() {
       : (estadoLower.indexOf('ocupado') !== -1 || estadoLower.indexOf('en_viaje') !== -1 || estadoLower.indexOf('en viaje') !== -1) ? 'ocupado' : 'desconectado';
     var estadoLabel = (estadoLower.indexOf('en linea') !== -1 || estadoLower.indexOf('online') !== -1 || estadoLower.indexOf('libre') !== -1 || estadoLower.indexOf('demo') !== -1) ? '🟢 En línea'
       : (estadoLower.indexOf('ocupado') !== -1 || estadoLower.indexOf('en_viaje') !== -1 || estadoLower.indexOf('en viaje') !== -1) ? '🟡 En viaje' : '🔴 Desconectado';
+    var walletBalance = Number(ch.wallet_balance || 0);
+    var debtLimit = Number(ch.cash_debt_limit || -300);
+    var deudaEfectivo = walletBalance < 0 ? Math.abs(walletBalance) : 0;
+    var bloqueadoEfectivo = Boolean(ch.cash_blocked) || walletBalance <= debtLimit;
+    var walletTone = bloqueadoEfectivo
+      ? 'color:#fca5a5;'
+      : (walletBalance < 0 ? 'color:#f5d57b;' : 'color:#86efac;');
+    var walletLabel = walletBalance.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     div.innerHTML += '<div class="chofer-card"><div class="chofer-avatar">' + (isGuia ? '🧭' : (ch.vehiculo_tipo === 'camioneta' ? '🚙' : '🚗')) + '</div><div class="chofer-info">'
       + '<div class="chofer-nombre">' + escHtml(ch.nombre) + '</div><div class="chofer-id">ID: ' + escHtml(ch.id) + '</div>'
       + '<div class="chofer-estado"><span class="dot ' + dotClass + '"></span>' + estadoLabel + '</div>'
       + '<div class="chofer-hotel">' + (isGuia ? '📍 Base' : '🏨 Hotel') + ': <b>' + escHtml(ch.hotel || 'Sin asignar') + '</b></div>'
+      + '<div class="chofer-vehiculo" style="' + walletTone + '">💼 Wallet: <b>$' + walletLabel + ' MXN</b>' + (deudaEfectivo > 0 ? ' · Deuda: $' + deudaEfectivo.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '') + '</div>'
+      + (bloqueadoEfectivo ? '<div class="chofer-vehiculo" style="color:#fca5a5;">⛔ Bloqueado por límite de deuda (≤ $' + debtLimit.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ')</div>' : '')
       + (isGuia
         ? '<div class="chofer-vehiculo" style="color:#6ee7b7;">🧳 Guía de tours</div>'
         : (ch.vehiculo_tipo ? '<div class="chofer-vehiculo">' + (ch.vehiculo_tipo === 'camioneta' ? '🚙 Camioneta' : '🚗 Carro') + '</div>' : '<div class="chofer-vehiculo" style="color:#666;">Sin vehículo</div>'))
@@ -1892,7 +1921,10 @@ async function confirmarNuevoChofer() {
   var id = (document.getElementById('nuevo-chofer-id') ? document.getElementById('nuevo-chofer-id').value : '').trim();
   var nombre = (document.getElementById('nuevo-chofer-nombre') ? document.getElementById('nuevo-chofer-nombre').value : '').trim();
   var hotelInput = (document.getElementById('nuevo-chofer-hotel') ? document.getElementById('nuevo-chofer-hotel').value : '').trim();
+  var passInput = (document.getElementById('nuevo-chofer-pass') ? document.getElementById('nuevo-chofer-pass').value : '').trim();
+  var esGuiaAlta = quickAltaTipo === 'guia';
   if (!id || !nombre) { showToast('⚠️ ID y nombre son obligatorios.', true); return; }
+  if (esGuiaAlta && !passInput) { showToast('⚠️ Para guías, la contraseña es obligatoria.', true); return; }
 
   // Evitar duplicado: si ya existe ese ID, actualizar en lugar de insertar
   try {
@@ -1910,12 +1942,14 @@ async function confirmarNuevoChofer() {
       nombre: nombre,
       hotel: hotelInput || (esGuia ? 'Guias' : 'Sin hotel'),
       vehiculo_tipo: esGuia ? 'guia' : null,
+      password_hash: esGuia ? btoa(passInput) : null,
       estado: 'offline',
       creado_en: new Date().toISOString()
     });
     document.getElementById('nuevo-chofer-id').value = '';
     document.getElementById('nuevo-chofer-nombre').value = '';
     document.getElementById('nuevo-chofer-hotel').value = '';
+    if (document.getElementById('nuevo-chofer-pass')) document.getElementById('nuevo-chofer-pass').value = '';
     showToast('✅ ' + (esGuia ? 'Guía' : 'Chofer') + ' ' + nombre + ' agregado');
     console.log('[chofer agregado]', res.data);
   } catch (err) {
@@ -2022,9 +2056,15 @@ function refrescarEtiquetasAltaRapida() {
   var lbl = document.getElementById('quick-form-tipo-label');
   var idInp = document.getElementById('nuevo-chofer-id');
   var nomInp = document.getElementById('nuevo-chofer-nombre');
+  var passInp = document.getElementById('nuevo-chofer-pass');
   if (lbl) lbl.textContent = 'Alta rápida: ' + (isGuia ? 'guía de tours' : 'chofer');
   if (idInp) idInp.placeholder = isGuia ? 'ID guía (ej: G-009)' : 'ID chofer (ej: 009)';
   if (nomInp) nomInp.placeholder = isGuia ? 'Nombre del guía' : 'Nombre del chofer';
+  if (passInp) {
+    passInp.style.display = isGuia ? '' : 'none';
+    passInp.value = '';
+    passInp.placeholder = isGuia ? 'Contraseña del guía' : 'Contraseña';
+  }
 }
 
 function aplicarFiltroClienteTipo(valor) {

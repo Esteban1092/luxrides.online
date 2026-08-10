@@ -7,6 +7,7 @@ const router = Router();
 const CHOFER_ALLOWED_FIELDS = new Set([
   'id',
   'nombre',
+  'password_hash',
   'hotel',
   'estado',
   'creado_en',
@@ -16,8 +17,17 @@ const CHOFER_ALLOWED_FIELDS = new Set([
   'vehiculo_color',
   'placa',
   'ubicacion',
-  'viaje_actual'
+  'viaje_actual',
+  'saldo_disponible',
+  'saldo_en_proceso',
+  'wallet_balance',
+  'cash_debt_limit',
+  'cash_blocked'
 ]);
+
+function roundMoney(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+}
 
 function supabaseHeaders(preferRepresentation = false) {
   const headers = {
@@ -131,6 +141,79 @@ router.patch('/admin/choferes/:id', async (req, res, next) => {
     });
 
     res.json({ ok: true, data: rows?.[0] || null });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/admin/choferes/:id/wallet-adjustments', async (req, res, next) => {
+  try {
+    const choferId = String(req.params.id || '').trim();
+    if (!choferId) return res.status(400).json({ ok: false, error: 'ID invalido' });
+
+    const amount = Number(req.body?.amount);
+    if (!Number.isFinite(amount) || amount === 0) {
+      return res.status(400).json({ ok: false, error: 'amount debe ser numerico y distinto de 0' });
+    }
+
+    const choferRows = await supabaseRequest('choferes?id=eq.' + encodeURIComponent(choferId) + '&select=*&limit=1', {
+      method: 'GET',
+      headers: supabaseHeaders()
+    });
+    const chofer = choferRows?.[0] || null;
+    if (!chofer) return res.status(404).json({ ok: false, error: 'Chofer no encontrado' });
+
+    const currentWallet = Number.isFinite(Number(chofer.wallet_balance))
+      ? Number(chofer.wallet_balance)
+      : Number(chofer.saldo_disponible || 0);
+    const debtLimit = Number.isFinite(Number(chofer.cash_debt_limit))
+      ? Number(chofer.cash_debt_limit)
+      : -300;
+    const nextWallet = roundMoney(currentWallet + amount);
+    const blockedByDebt = nextWallet <= debtLimit;
+
+    const updateRows = await supabaseRequest('choferes?id=eq.' + encodeURIComponent(choferId), {
+      method: 'PATCH',
+      headers: supabaseHeaders(true),
+      body: JSON.stringify({
+        wallet_balance: nextWallet,
+        cash_debt_limit: debtLimit,
+        cash_blocked: blockedByDebt,
+        ultima_conexion: new Date().toISOString()
+      })
+    });
+
+    try {
+      await supabaseRequest('wallet_movements', {
+        method: 'POST',
+        headers: supabaseHeaders(true),
+        body: JSON.stringify({
+          chofer_id: choferId,
+          tipo: String(req.body?.tipo || 'manual_adjustment').slice(0, 60),
+          metodo_pago: String(req.body?.metodo || 'admin_manual').slice(0, 40),
+          amount: amount,
+          wallet_balance_before: currentWallet,
+          wallet_balance_after: nextWallet,
+          metadata: {
+            referencia: String(req.body?.referencia || ''),
+            notas: String(req.body?.notas || ''),
+            admin_id: req.adminSession?.adminId || null
+          },
+          created_at: new Date().toISOString()
+        })
+      });
+    } catch (error) {
+      console.warn('[admin-wallet-adjustment] no se pudo guardar wallet_movements', error.message);
+    }
+
+    res.status(201).json({
+      ok: true,
+      data: updateRows?.[0] || null,
+      wallet_balance_before: currentWallet,
+      wallet_balance_after: nextWallet,
+      cash_blocked: blockedByDebt,
+      debt_limit: debtLimit
+    });
   } catch (error) {
     next(error);
   }

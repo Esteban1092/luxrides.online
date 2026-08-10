@@ -147,6 +147,13 @@ html,body{width:100%;height:100%;background:#050505;color:#fff;overflow:hidden;-
 #install-modal .card button{width:100%;padding:13px;margin-top:8px;border:none;border-radius:12px;font-weight:700;cursor:pointer;transition:all .2s;}
 #install-modal .card .install-btn{background:linear-gradient(135deg,var(--gold),#B8942E);color:#050505;}
 #install-modal .card .close-btn{background:rgba(255,255,255,.06);color:#fff;}
+#push-subscribe-modal{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:24px;}
+#push-subscribe-modal .card{background:linear-gradient(145deg,#151515,#0a0a0a);border:1.5px solid rgba(212,175,55,.3);border-radius:20px;padding:28px 22px;max-width:360px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.6);}
+#push-subscribe-modal .card h3{font-family:'Playfair Display',serif;color:var(--gold);margin:0 0 10px;}
+#push-subscribe-modal .card p{font-size:.84rem;color:rgba(255,255,255,.6);margin:0 0 18px;line-height:1.45;}
+#push-subscribe-modal .card button{width:100%;padding:13px;margin-top:8px;border:none;border-radius:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+#push-subscribe-modal .card .push-btn-primary{background:linear-gradient(135deg,var(--gold),#B8942E);color:#050505;}
+#push-subscribe-modal .card .push-btn-secondary{background:rgba(255,255,255,.06);color:#fff;}
 #stripe-modal{position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;}
 .stripe-modal-card{background:linear-gradient(145deg,#151515,#0a0a0a);border:1.5px solid rgba(212,175,55,.3);border-radius:20px;padding:28px 22px;width:100%;max-width:380px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.6);}
 .stripe-modal-card .close{position:absolute;top:12px;right:16px;background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.5);font-size:1.2rem;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .2s;}
@@ -837,19 +844,21 @@ async function asegurarServiceWorkerLux() {
   return reg;
 }
 
-async function registrarPush() {
+async function registrarPush(opts) {
+  opts = opts || {};
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      actualizarEstadoBotonPush('blocked');
+      actualizarEstadoBotonPush('off');
       notify('⚠️ Push no soportado en este navegador', 'err'); return;
     }
     if (!VAPID_PUBLIC_KEY) {
-      actualizarEstadoBotonPush('blocked');
+      actualizarEstadoBotonPush('off');
       notify('⚠️ Falta configurar la llave pública VAPID', 'err'); return;
     }
     if (Notification.permission === 'denied') {
-      actualizarEstadoBotonPush('blocked');
-      notify('🔕 Notificaciones bloqueadas — actívalas en ajustes del navegador', 'err'); return;
+      actualizarEstadoBotonPush('off');
+      if (opts.fromButton) abrirSuscripcionNotificacionesBloqueadas();
+      notify('🔕 Las notificaciones están desactivadas. Puedes activarlas en los ajustes del navegador.', 'err'); return;
     }
     var reg = await asegurarServiceWorkerLux();
     var sub = await reg.pushManager.getSubscription();
@@ -863,13 +872,20 @@ async function registrarPush() {
       await guardarSuscripcionPush(sub);
       try { localStorage.setItem('luxrides_push_vapid_public', VAPID_PUBLIC_KEY); } catch (e) {}
       actualizarEstadoBotonPush('on');
-      notify('🔔 Notificaciones en segundo plano activas', 'ok');
+      if (!opts.silent) notify('🔔 Notificaciones en segundo plano activas', 'ok');
       return;
     }
+
+    if (opts.silent && Notification.permission === 'default') {
+      actualizarEstadoBotonPush('off');
+      return;
+    }
+
     var permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-      actualizarEstadoBotonPush(permission === 'denied' ? 'blocked' : 'off');
-      notify('🔕 Permiso de notificaciones denegado', 'err'); return;
+      actualizarEstadoBotonPush('off');
+      if (permission === 'denied' && opts.fromButton) abrirSuscripcionNotificacionesBloqueadas();
+      notify('🔕 No se aceptaron las notificaciones. Puedes volver a intentarlo más tarde.', 'err'); return;
     }
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
@@ -878,16 +894,92 @@ async function registrarPush() {
     await guardarSuscripcionPush(sub);
     try { localStorage.setItem('luxrides_push_vapid_public', VAPID_PUBLIC_KEY); } catch (e) {}
     actualizarEstadoBotonPush('on');
-    notify('✅ Notificaciones en segundo plano activadas', 'ok');
+    if (!opts.silent) notify('✅ Notificaciones en segundo plano activadas', 'ok');
   } catch (e) {
     console.warn('Error registering push:', e);
     actualizarEstadoBotonPush('off');
-    notify('⚠️ No se pudo activar push: ' + (e.message || e), 'err');
+    if (!opts.silent) notify('⚠️ No se pudo activar push: ' + (e.message || e), 'err');
   }
 }
 
+function mostrarModalSuscripcionPush() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    registrarPush({ silent: true });
+    return;
+  }
+  if (Notification.permission !== 'default') return;
+  var modal = document.getElementById('push-subscribe-modal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+}
+
+function cerrarModalSuscripcionPush() {
+  var modal = document.getElementById('push-subscribe-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function suscribirsePushDesdeModal() {
+  cerrarModalSuscripcionPush();
+  if (!('Notification' in window)) {
+    notify('⚠️ Este navegador no permite notificaciones web.', 'err');
+    return;
+  }
+  var permission = await Notification.requestPermission();
+  if (permission === 'granted') {
+    await registrarPush({ fromButton: true, silent: false });
+    return;
+  }
+  actualizarEstadoBotonPush('off');
+  notify('🔕 Puedes volver a intentarlo cuando quieras.', 'err');
+}
+
+function activarAutoSuscripcionPushChofer() {
+  if (!('Notification' in window)) return;
+
+  if (Notification.permission === 'granted') {
+    registrarPush({ silent: true });
+    return;
+  }
+
+  if (Notification.permission === 'default') {
+    setTimeout(function() { mostrarModalSuscripcionPush(); }, 700);
+    return;
+  }
+
+  actualizarEstadoBotonPush('off');
+}
+
 async function activarNotificacionesChofer() {
-  await registrarPush();
+  if (Notification.permission === 'denied') {
+    actualizarEstadoBotonPush('off');
+    abrirSuscripcionNotificacionesBloqueadas();
+    return;
+  }
+  if (Notification.permission === 'default') {
+    await suscribirsePushDesdeModal();
+    return;
+  }
+  await registrarPush({ fromButton: true, silent: false });
+}
+
+function abrirSuscripcionNotificacionesBloqueadas() {
+  var ua = (navigator && navigator.userAgent ? navigator.userAgent : '').toLowerCase();
+  var isAndroid = ua.includes('android');
+  var isIOS = /iphone|ipad|ipod/.test(ua);
+
+  if (isAndroid) {
+    notify('🔧 Android: Chrome > menú ⋮ > Configuración > Configuración de sitios > Notificaciones > luxrides.online > Permitir', 'err');
+  } else if (isIOS) {
+    notify('🔧 iPhone: Ajustes > Safari > Notificaciones > luxrides.online > Permitir', 'err');
+  } else {
+    notify('🔧 Habilita notificaciones para luxrides.online en ajustes del navegador y recarga la página', 'err');
+  }
+
+  // Open help page as fallback without using Android intent URLs that can redirect to Play Store.
+  try {
+    window.open('https://support.google.com/chrome/answer/3220216?hl=es', '_blank', 'noopener,noreferrer');
+  } catch (e) {}
 }
 
 async function guardarSuscripcionPush(sub) {
@@ -1294,11 +1386,11 @@ function roundMoney(value) {
 }
 
 function calcularPagoChofer(totalViaje) {
-  return roundMoney(Number(totalViaje || 0) * 0.78);
+  return roundMoney(Number(totalViaje || 0) * 0.80);
 }
 
 function calcularComisionLux(totalViaje) {
-  return roundMoney(Number(totalViaje || 0) * 0.22);
+  return roundMoney(Number(totalViaje || 0) * 0.20);
 }
 
 document.getElementById('inp-id').addEventListener('input', toggleLoginBtn);
@@ -1362,7 +1454,7 @@ async function iniciarApp() {
   iniciarNoSleep();
   iniciarWakeLock();
   actualizarEstadoBotonPush(Notification.permission === 'granted' ? 'on' : (Notification.permission === 'denied' ? 'blocked' : 'off'));
-  await registrarPush();
+  activarAutoSuscripcionPushChofer();
   toggleBusquedaViajes(true);
   setOnline(true);
   mostrarToast('Bienvenido ' + choferData.nombre);
@@ -1670,20 +1762,95 @@ function suscribirViajes() {
 }
 
 var _audioCtx = null;
-function sonarAlerta() {
+var _audioUnlocked = false;
+var _alertAudio = null;
+var _alertAudioUrl = null;
+
+function desbloquearAudio() {
+  if (_audioUnlocked) return;
   try {
     if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx && _audioCtx.state === 'suspended') {
+      _audioCtx.resume().catch(function() {});
+    }
+    _audioUnlocked = true;
+  } catch (e) {}
+}
+
+function prepararAudioAlerta() {
+  if (_alertAudio) return _alertAudio;
+  try {
+    var sampleRate = 22050;
+    var duration = 0.55;
+    var freq = 1800;
+    var frameCount = Math.floor(sampleRate * duration);
+    var buffer = new ArrayBuffer(44 + frameCount * 2);
+    var view = new DataView(buffer);
+    var writeString = function(offset, str) { for (var i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + frameCount * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, frameCount * 2, true);
+    for (var i = 0; i < frameCount; i++) {
+      var t = i / sampleRate;
+      var sample = Math.sin(2 * Math.PI * freq * t);
+      sample *= Math.pow(1 - t / duration, 1.4);
+      var value = Math.max(-1, Math.min(1, sample));
+      view.setInt16(44 + i * 2, value * 0.8 * 0x7fff, true);
+    }
+    var blob = new Blob([buffer], { type: 'audio/wav' });
+    _alertAudioUrl = URL.createObjectURL(blob);
+    _alertAudio = document.createElement('audio');
+    _alertAudio.src = _alertAudioUrl;
+    _alertAudio.preload = 'auto';
+    _alertAudio.volume = 1;
+    _alertAudio.setAttribute('playsinline', 'true');
+    document.body.appendChild(_alertAudio);
+  } catch (e) {}
+  return _alertAudio;
+}
+
+function reproducirAlertaSonora() {
+  desbloquearAudio();
+  try {
+    var audio = prepararAudioAlerta();
+    if (!audio) return;
+    audio.currentTime = 0;
+    var playPromise = audio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(function() {});
+    }
+  } catch (e) {}
+}
+
+function sonarAlerta() {
+  reproducirAlertaSonora();
+  try {
     var ctx = _audioCtx;
-    [[880, 0, 0.15], [1100, 0.18, 0.15], [880, 0.36, 0.15], [1100, 0.54, 0.18]].forEach(function(t) {
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sine'; osc.frequency.value = t[0];
-      gain.gain.setValueAtTime(0.35, ctx.currentTime + t[1]);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t[1] + t[2]);
-      osc.start(ctx.currentTime + t[1]);
-      osc.stop(ctx.currentTime + t[1] + t[2] + 0.05);
-    });
+    if (!ctx) return;
+    var pattern = [[880, 0, 0.16], [1200, 0.12, 0.16], [880, 0.24, 0.16], [1200, 0.36, 0.2]];
+    for (var rep = 0; rep < 3; rep++) {
+      pattern.forEach(function(t) {
+        var delay = rep * 0.75 + t[1];
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine'; osc.frequency.value = t[0];
+        gain.gain.setValueAtTime(0.95, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + t[2]);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + t[2] + 0.05);
+      });
+    }
   } catch(e) {}
 }
 
@@ -1708,6 +1875,7 @@ function mostrarNuevoViaje(v) {
   mostrarNotificacionNuevoViaje(v);
   if (navigator.vibrate) navigator.vibrate([400, 150, 400]);
   sonarAlerta();
+  mostrarAlertaViaje({ titulo: 'Nuevo viaje ★', cuerpo: 'Tienes un nuevo viaje disponible' });
   var tabBtn = document.querySelector('[data-tab="viajes"] .icon');
   if (tabBtn) tabBtn.textContent = '🚖​·';
   renderViajesPendientes();
@@ -1716,8 +1884,47 @@ function mostrarNuevoViaje(v) {
 function mostrarNotificacionNuevoViaje(v) {
   var totalViaje = Number(v.total || v.precio || 0);
   var pagoChofer = calcularPagoChofer(totalViaje);
+  var titulo = 'Nuevo viaje disponible';
+  var cuerpo = 'Cliente: ' + (v.cliente || '—') + ' - Tu pago: $' + formatMoney(pagoChofer);
+  var tag = 'luxrides-viaje-' + (v.id || Date.now());
+
+  function dispararNotificacion() {
+    try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(function(reg) {
+          reg.showNotification(titulo, {
+            body: cuerpo,
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+            tag: tag,
+            renotify: true,
+            requireInteraction: false,
+            vibrate: [200, 100, 200]
+          }).catch(function() {});
+        }).catch(function() {});
+      }
+    } catch (e) {}
+    try {
+      new Notification(titulo, { body: cuerpo, tag: tag, renotify: true });
+    } catch (e) {}
+  }
+
   if (Notification.permission === 'granted') {
-    new Notification('Nuevo viaje disponible', { body: 'Cliente: ' + v.cliente + ' - Tu pago: $' + formatMoney(pagoChofer) });
+    for (var i = 0; i < 3; i++) {
+      setTimeout(dispararNotificacion, i * 900);
+    }
+    try { navigator.vibrate([300, 150, 300]); } catch (e) {}
+    return;
+  }
+
+  if (Notification.permission === 'default') {
+    Notification.requestPermission().then(function(permission) {
+      if (permission === 'granted') {
+        for (var j = 0; j < 3; j++) {
+          setTimeout(dispararNotificacion, j * 900);
+        }
+      }
+    });
   }
 }
 
@@ -1733,9 +1940,12 @@ function renderViajesPendientes() {
     var v = viajesPendientes[k];
     var totalViaje = Number(v.total || v.precio || 0);
     var pagoChofer = calcularPagoChofer(totalViaje);
+    var metodoPago = String(v.metodo_pago || v.payment_method || 'tarjeta').toLowerCase();
+    var metodoPagoLabel = (metodoPago === 'efectivo' || metodoPago === 'cash') ? 'Efectivo' : 'Tarjeta';
     html += '<div class="viaje-card" data-id="' + k + '">';
     html += '<div class="head"><span class="name">' + escHtml(v.cliente) + '</span><span class="price">$' + formatMoney(pagoChofer) + '</span></div>';
     html += '<div class="detail"><span>' + escHtml(v.origen || '') + ' → ' + escHtml(v.destino || '') + '</span></div>';
+    html += '<div class="detail"><span>💳 Pago: ' + metodoPagoLabel + '</span></div>';
     html += '<div class="detail" style="margin-top:8px;"><span class="badge gold">' + (v.distancia_km || '—') + ' km</span><span class="badge gold">' + (v.duracion_min || '—') + ' min</span></div>';
     html += '<div style="margin-top:8px;display:flex;gap:8px;">';
     html += '<button class="btn-sm gold" onclick="aceptarViaje(\'' + k + '\')">✓ Aceptar</button>';
@@ -1748,17 +1958,27 @@ function escHtml(s) { if (!s) return ''; return String(s).replace(/[&<>"']/g,fun
 function formatNum(n) { return Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
 function formatMoney(n) { return Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-function aceptarViaje(id) {
+async function aceptarViaje(id) {
   var v = id ? viajesPendientes[id] : viajeActual;
   if (!v && id) v = viajesPendientes[id];
   if (!v) return;
+
+  try {
+    await driverApi('/api/driver/trips/' + encodeURIComponent(v.id) + '/accept', { method: 'PATCH' });
+  } catch (err) {
+    console.error(err);
+    var msg = String(err && err.message || 'Error al aceptar viaje');
+    if (/DEBT_LIMIT_EXCEEDED|deuda|wallet/i.test(msg)) {
+      notify('⛔ No puedes aceptar viajes: excediste el límite de deuda en efectivo. Liquida en admin.', 'err');
+    } else {
+      notify(msg, 'err');
+    }
+    return;
+  }
+
   viajeActual = v;
   if (viajesPendientes[v.id]) delete viajesPendientes[v.id];
   renderViajesPendientes();
-  driverApi('/api/driver/trips/' + encodeURIComponent(v.id) + '/accept', { method: 'PATCH' }).catch(function(err) {
-    console.error(err);
-    notify('Error al aceptar viaje', 'err');
-  });
   toggleBusquedaViajes(false);
   switchTab('mapa');
   setTimeout(function() {
@@ -1792,6 +2012,9 @@ function rechazarViaje(id) {
 function mostrarViajeScreen() {
   if (!viajeActual) return;
   var totalViaje = Number(viajeActual.total || viajeActual.precio || 0);
+  var metodoPagoRaw = String(viajeActual.metodo_pago || viajeActual.payment_method || 'tarjeta').toLowerCase();
+  var esEfectivo = metodoPagoRaw === 'efectivo' || metodoPagoRaw === 'cash';
+  var metodoPagoLabel = esEfectivo ? 'Efectivo' : 'Tarjeta';
   var pagoChofer = calcularPagoChofer(totalViaje);
   var comisionLux = calcularComisionLux(totalViaje);
   var s = document.getElementById('viaje-screen');
@@ -1801,8 +2024,12 @@ function mostrarViajeScreen() {
   info.innerHTML = '<div class="item"><span class="ico">👤</span><div><div class="lbl">Cliente</div><div class="val">' + escHtml(viajeActual.cliente) + '</div></div></div>';
   info.innerHTML += '<div class="item"><span class="ico">📍</span><div><div class="lbl">Origen</div><div class="val">' + escHtml(viajeActual.origen || '') + '</div></div></div>';
   info.innerHTML += '<div class="item"><span class="ico">🏁</span><div><div class="lbl">Destino</div><div class="val">' + escHtml(viajeActual.destino || '') + '</div></div></div>';
-  info.innerHTML += '<div class="item"><span class="ico">💵</span><div><div class="lbl">Pago chofer 78%</div><div class="val">$' + formatMoney(pagoChofer) + '</div></div></div>';
-  info.innerHTML += '<div class="item"><span class="ico">🏦</span><div><div class="lbl">Comisión LuxRides 22%</div><div class="val">$' + formatMoney(comisionLux) + '</div></div></div>';
+  info.innerHTML += '<div class="item"><span class="ico">💳</span><div><div class="lbl">Método de pago</div><div class="val">' + metodoPagoLabel + '</div></div></div>';
+  info.innerHTML += '<div class="item"><span class="ico">💵</span><div><div class="lbl">Pago chofer 80%</div><div class="val">$' + formatMoney(pagoChofer) + '</div></div></div>';
+  info.innerHTML += '<div class="item"><span class="ico">🏦</span><div><div class="lbl">Comisión LuxRides 20%</div><div class="val">$' + formatMoney(comisionLux) + '</div></div></div>';
+  if (esEfectivo) {
+    info.innerHTML += '<div class="item"><span class="ico">⚠️</span><div><div class="lbl">Cobro en efectivo</div><div class="val">Cobras al cliente y la comisión se descuenta de tu wallet.</div></div></div>';
+  }
   info.innerHTML += '<div class="item"><span class="ico">💰</span><div><div class="lbl">Tarifa total</div><div class="val">$' + formatMoney(totalViaje) + '</div></div></div>';
   var actions = document.getElementById('viaje-actions');
   actions.innerHTML = '<button class="btn-finalize" onclick="finalizarViaje()">✅ Finalizar viaje</button>';
@@ -1844,7 +2071,13 @@ async function finalizarViaje() {
     });
     if (result && result.data && result.data.chofer) choferData = result.data.chofer;
     if (result && result.data && Number.isFinite(Number(result.data.pago_chofer))) pagoChofer = Number(result.data.pago_chofer);
-    notify('Viaje completado. +$' + formatNum(pagoChofer) + ' añadidos a tu saldo.', 'ok');
+    var metodoPago = String(result?.data?.payment_method || v.metodo_pago || v.payment_method || 'tarjeta').toLowerCase();
+    if (metodoPago === 'efectivo' || metodoPago === 'cash') {
+      var deuda = Number(result?.data?.wallet_balance || choferData?.wallet_balance || 0);
+      notify('Viaje en efectivo completado. Comisión descontada de wallet. Balance: $' + formatMoney(deuda), deuda <= -300 ? 'err' : 'ok');
+    } else {
+      notify('Viaje completado. +$' + formatNum(pagoChofer) + ' añadidos a tu saldo.', 'ok');
+    }
     viajesPendientes = {};
     borrarRutaLiveMap();
     cerrarViajeScreen();

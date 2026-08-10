@@ -256,22 +256,37 @@ async function subirFoto(event) {
 
 async function cargarViajes() {
   if(!SB||!_perfil) return;
-  const { data } = await SB.from("viajes").select("*").eq("hotel_origen_id", _perfil.id).order("created_at",{ascending:false}).limit(50);
+  const marker = '%-CG-' + String(_perfil.url_unica_slug || '').toLowerCase();
+  const { data, error } = await SB
+    .from("reservas")
+    .select("*")
+    .ilike("reserva_id", marker)
+    .order("timestamp", { ascending: false })
+    .limit(50);
+  if (error) {
+    document.getElementById("lista-viajes").innerHTML = '<div class="empty">Error al cargar reservas</div>';
+    return;
+  }
   const viajes = data || [];
   document.getElementById("st-viajes").textContent = viajes.length;
   const div = document.getElementById("lista-viajes");
   if(!viajes.length){ div.innerHTML = '<div class="empty">Sin viajes registrados aun</div>'; return; }
   div.innerHTML = viajes.map(v => {
-    const cls = v.estado==="finalizado" ? "v-finalizado" : v.estado==="cancelado" ? "v-cancelado" : "v-pendiente";
-    const comision = v.comision_concierge > 0 ? '<span class="viaje-comision">+' + fmt$(v.comision_concierge) + ' MXN</span>' : "";
+    const estado = String(v.estado || '').toLowerCase();
+    const cls = estado === "finalizado" || estado === "completado" ? "v-finalizado" : estado === "cancelado" ? "v-cancelado" : "v-pendiente";
+    const total = Number(v.total || 0);
+    const pct = Number(_perfil.porcentaje_comision || 0.1);
+    const comisionCalc = Math.max(0, total * pct);
+    const comision = comisionCalc > 0 ? '<span class="viaje-comision">+' + fmt$(comisionCalc) + ' MXN</span>' : "";
+    const fechaVista = v.timestamp || v.created_at;
     return '<div class="viaje-card">' +
       comision +
       '<span class="viaje-estado ' + cls + '">' + (v.estado||"pendiente").toUpperCase() + '</span>' +
       '<div class="viaje-ruta">' + esc(v.origen) + ' &rarr; ' + esc(v.destino) + '</div>' +
       '<div class="viaje-meta">' +
         '<span>Cliente: ' + esc(v.cliente||"-") + '</span>' +
-        '<span>Total: ' + fmt$(v.precio_total) + ' MXN</span>' +
-        '<span>' + fmtFecha(v.created_at) + '</span>' +
+        '<span>Total: ' + fmt$(total) + ' MXN</span>' +
+        '<span>' + fmtFecha(fechaVista) + '</span>' +
       '</div></div>';
   }).join("");
 }

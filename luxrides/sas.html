@@ -1288,6 +1288,7 @@
       .guias-card-btn:hover{transform:translateY(-1px);}
       .guias-card-btn.pay{background:#635BFF;color:#fff;box-shadow:0 8px 22px rgba(99,91,255,.18);}
       .guias-card-btn.quote{background:#F2E8C9;color:#7E5F10;}
+      .guias-card-btn.reserve{background:#16A34A;color:#fff;box-shadow:0 8px 22px rgba(22,163,74,.2);}
       .guias-card-contact{margin-top:8px;font-family:'Outfit',sans-serif;font-size:.62rem;color:#877A5C;line-height:1.45;}
       .guias-coming{
         text-align:center;padding:6px 0 2px;
@@ -1327,7 +1328,6 @@
       .trip-badge.estado-amber{color:#8A6A00;}
       .trip-badge.estado-red{color:#B42318;}
       .trip-badge.estado-blue{color:#1D4ED8;}
-      /* Dot de estado sin fondos en el texto */
       .status-dot{position:relative;display:inline-flex;width:8px;height:8px;flex-shrink:0;}
       .status-dot-ring{position:absolute;inset:0;border-radius:50%;opacity:.7;}
       .status-dot-core{position:relative;display:inline-flex;border-radius:50%;width:8px;height:8px;}
@@ -1641,6 +1641,14 @@
               <span class="price-amount" id="r-precio">$0</span>
               <span class="price-currency">MXN</span>
             </div>
+            <div class="field" id="payment-method-box" style="margin-top:8px;">
+              <label class="lbl">Método de pago</label>
+              <div class="btn-row">
+                <button type="button" class="btn-toggle active" id="btn-pay-card" onclick="setPaymentMethod('tarjeta')">💳 Tarjeta</button>
+                <button type="button" class="btn-toggle" id="btn-pay-cash" onclick="setPaymentMethod('efectivo')">💵 Efectivo</button>
+              </div>
+            </div>
+            <button id="btn-cash" onclick="reservarEnEfectivo()" style="display:none;width:100%;padding:14px;border:none;background:#16a34a;color:#fff;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;align-items:center;justify-content:center;gap:10px;transition:background .2s;margin-top:8px;border-radius:6px;">💵 Reservar y pagar en efectivo</button>
             <button id="btn-wa" onclick="enviarWhatsApp()">💬 Confirmar por WhatsApp</button>
             <button id="btn-stripe" onclick="abrirPagoStripe()">💳 Pagar con Stripe</button>
             <button id="btn-clip" onclick="pagarConClip()">🟢 Pagar con Clip</button>
@@ -2347,7 +2355,14 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       async function guardarViajeEnServidor(datos) {
         const nombreCliente = (document.getElementById('inp-nombre')?.value || '').trim();
         const emailCliente = obtenerEmailClienteReserva();
+        const conciergeSlug = resolverConciergeSlugActivo();
+        const slugSafe = conciergeSlug ? conciergeSlug.replace(/[^a-z0-9-]/gi, '').toLowerCase() : '';
+        const baseReservaId = datos.reserva_id || ('LUX-' + Date.now());
+        const reservaIdConContexto = (slugSafe && !baseReservaId.includes('-CG-'))
+          ? (baseReservaId + '-CG-' + slugSafe)
+          : baseReservaId;
         const payload = Object.assign({}, datos, {
+          reserva_id: reservaIdConContexto,
           customer: datos.customer || datos.cliente || nombreCliente,
           cliente: datos.cliente || datos.customer || nombreCliente,
           passenger_name: datos.passenger_name || datos.cliente || datos.customer || nombreCliente,
@@ -2357,7 +2372,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           booking_date: datos.booking_date || datos.fecha || getFechaISO(),
           pickup_time: datos.pickup_time || datos.hora_recogida || ((document.getElementById('inp-hora').value||'')+':'+(document.getElementById('inp-min').value||'')+' '+ampm),
           service_kind: datos.service_kind || datos.servicio || servicio,
-          trip_kind: datos.trip_kind || 'normal'
+          trip_kind: datos.trip_kind || 'normal',
+          metodo_pago: datos.metodo_pago || datos.payment_method || metodoPagoSeleccionado,
+          payment_method: datos.payment_method || datos.metodo_pago || metodoPagoSeleccionado,
+          concierge_slug: datos.concierge_slug || slugSafe || null,
+          booking_source: datos.booking_source || (slugSafe ? 'concierge_profile' : 'web')
         });
         try {
           const base = (window.LuxCfg && LuxCfg.backendUrl ? LuxCfg.backendUrl() : '') || (window.LuxCfg && LuxCfg.apiBaseUrl ? LuxCfg.apiBaseUrl() : '');
@@ -2370,6 +2389,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           if (!res.ok) {
             console.error('Error backend reservas:', body);
             mostrarToast('⚠️ Error al guardar reserva — ' + (body.error || body.message || 'Servidor no disponible'), 'err');
+            return false;
           } else {
             console.log('Viaje guardado en backend', body);
             mostrarToast('✅ Reserva guardada en servidor');
@@ -2380,10 +2400,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               _ratingReservaId = payload.reserva_id;
               iniciarSeguimientoReserva(payload.reserva_id);
             }
+            return true;
           }
         } catch (err) {
           console.error('Error backend reservas:', err);
           mostrarToast('⚠️ Sin conexión al servidor', 'err');
+          return false;
         }
       }
 
@@ -2431,6 +2453,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       const WHATSAPP_CENTRAL = (window.LuxCfg && LuxCfg.whatsapp()) || '';
       const STRIPE_PK = (window.LuxCfg && LuxCfg.stripePk()) || '';
+      const CONCIERGE_SLUG_KEY = 'luxrides_concierge_slug';
       let stripeInstance = null;
       let servicio  = 'I';
       let hSel      = 2;
@@ -2444,6 +2467,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       let autocompletesStops = [];
       let stopCounter = 0;
       let flatpickrFecha = null;
+      let metodoPagoSeleccionado = 'tarjeta';
       let fallbackSearchReady = false;
       const fallbackDebounceTimers = {};
       const MIN_FALLBACK_CHARS = 2;
@@ -2481,6 +2505,18 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         if (!inp) return '';
         if (inp.dataset.isoDate) return inp.dataset.isoDate;
         return parseDisplayDateToISO(inp.value);
+      }
+
+      function resolverConciergeSlugActivo() {
+        const fromUrl = (new URLSearchParams(window.location.search).get('c') || '').trim().toLowerCase();
+        const fromSession = (sessionStorage.getItem(CONCIERGE_SLUG_KEY) || '').trim().toLowerCase();
+        const fromLocal = (localStorage.getItem(CONCIERGE_SLUG_KEY) || '').trim().toLowerCase();
+        const slug = fromUrl || fromSession || fromLocal;
+        if (slug) {
+          try { sessionStorage.setItem(CONCIERGE_SLUG_KEY, slug); } catch(e) {}
+          try { localStorage.setItem(CONCIERGE_SLUG_KEY, slug); } catch(e) {}
+        }
+        return slug;
       }
 
       function setFechaDesdeISO(isoDate) {
@@ -3356,6 +3392,63 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         document.getElementById('results').style.display='none';
       }
 
+      function setPaymentMethod(metodo){
+        metodoPagoSeleccionado = metodo === 'efectivo' ? 'efectivo' : 'tarjeta';
+        const isCash = metodoPagoSeleccionado === 'efectivo';
+        const cardBtn = document.getElementById('btn-pay-card');
+        const cashBtn = document.getElementById('btn-pay-cash');
+        const btnStripe = document.getElementById('btn-stripe');
+        const btnClip = document.getElementById('btn-clip');
+        const btnCash = document.getElementById('btn-cash');
+
+        if (cardBtn) cardBtn.classList.toggle('active', !isCash);
+        if (cashBtn) cashBtn.classList.toggle('active', isCash);
+        if (btnStripe) btnStripe.style.display = isCash ? 'none' : 'flex';
+        if (btnClip) btnClip.style.display = isCash ? 'none' : 'flex';
+        if (btnCash) btnCash.style.display = isCash ? 'flex' : 'none';
+      }
+
+      function reservarEnEfectivo(){
+        if (!resultado) {
+          mostrarToast('Primero calcula el precio del servicio.', 'err');
+          return;
+        }
+        const nombre = document.getElementById('inp-nombre').value.trim();
+        if (!nombre) {
+          mostrarError('Por favor ingresa el nombre del cliente');
+          return;
+        }
+        const fecha = getFechaISO();
+        const vehiculo = pasajeros <= 3 ? 'Sedán VIP Diamond' : 'SUV Platinum Diamond';
+        guardarViajeEnServidor({
+          reserva_id: 'LUX-' + Date.now(),
+          customer: nombre,
+          cliente: nombre,
+          passenger_name: nombre,
+          origen: coordOrigen?.display || '',
+          destino: coordDestino?.display || '',
+          origen_lat: coordOrigen ? coordOrigen.lat : null,
+          origen_lng: coordOrigen ? coordOrigen.lon : null,
+          destino_lat: coordDestino ? coordDestino.lat : null,
+          destino_lng: coordDestino ? coordDestino.lon : null,
+          extra_stops: autocompletesStops.filter(function(s){ return s && s.coord; }).map(function(s){ return s.coord; }),
+          fecha: fecha,
+          booking_date: fecha,
+          hora_recogida: (document.getElementById('inp-hora').value||'') + ':' + (document.getElementById('inp-min').value||'00').toString().padStart(2,'0') + ' ' + ampm,
+          pickup_time: (document.getElementById('inp-hora').value||'') + ':' + (document.getElementById('inp-min').value||'00').toString().padStart(2,'0') + ' ' + ampm,
+          total: resultado.totalPrecio,
+          estado: 'pendiente',
+          servicio: servicio,
+          service_kind: servicio,
+          vehiculo: vehiculo,
+          trip_kind: 'normal',
+          metodo_pago: 'efectivo',
+          payment_method: 'efectivo',
+          timestamp: new Date().toISOString()
+        });
+        mostrarToast('✅ Reserva registrada para pago en efectivo');
+      }
+
       function setLiveStatus(){}
 
       function usarUbicacion() {
@@ -3398,6 +3491,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       buildHours();
       buildPax();
       setTraslado('N');
+      setPaymentMethod('tarjeta');
 
       ['inp-nombre','inp-email','inp-origen','inp-destino','inp-fecha','inp-hora','inp-min','inp-aerolinea','inp-vuelo','inp-vuelo-salida','inp-cliente-num']
         .forEach(id => {
@@ -4107,6 +4201,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               reserva_id: 'LUX-' + Date.now(),
               cliente: nombre,
               email_cliente: emailCliente,
+              metodo_pago: 'tarjeta',
+              payment_method: 'tarjeta',
               origen, destino,
               fecha: getFechaISO(),
               hora_recogida: document.getElementById('inp-hora').value + ':' + (document.getElementById('inp-min').value||'00').toString().padStart(2,'0') + ' ' + ampm,
@@ -6383,6 +6479,71 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
     }
 
+    async function reservarTourCatalogo(tourId) {
+      var tour = LUX_GUIAS_TOURS.find(function(item){ return item.id === tourId; });
+      if (!tour) return;
+
+      var selectedIndex = Number(_guiasTourSelections[tour.id] || 0);
+      var tarifa = tour.tarifas[selectedIndex] || tour.tarifas[0] || { label: 'Tarifa por confirmar', price: '$0 MXN', note: '' };
+      var routeOptions = Array.isArray(tour.routeOptions) ? tour.routeOptions : [];
+      var selectedRouteIndex = Number(_guiasRouteSelections[tour.id] || 0);
+      if (!routeOptions[selectedRouteIndex]) selectedRouteIndex = 0;
+      var selectedRoute = routeOptions[selectedRouteIndex] || '';
+
+      var inpNombre = document.getElementById('inp-nombre');
+      var inpTelefono = document.getElementById('inp-cliente-num');
+      var perfil = window._getPerfil ? window._getPerfil() : null;
+      var user = window._getUser ? window._getUser() : null;
+      var nombre = (inpNombre && inpNombre.value ? inpNombre.value : '').trim()
+        || (perfil && perfil.nombre_completo ? String(perfil.nombre_completo).trim() : '')
+        || (user && user.user_metadata && user.user_metadata.full_name ? String(user.user_metadata.full_name).trim() : '')
+        || '';
+
+      if (!nombre) {
+        mostrarToast('⚠️ Escribe tu nombre en Inicio para reservar el tour.', 'err');
+        switchTab('inicio');
+        if (inpNombre) inpNombre.focus();
+        return;
+      }
+
+      var email = obtenerEmailClienteReserva();
+      var telefono = (inpTelefono && inpTelefono.value ? inpTelefono.value : '').trim();
+      var fecha = getFechaISO() || todayIsoDate();
+      var horaRecogida = (document.getElementById('inp-hora').value || '') + ':' + (document.getElementById('inp-min').value || '') + ' ' + ampm;
+      if (!/^\d{2}:\d{2}\s(?:AM|PM)$/.test(horaRecogida)) horaRecogida = '09:00 AM';
+
+      var destinoTour = tour.title + (selectedRoute ? (' · ' + selectedRoute) : '');
+      var amount = _guiasParseAmount(tarifa.price);
+      var payloadTour = {
+        reserva_id: 'LUX-TOUR-' + Date.now(),
+        customer: nombre,
+        cliente: nombre,
+        passenger_name: nombre,
+        email_cliente: email || '',
+        origen: 'Tour LuxRides',
+        destino: destinoTour,
+        fecha: fecha,
+        booking_date: fecha,
+        hora_recogida: horaRecogida,
+        pickup_time: horaRecogida,
+        total: Number(amount || 0),
+        estado: 'pendiente',
+        servicio: 'G',
+        service_kind: 'G',
+        trip_kind: 'tour_catalogo',
+        vehiculo: 'Tour · ' + tarifa.label,
+        numero_vuelo: '',
+        timestamp: new Date().toISOString(),
+        telefono_cliente: telefono,
+        observaciones: 'Tour: ' + tour.title + ' · Tarifa: ' + tarifa.label + (selectedRoute ? (' · Ruta: ' + selectedRoute) : '')
+      };
+
+      var ok = await guardarViajeEnServidor(payloadTour);
+      if (ok) {
+        mostrarToast('✅ Tour reservado y enviado a despacho.');
+      }
+    }
+
     function solicitarCotizacionTour(tourId) {
       var tour = LUX_GUIAS_TOURS.find(function(item){ return item.id === tourId; });
       if (!tour) return;
@@ -6453,6 +6614,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               '</div>' +
               '<div class="guias-card-paynote">Pago anticipado requerido para confirmar este tour.</div>' +
               '<div class="guias-card-actions">' +
+                '<button class="guias-card-btn reserve" onclick="reservarTourCatalogo(\'' + _guiasEscapeHtml(tour.id) + '\')">🧳 Reservar ahora</button>' +
                 (payAmount
                   ? '<button class="guias-card-btn pay" onclick="abrirPagoTourStripe(\'' + _guiasEscapeHtml(tour.id) + '\')">💳 Pagar con Stripe</button>'
                   : '<button class="guias-card-btn quote" onclick="solicitarCotizacionTour(\'' + _guiasEscapeHtml(tour.id) + '\')">📝 Solicitar cotizacion</button>') +

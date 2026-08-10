@@ -74,6 +74,7 @@ const WA_CENTRAL = window.LuxCfg ? LuxCfg.whatsapp() : '+525527729551';
 
   const waNum = WA_CENTRAL.replace(/\D/g,'');
   const waMsg = encodeURIComponent(`Hola, me contacta el concierge ${data.nombre_concierge} del ${data.nombre_hotel}. ¿Podrían ayudarme con una reserva?`);
+  const reservaUrl = `https://luxrides.online/sas.html?c=${encodeURIComponent(data.url_unica_slug || slug)}`;
 
   content.innerHTML = `
     <div class="avatar">🤵</div>
@@ -82,7 +83,7 @@ const WA_CENTRAL = window.LuxCfg ? LuxCfg.whatsapp() : '+525527729551';
     <div class="badge-nfc"><span class="nfc-dot"></span> Verificado · NFC LuxRides</div>
     <div class="divider"></div>
     <div class="cta">Tu concierge personal está listo para gestionar tu traslado ejecutivo en CDMX.</div>
-    <a class="btn-reservar" href="https://luxrides.online/sas.html">🚗 Hacer una reserva</a>
+    <a class="btn-reservar" href="${reservaUrl}">🚗 Hacer una reserva</a>
     <a class="btn-wa" href="https://wa.me/${waNum}?text=${waMsg}" target="_blank">💬 Contactar por WhatsApp</a>
     <div class="id-tag">NFC: ${escHtml(data.nfc_tag_id || '—')}</div>
   `;

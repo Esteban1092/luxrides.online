@@ -1,6 +1,8 @@
 User-agent: *
 Allow: /
 Allow: /sas.html
+Allow: /guias.html
+Allow: /consierges/
 
 Disallow: /ses.html
 Disallow: /sis.html

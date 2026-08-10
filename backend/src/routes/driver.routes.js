@@ -8,8 +8,42 @@ function roundMoney(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
+const PLATFORM_COMMISSION_RATE = 0.20;
+const DRIVER_SHARE_CARD_RATE = 1 - PLATFORM_COMMISSION_RATE;
+const CASH_DEBT_LIMIT_DEFAULT = -300;
+
 function calcularPagoChofer(totalViaje) {
-  return roundMoney(Number(totalViaje || 0) * 0.78);
+  return roundMoney(Number(totalViaje || 0) * DRIVER_SHARE_CARD_RATE);
+}
+
+function calcularComisionPlataforma(totalViaje) {
+  return roundMoney(Number(totalViaje || 0) * PLATFORM_COMMISSION_RATE);
+}
+
+function parsePaymentMethod(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (raw === 'efectivo' || raw === 'cash') return 'efectivo';
+  if (raw === 'tarjeta' || raw === 'card') return 'tarjeta';
+  return '';
+}
+
+function getTripTotal(trip) {
+  return Number(trip?.total ?? trip?.precio ?? 0) || 0;
+}
+
+function getCashDebtLimit(chofer) {
+  const configured = Number(chofer?.cash_debt_limit);
+  return Number.isFinite(configured) ? configured : CASH_DEBT_LIMIT_DEFAULT;
+}
+
+function getWalletBalance(chofer) {
+  const wallet = Number(chofer?.wallet_balance);
+  if (Number.isFinite(wallet)) return wallet;
+  return Number(chofer?.saldo_disponible || 0);
+}
+
+function mustBlockForDebt(walletBalance, debtLimit) {
+  return Number(walletBalance) <= Number(debtLimit);
 }
 
 const CHOFER_UPDATE_FIELDS = new Set([
@@ -56,6 +90,16 @@ function cleanString(value) {
   return String(value || '').trim();
 }
 
+function decodeBase64Safe(value) {
+  const raw = cleanString(value);
+  if (!raw) return '';
+  try {
+    return Buffer.from(raw, 'base64').toString('utf8');
+  } catch {
+    return raw;
+  }
+}
+
 function normalizeChoferPatch(body) {
   const patch = {};
   for (const [key, value] of Object.entries(body || {})) {
@@ -91,11 +135,56 @@ async function insertRow(table, payload) {
   return rows?.[0] || null;
 }
 
+async function resolveTripPaymentMethod(trip) {
+  const direct = parsePaymentMethod(trip?.metodo_pago || trip?.payment_method);
+  if (direct) return direct;
+
+  const reservaId = cleanString(trip?.reserva_id);
+  if (!reservaId) return 'tarjeta';
+
+  try {
+    const rows = await supabaseRequest('reservas?reserva_id=eq.' + encodeURIComponent(reservaId) + '&select=metodo_pago,payment_method&limit=1', {
+      method: 'GET',
+      headers: supabaseHeaders()
+    });
+    const reserva = rows?.[0] || null;
+    return parsePaymentMethod(reserva?.metodo_pago || reserva?.payment_method || 'tarjeta') || 'tarjeta';
+  } catch (error) {
+    console.warn('[driver-payment-method] no se pudo leer metodo en reserva', error.message);
+    return 'tarjeta';
+  }
+}
+
+async function insertWalletMovementSafe(payload) {
+  try {
+    await insertRow('wallet_movements', payload);
+  } catch (error) {
+    console.warn('[wallet-movement] no se pudo guardar movimiento', error.message);
+  }
+}
+
+async function updateChoferWithWalletFallback(id, patch) {
+  try {
+    return await updateChofer(id, patch);
+  } catch (error) {
+    const msg = String(error?.message || '').toLowerCase();
+    const touchesWalletColumns = msg.includes('wallet_balance') || msg.includes('cash_debt_limit') || msg.includes('cash_blocked');
+    if (!touchesWalletColumns) throw error;
+
+    const fallbackPatch = { ...patch };
+    delete fallbackPatch.wallet_balance;
+    delete fallbackPatch.cash_debt_limit;
+    delete fallbackPatch.cash_blocked;
+    return await updateChofer(id, fallbackPatch);
+  }
+}
+
 router.post('/driver/login', async (req, res, next) => {
   try {
     const id = cleanString(req.body?.id);
     const nombre = cleanString(req.body?.nombre);
-    if (!id || !nombre) {
+    const pass = cleanString(req.body?.pass);
+    if (!id || (!nombre && !pass)) {
       return res.status(400).json({ ok: false, error: 'Faltan credenciales' });
     }
 
@@ -103,8 +192,25 @@ router.post('/driver/login', async (req, res, next) => {
     if (!chofer) {
       return res.status(404).json({ ok: false, error: 'Chofer no encontrado' });
     }
-    if (chofer.nombre && chofer.nombre.toLowerCase() !== nombre.toLowerCase()) {
-      return res.status(401).json({ ok: false, error: 'El nombre no coincide con el ID proporcionado.' });
+
+    // Compatibilidad:
+    // - Login legacy: id + nombre (chofer app)
+    // - Login nuevo: id + contraseña (guias/admin style)
+    let authOk = false;
+    if (pass) {
+      const storedDecoded = decodeBase64Safe(chofer.password_hash);
+      if (!storedDecoded) {
+        return res.status(401).json({ ok: false, error: 'Este usuario no tiene contraseña configurada.' });
+      }
+      authOk = storedDecoded === pass;
+      if (!authOk) {
+        return res.status(401).json({ ok: false, error: 'Contraseña incorrecta.' });
+      }
+    } else {
+      authOk = Boolean(nombre) && Boolean(chofer.nombre) && chofer.nombre.toLowerCase() === nombre.toLowerCase();
+      if (!authOk) {
+        return res.status(401).json({ ok: false, error: 'El nombre no coincide con el ID proporcionado.' });
+      }
     }
 
     const sessionToken = createDriverSessionCookieValue(chofer);
@@ -200,6 +306,23 @@ router.patch('/driver/trips/:id/accept', requireDriverSession, async (req, res, 
     const id = cleanString(req.params.id);
     if (!id) return res.status(400).json({ ok: false, error: 'id invalido' });
 
+    const chofer = await getChoferById(req.driverSession.choferId);
+    if (!chofer) return res.status(404).json({ ok: false, error: 'Chofer no encontrado' });
+
+    const walletBalance = getWalletBalance(chofer);
+    const debtLimit = getCashDebtLimit(chofer);
+    const blockedByDebt = Boolean(chofer.cash_blocked) || mustBlockForDebt(walletBalance, debtLimit);
+
+    if (blockedByDebt) {
+      return res.status(403).json({
+        ok: false,
+        code: 'DEBT_LIMIT_EXCEEDED',
+        error: 'Tu deuda por viajes en efectivo excede el limite permitido. Contacta a administracion para regularizar tu wallet.',
+        wallet_balance: walletBalance,
+        debt_limit: debtLimit
+      });
+    }
+
     const rows = await supabaseRequest('viajes?id=eq.' + encodeURIComponent(id), {
       method: 'PATCH',
       headers: supabaseHeaders(true),
@@ -253,48 +376,127 @@ router.patch('/driver/trips/:id/finalize', requireDriverSession, async (req, res
       return res.status(403).json({ ok: false, error: 'El viaje no pertenece a esta sesion.' });
     }
 
-    const pagoChofer = calcularPagoChofer(totalViaje);
+    const paymentMethod = await resolveTripPaymentMethod(trip);
+    const totalViaje = getTripTotal(trip);
+    const comisionPlataforma = calcularComisionPlataforma(totalViaje);
+    const pagoChofer = paymentMethod === 'efectivo'
+      ? roundMoney(totalViaje)
+      : calcularPagoChofer(totalViaje);
+    const walletDelta = paymentMethod === 'efectivo'
+      ? roundMoney(-comisionPlataforma)
+      : roundMoney(pagoChofer);
 
     const completedAt = new Date().toISOString();
-    const viajeActualizado = await updateChofer(req.driverSession.choferId, {
-      estado: 'en linea',
-      viaje_actual: null,
-      ultima_conexion: completedAt
-    });
 
-    const viajeCerrado = await supabaseRequest('viajes?id=eq.' + encodeURIComponent(id), {
-      method: 'PATCH',
-      headers: supabaseHeaders(true),
-      body: JSON.stringify({
+    let viajeCerrado = null;
+    try {
+      viajeCerrado = await supabaseRequest('viajes?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: supabaseHeaders(true),
+        body: JSON.stringify({
+          estado: 'completado',
+          completado_en: completedAt,
+          pago_chofer: pagoChofer,
+          comision_plataforma: comisionPlataforma,
+          metodo_pago: paymentMethod,
+          payment_method: paymentMethod,
+          wallet_delta: walletDelta
+        })
+      });
+    } catch (error) {
+      const msg = String(error?.message || '').toLowerCase();
+      const paymentColumnsMissing = msg.includes('comision_plataforma') || msg.includes('metodo_pago') || msg.includes('payment_method') || msg.includes('wallet_delta');
+      if (!paymentColumnsMissing) throw error;
+      viajeCerrado = await supabaseRequest('viajes?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: supabaseHeaders(true),
+        body: JSON.stringify({
+          estado: 'completado',
+          completado_en: completedAt,
+          pago_chofer: pagoChofer
+        })
+      });
+    }
+
+    try {
+      await insertRow('historial', {
+        chofer_id: req.driverSession.choferId,
+        cliente: trip.cliente || '',
+        origen: trip.origen || '',
+        destino: trip.destino || '',
+        precio: trip.total || trip.precio || 0,
+        pago_chofer: pagoChofer,
+        comision_plataforma: comisionPlataforma,
+        metodo_pago: paymentMethod,
+        payment_method: paymentMethod,
+        wallet_delta: walletDelta,
         estado: 'completado',
-        completado_en: completedAt,
-        pago_chofer: pagoChofer
-      })
-    });
-
-    await insertRow('historial', {
-      chofer_id: req.driverSession.choferId,
-      cliente: trip.cliente || '',
-      origen: trip.origen || '',
-      destino: trip.destino || '',
-      precio: trip.total || trip.precio || 0,
-      pago_chofer: pagoChofer,
-      estado: 'completado',
-      reserva_id: trip.reserva_id || '',
-      fecha: completedAt.slice(0, 10),
-      hora: completedAt.slice(11, 16),
-      timestamp: Date.now()
-    });
+        reserva_id: trip.reserva_id || '',
+        fecha: completedAt.slice(0, 10),
+        hora: completedAt.slice(11, 16),
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      const msg = String(error?.message || '').toLowerCase();
+      const paymentColumnsMissing = msg.includes('comision_plataforma') || msg.includes('metodo_pago') || msg.includes('payment_method') || msg.includes('wallet_delta');
+      if (!paymentColumnsMissing) throw error;
+      await insertRow('historial', {
+        chofer_id: req.driverSession.choferId,
+        cliente: trip.cliente || '',
+        origen: trip.origen || '',
+        destino: trip.destino || '',
+        precio: trip.total || trip.precio || 0,
+        pago_chofer: pagoChofer,
+        estado: 'completado',
+        reserva_id: trip.reserva_id || '',
+        fecha: completedAt.slice(0, 10),
+        hora: completedAt.slice(11, 16),
+        timestamp: Date.now()
+      });
+    }
 
     const chofer = await getChoferById(req.driverSession.choferId);
-    const saldoDisponible = roundMoney(Number(chofer?.saldo_disponible || 0) + pagoChofer);
-    const saldoProceso = roundMoney(Number(chofer?.saldo_en_proceso || 0) + roundMoney(pagoChofer * 0.1));
-    await updateChofer(req.driverSession.choferId, {
+    const saldoActual = Number(chofer?.saldo_disponible || 0);
+    const saldoProcesoActual = Number(chofer?.saldo_en_proceso || 0);
+    const walletBalanceActual = getWalletBalance(chofer);
+    const walletBalanceNuevo = roundMoney(walletBalanceActual + walletDelta);
+    const debtLimit = getCashDebtLimit(chofer);
+    const blockedByDebt = mustBlockForDebt(walletBalanceNuevo, debtLimit);
+
+    const saldoDisponible = paymentMethod === 'efectivo'
+      ? roundMoney(saldoActual)
+      : roundMoney(saldoActual + pagoChofer);
+    const saldoProceso = paymentMethod === 'efectivo'
+      ? roundMoney(saldoProcesoActual)
+      : roundMoney(saldoProcesoActual + roundMoney(pagoChofer * 0.1));
+
+    const viajeActualizado = await updateChoferWithWalletFallback(req.driverSession.choferId, {
       saldo_disponible: saldoDisponible,
       saldo_en_proceso: saldoProceso,
+      wallet_balance: walletBalanceNuevo,
+      cash_debt_limit: debtLimit,
+      cash_blocked: blockedByDebt,
       estado: 'en linea',
       viaje_actual: null,
       ultima_conexion: completedAt
+    });
+
+    await insertWalletMovementSafe({
+      chofer_id: req.driverSession.choferId,
+      reserva_id: trip.reserva_id || null,
+      viaje_id: trip.id || id,
+      tipo: paymentMethod === 'efectivo' ? 'cash_commission' : 'card_settlement',
+      metodo_pago: paymentMethod,
+      amount: walletDelta,
+      comision_plataforma: comisionPlataforma,
+      wallet_balance_before: walletBalanceActual,
+      wallet_balance_after: walletBalanceNuevo,
+      metadata: {
+        total_viaje: totalViaje,
+        pago_chofer: pagoChofer,
+        cash_blocked: blockedByDebt
+      },
+      created_at: completedAt
     });
 
     if (trip.reserva_id) {
@@ -302,14 +504,32 @@ router.patch('/driver/trips/:id/finalize', requireDriverSession, async (req, res
         await supabaseRequest('reservas?reserva_id=eq.' + encodeURIComponent(trip.reserva_id), {
           method: 'PATCH',
           headers: supabaseHeaders(true),
-          body: JSON.stringify({ estado: 'completado', saldo_acreditado: true })
+          body: JSON.stringify({
+            estado: 'completado',
+            saldo_acreditado: true,
+            metodo_pago: paymentMethod,
+            payment_method: paymentMethod,
+            comision_plataforma: comisionPlataforma
+          })
         });
       } catch (error) {
         console.warn('[driver-finalize] no se pudo actualizar reserva', error.message);
       }
     }
 
-    return res.json({ ok: true, data: { viaje: viajeCerrado?.[0] || null, chofer: viajeActualizado, pago_chofer: pagoChofer } });
+    return res.json({
+      ok: true,
+      data: {
+        viaje: viajeCerrado?.[0] || null,
+        chofer: viajeActualizado,
+        payment_method: paymentMethod,
+        pago_chofer: pagoChofer,
+        comision_plataforma: comisionPlataforma,
+        wallet_balance: walletBalanceNuevo,
+        cash_blocked: blockedByDebt,
+        debt_limit: debtLimit
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -430,7 +650,7 @@ router.post('/driver/photo', requireDriverSession, async (req, res, next) => {
 
 router.post('/driver/reset', requireDriverSession, async (req, res, next) => {
   try {
-    const chofer = await updateChofer(req.driverSession.choferId, {
+    const chofer = await updateChoferWithWalletFallback(req.driverSession.choferId, {
       estado: 'offline',
       vehiculo: '',
       vehiculo_tipo: '',
@@ -441,6 +661,9 @@ router.post('/driver/reset', requireDriverSession, async (req, res, next) => {
       foto_url: '',
       saldo_disponible: 0,
       saldo_en_proceso: 0,
+      wallet_balance: 0,
+      cash_debt_limit: CASH_DEBT_LIMIT_DEFAULT,
+      cash_blocked: false,
       viaje_actual: null,
       ubicacion: null,
       ultima_conexion: new Date().toISOString()
