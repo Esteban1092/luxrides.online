@@ -93,7 +93,7 @@
       <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
       <script>
       (function(){
-        var build = '2026-08-10-c';
+        var build = '2026-08-10-g';
         var key = 'lux_sas_build';
         try {
           var prev = localStorage.getItem(key);
@@ -247,10 +247,11 @@
       .btn-hour{padding:10px 4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:0.85rem;cursor:pointer;transition:all .2s;}
       .btn-hour.active{background:var(--gold);border-color:var(--gold);color:#050505;font-weight:600;}
       .pax-row{display:flex;gap:6px;margin-top:6px;}
-      .btn-pax{flex:1;padding:10px 4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:0.85rem;cursor:pointer;transition:all .2s;}
+      .btn-pax{flex:1;padding:10px 4px;border:1.5px solid rgba(212,175,55,0.35);background:rgba(255,255,255,0.04);color:#888;font-family:'Outfit',sans-serif;font-size:0.92rem;font-weight:600;cursor:pointer;transition:all .2s;border-radius:10px;letter-spacing:0.01em;}
+      .btn-pax:hover{border-color:var(--gold);color:var(--gold);background:rgba(212,175,55,0.07);}
       .btn-pax.active{font-weight:700;box-shadow:0 0 0 1px rgba(0,0,0,0.08) inset;}
-      .pax-row.sedan-selected .btn-pax.active{background:#d4af37;border-color:#8f6a09;color:#201500;box-shadow:0 0 0 2px rgba(212,175,55,0.22),0 10px 18px rgba(212,175,55,0.18);} 
-      .pax-row.suv-selected .btn-pax.active{background:#0f172a;border-color:#1d4ed8;color:#e2e8f0;box-shadow:0 0 0 2px rgba(29,78,216,0.22),0 10px 18px rgba(15,23,42,0.18);} 
+      .pax-row.sedan-selected .btn-pax.active{background:#d4af37;border-color:#8f6a09;color:#201500;box-shadow:0 0 0 2px rgba(212,175,55,0.22),0 10px 18px rgba(212,175,55,0.18);}
+      .pax-row.suv-selected .btn-pax.active{background:#0f172a;border-color:#1d4ed8;color:#e2e8f0;box-shadow:0 0 0 2px rgba(29,78,216,0.22),0 10px 18px rgba(15,23,42,0.18);}
       .vehicle-hint{text-align:center;font-size:0.75rem;margin-top:6px;padding:8px 10px;border-radius:8px;border:1px solid transparent;font-weight:700;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.28);}
       .vehicle-hint.sedan{color:#5a4308;background:#f6ecd0;border-color:#d6bf6a;}
       .vehicle-hint.suv{color:#dbeafe;background:#0f172a;border-color:#1d4ed8;}
@@ -387,8 +388,6 @@
         .btn-row{flex-wrap:wrap;}
         .btn-toggle{flex:1 1 calc(50% - 4px);min-width:0;font-size:0.82rem;padding:10px 4px;text-align:center;}
         /* Si hay exactamente 2 botones, cada uno ocupa mitad */
-        /* Si hay 3 (traslado), se adaptan igual: 2 arriba y 1 abajo centrado */
-        #trip-row .btn-toggle:last-child:nth-child(3){flex:1 1 100%;}
         .btn-hour{font-size:0.8rem;padding:9px 2px;}
         .btn-pax{font-size:0.82rem;padding:9px 4px;}
         #btn-calc,#btn-wa{padding-top:14px;padding-bottom:14px;font-size:.95rem;}
@@ -1278,6 +1277,12 @@
       .guias-card-pricing{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-top:9px;}
       .guias-card-select-wrap{min-width:0;}
       .guias-card-select{width:100%;border:1px solid rgba(212,175,55,.24);background:#fffaf0;color:#3E3420;border-radius:10px;padding:8px 10px;font-family:'Outfit',sans-serif;font-size:.68rem;outline:none;}
+      .guias-pax-btns{display:flex;gap:5px;margin-top:4px;}
+      .guias-pax-btn{flex:1;padding:7px 4px;border:1.5px solid rgba(212,175,55,0.3);background:rgba(255,249,230,0.6);color:#8D6D14;font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .18s;border-radius:9px;text-align:center;}
+      .guias-pax-btn:hover{border-color:#d4af37;background:rgba(212,175,55,0.12);}
+      .guias-pax-btn.active{background:#d4af37;border-color:#8f6a09;color:#3E2000;box-shadow:0 2px 8px rgba(212,175,55,0.3);}
+      .guias-pax-btn.wa-btn{background:rgba(37,211,102,0.1);border-color:rgba(37,211,102,0.35);color:#16a34a;}
+      .guias-pax-btn.wa-btn.active{background:#25d366;border-color:#1da851;color:#fff;}
       .guias-card-pricebox{background:linear-gradient(135deg,#FFF3CD,#FFE8A3);border:1px solid rgba(212,175,55,.28);border-radius:11px;padding:7px 10px;min-width:110px;text-align:right;}
       .guias-card-pricebox .lbl{font-family:'Outfit',sans-serif;font-size:.5rem;letter-spacing:.08em;text-transform:uppercase;color:#8D6D14;display:block;}
       .guias-card-pricebox .val{font-family:'Playfair Display',serif;font-size:.86rem;font-weight:700;color:#6C5108;display:block;line-height:1.15;}
@@ -1494,7 +1499,6 @@
             <div class="btn-row" id="trip-row">
               <button class="btn-toggle active" data-trip="N" onclick="setTraslado('N')">🚘 Normal</button>
               <button class="btn-toggle" data-trip="P" onclick="setTraslado('P')">🛬 Pick Up</button>
-              <button class="btn-toggle" data-trip="D" onclick="setTraslado('D')">🛫 Drop Off</button>
             </div>
           </div>
 
@@ -1503,7 +1507,7 @@
           </div>
 
           <div class="hours-box" id="flight-box" style="display:none;">
-            <label class="lbl" data-i18n="form.vuelo_lbl">Datos de Vuelo (solo Pick Up / Drop Off)</label>
+            <label class="lbl" data-i18n="form.vuelo_lbl">Datos de Vuelo (solo Pick Up)</label>
             <div class="field">
               <div class="icon-wrap">
                 <span class="ico">✈️</span>
@@ -1528,12 +1532,6 @@
                 <input type="text" id="inp-cliente-num" placeholder="Teléfono del cliente"/>
               </div>
             </div>
-            <div class="field" id="dropoff-destino-box" style="display:none;margin-top:10px;margin-bottom:0;">
-              <div class="icon-wrap">
-                <span class="ico">🏁</span>
-                <input type="text" id="inp-dropoff-destino" placeholder="Destino del cliente (ej: Hotel, Domicilio)"/>
-              </div>
-            </div>
           </div>
 
           <div class="hours-box" id="hours-box" style="display:none;">
@@ -1545,7 +1543,7 @@
                 <li><strong>Mínimo requerido:</strong> 3 horas obligatorias de servicio continuo.</li>
                 <li><strong>Zona de cobertura:</strong> Válido exclusivamente dentro de CDMX.</li>
                 <li><strong>¿Qué incluye?:</strong> Chofer asignado, gasolina y paradas ilimitadas dentro del tiempo contratado.</li>
-                <li><strong>Restricción:</strong> No está diseñado para viajes rápidos de un solo destino (para eso usa la opción Normal, Pick Up o Drop Off). Si excedes el tiempo contratado, se cobrará una tarifa adicional por hora extra.</li>
+                <li><strong>Restricción:</strong> No está diseñado para viajes rápidos de un solo destino (para eso usa la opción Normal o Pick Up). Si excedes el tiempo contratado, se cobrará una tarifa adicional por hora extra.</li>
               </ul>
             </div>
           </div>
@@ -1559,7 +1557,7 @@
           </div>
 
           <div class="field" id="field-destino">
-            <label class="lbl" data-i18n="form.destino">Destino Principal</label>
+            <label class="lbl" data-i18n="form.destino">Destino del cliente</label>
             <div class="icon-wrap">
               <span class="ico">🏁</span>
               <input type="text" id="inp-destino" placeholder="Ej: Pujol"/>
@@ -1604,6 +1602,7 @@
             <label class="lbl" data-i18n="form.pasajeros">Pasajeros</label>
             <div class="pax-row" id="pax-row"></div>
             <div class="vehicle-hint" id="vehicle-hint">Sedán VIP Diamond</div>
+            <div class="pax-contact" id="pax-contact" style="display:none;margin-top:8px;padding:9px 10px;border:1px solid rgba(212,175,55,0.3);background:rgba(212,175,55,0.1);border-radius:8px;color:var(--gold);font-size:0.84rem;line-height:1.4;"></div>
           </div>
           <div id="tyc-mini">
             <input type="checkbox" id="tyc-mini-check" onchange="toggleBtnCalc()"/>
@@ -2510,11 +2509,10 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       function resolverConciergeSlugActivo() {
         const fromUrl = (new URLSearchParams(window.location.search).get('c') || '').trim().toLowerCase();
         const fromSession = (sessionStorage.getItem(CONCIERGE_SLUG_KEY) || '').trim().toLowerCase();
-        const fromLocal = (localStorage.getItem(CONCIERGE_SLUG_KEY) || '').trim().toLowerCase();
-        const slug = fromUrl || fromSession || fromLocal;
+        // Solo URL o sessionStorage — NO localStorage para evitar atribuir reservas futuras sin NFC
+        const slug = fromUrl || fromSession;
         if (slug) {
           try { sessionStorage.setItem(CONCIERGE_SLUG_KEY, slug); } catch(e) {}
-          try { localStorage.setItem(CONCIERGE_SLUG_KEY, slug); } catch(e) {}
         }
         return slug;
       }
@@ -3293,10 +3291,15 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       function buildPax(){
+        const options = [
+          { value: 3, label: '1-3' },
+          { value: 7, label: '4-7' }
+        ];
         document.getElementById('pax-row').innerHTML =
-          [1,2,3,4,5,6,7].map(p => `<button class="btn-pax${p===pasajeros?' active':''}" onclick="setPax(${p})">${p}</button>`).join('');
+          options.map(opt => `<button class="btn-pax${opt.value===pasajeros?' active':''}" data-pax="${opt.value}" onclick="setPax(${opt.value})">${opt.label}</button>`).join('');
         const row = document.getElementById('pax-row');
         const hint = document.getElementById('vehicle-hint');
+        const contactBox = document.getElementById('pax-contact');
         const isSedan = pasajeros <= 3;
         if (row) {
           row.classList.toggle('sedan-selected', isSedan);
@@ -3307,10 +3310,22 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           hint.classList.toggle('sedan', isSedan);
           hint.classList.toggle('suv', !isSedan);
         }
+        if (contactBox) {
+          if (pasajeros >= 8) {
+            const numero = (WHATSAPP_CENTRAL || '+525527729551').replace(/\D/g, '');
+            const waUrl = 'https://wa.me/' + numero + '?text=' + encodeURIComponent('Hola LuxRides, necesito cotizar un viaje para un grupo de 8+ pasajeros.');
+            contactBox.innerHTML = `📲 Para grupos grandes, contáctanos por WhatsApp: <a href="${waUrl}" target="_blank" rel="noopener" style="color:var(--gold);font-weight:700;text-decoration:underline;">${WHATSAPP_CENTRAL || '+52 5527729551'}</a>`;
+            contactBox.style.display = 'block';
+          } else {
+            contactBox.style.display = 'none';
+            contactBox.innerHTML = '';
+          }
+        }
       }
 
       function aplicarModoAeropuerto(val){
-        const isAirport = val === 'P' || val === 'D';
+        const isPickup = val === 'P';
+        const isAirport = isPickup;
         const originField = document.getElementById('field-origen');
         const destinoField = document.getElementById('field-destino');
         const stopsField = document.getElementById('field-stops');
@@ -3321,7 +3336,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const isTimeService = servicio === 'T';
 
         if (originField) originField.setAttribute('aria-hidden', isAirport ? 'true' : 'false');
-        if (destinoField) destinoField.setAttribute('aria-hidden', (isAirport || isTimeService) ? 'true' : 'false');
+        if (destinoField) destinoField.setAttribute('aria-hidden', isTimeService ? 'true' : 'false');
         if (stopsField) stopsField.setAttribute('aria-hidden', (isAirport || servicio !== 'I' || isTimeService) ? 'true' : 'false');
         if (quickDirs) quickDirs.setAttribute('aria-hidden', (isAirport || servicio !== 'I' || isTimeService) ? 'true' : 'false');
 
@@ -3330,8 +3345,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           inpOrigen.style.opacity = (isAirport || isTimeService) ? '0.5' : '1';
         }
         if (inpDestino) {
-          inpDestino.disabled = isAirport || isTimeService;
-          inpDestino.style.opacity = (isAirport || isTimeService) ? '0.5' : '1';
+          inpDestino.disabled = isTimeService;
+          inpDestino.style.opacity = isTimeService ? '0.5' : '1';
         }
 
         if (isAirport) {
@@ -3345,7 +3360,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         }
 
         if (inpVueloSalida) {
-          inpVueloSalida.placeholder = val === 'P' ? 'Lugar de llegada del vuelo' : 'Lugar de salida del vuelo';
+          inpVueloSalida.placeholder = 'Lugar de llegada del vuelo';
         }
       }
 
@@ -3357,13 +3372,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         refreshRapidoUI();
       }
 
+      function limpiarOpcionesTrasladoObsoletas(){
+        const tripRow = document.getElementById('trip-row');
+        if (!tripRow) return;
+        tripRow.querySelectorAll('.btn-toggle[data-trip="D"]').forEach(function(btn){ btn.remove(); });
+      }
+
       function setTraslado(val){
-        tipoTraslado = val;
-        document.querySelectorAll('#trip-row .btn-toggle').forEach(b => b.classList.toggle('active', b.dataset.trip===val));
-        document.getElementById('flight-box').style.display = (val === 'P' || val === 'D') ? 'block' : 'none';
-        const dropoffDestinoBox = document.getElementById('dropoff-destino-box');
-        if (dropoffDestinoBox) dropoffDestinoBox.style.display = val === 'D' ? 'block' : 'none';
-        aplicarModoAeropuerto(val);
+        tipoTraslado = (val === 'P') ? 'P' : 'N';
+        document.querySelectorAll('#trip-row .btn-toggle').forEach(b => b.classList.toggle('active', b.dataset.trip===tipoTraslado));
+        document.getElementById('flight-box').style.display = tipoTraslado === 'P' ? 'block' : 'none';
+        aplicarModoAeropuerto(tipoTraslado);
         refreshRapidoUI();
       }
 
@@ -3375,7 +3394,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       function setPax(p){
         pasajeros = p;
-        document.querySelectorAll('.btn-pax').forEach(b => b.classList.toggle('active', parseInt(b.textContent)===p));
+        document.querySelectorAll('.btn-pax').forEach(b => b.classList.toggle('active', parseInt(b.dataset.pax)===p));
         buildPax();
         refreshRapidoUI();
       }
@@ -3490,6 +3509,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       initDatePicker();
       buildHours();
       buildPax();
+      limpiarOpcionesTrasladoObsoletas();
       setTraslado('N');
       setPaymentMethod('tarjeta');
 
@@ -3503,7 +3523,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         });
 
       function agregarParada() {
-        if (tipoTraslado === 'P' || tipoTraslado === 'D' || servicio !== 'I') return;
+        if (tipoTraslado === 'P' || servicio !== 'I') return;
         const container = document.getElementById("stops");
         const stopId = ++stopCounter;
         const field = document.createElement("div");
@@ -3615,7 +3635,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       function calcCasetas(distanciaKm){
-        if (tipoTraslado === 'P' || tipoTraslado === 'D') return 0;
+        if (tipoTraslado === 'P') return 0;
         if (distanciaKm > 100) return 500;
         if (distanciaKm > 50)  return 360;
         if (distanciaKm > 20)  return 240;
@@ -3625,7 +3645,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       function calcTotalPrecio(servicioActual, distanciaKm, casetasTotal){
         const esSUV = pasajeros > 3;
         if (tipoTraslado === 'P') return esSUV ? 2900 : 1900;
-        if (tipoTraslado === 'D') return esSUV ? 3800 : 2550;
         if (servicioActual === 'I') {
           const base     = esSUV ? 300 : 200;
           const tarifaKm = esSUV ?  45 :  35;
@@ -3655,12 +3674,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const nombre=document.getElementById('inp-nombre').value.trim();
         document.getElementById('error-msg').style.display='none';
         if(!nombre){mostrarError('Por favor ingresa el nombre del cliente');return;}
-        const esFijo = tipoTraslado==='P' || tipoTraslado==='D';
+        const esFijo = tipoTraslado==='P';
         if(!esFijo && !coordOrigen){mostrarError('Por favor selecciona un origen de la lista desplegable');return;}
         if(esFijo && !coordOrigen){
           coordOrigen = { lat: 19.4361, lon: -99.0719, display: 'Aeropuerto Internacional de la Ciudad de México' };
         }
-        if(servicio==='I' && !esFijo && !coordDestino){mostrarError('Por favor selecciona un destino de la lista desplegable');return;}
+        if(servicio==='I' && !coordDestino && (tipoTraslado==='P' || !esFijo)){mostrarError('Por favor selecciona un destino de la lista desplegable');return;}
         const waypoints = getWaypointsFromStops();
         const stopInputs = document.querySelectorAll('#stops input[type="text"]');
         const filledStops = Array.from(stopInputs).filter(function(inp){ return String(inp.value || '').trim(); }).length;
@@ -3668,13 +3687,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           mostrarError('Selecciona cada parada desde Autocomplete para trazar la ruta correctamente.');
           return;
         }
-        if(tipoTraslado==='P' || tipoTraslado==='D'){
+        if(tipoTraslado==='P'){
           const aerolinea=document.getElementById('inp-aerolinea').value.trim();
           const vuelo=document.getElementById('inp-vuelo').value.trim();
           const salida=document.getElementById('inp-vuelo-salida').value.trim();
           const numeroCliente=document.getElementById('inp-cliente-num').value.trim();
           if(!aerolinea || !vuelo || !salida || !numeroCliente){
-            mostrarError('Completa aerolínea, vuelo, salida y número del cliente para Pick Up / Drop Off');
+            mostrarError('Completa aerolínea, vuelo, llegada y número del cliente para Pick Up');
             return;
           }
         }
@@ -3683,7 +3702,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         document.getElementById('btn-calc-txt').textContent='Calculando...';
         document.getElementById('results').style.display='none';
         let distanciaKm=0,duracionMin=0;
-        const esFijoCalc = tipoTraslado==='P' || tipoTraslado==='D';
+        const esFijoCalc = tipoTraslado==='P';
         if(servicio==='I' && !esFijoCalc){
           if (_directionsService && waypoints.length) {
             try {
@@ -3892,7 +3911,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       function renderResults(){
         const {distanciaKm,duracionMin,totalPrecio,casetasTotal}=resultado;
         const vehiculo=pasajeros<=3?'Sedán VIP Diamond':'SUV Platinum Diamond';
-        const esFijo  = tipoTraslado==='P' || tipoTraslado==='D';
+        const esFijo  = tipoTraslado==='P';
         const esKm    = servicio==='I' && !esFijo;
         document.getElementById('results').style.display='block';
         document.getElementById('route-box').style.display=esKm?'block':'none';
@@ -3953,8 +3972,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const vuelo=document.getElementById('inp-vuelo').value.trim();
         const salida=document.getElementById('inp-vuelo-salida').value.trim();
         const numeroCliente=document.getElementById('inp-cliente-num').value.trim();
-        const trasladoTexto = tipoTraslado==='P' ? 'Pick Up' : (tipoTraslado==='D' ? 'Drop Off' : 'Normal');
-        const dropoffDestino = document.getElementById('inp-dropoff-destino')?.value.trim() || '';
+        const trasladoTexto = tipoTraslado==='P' ? 'Pick Up' : 'Normal';
+        const destinoReserva = coordDestino?.display || '';
 
         const lines=[
           '🚗 *RESERVA LUXRIDES VIP*',
@@ -3963,12 +3982,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           '🚘 *Vehiculo:* '+vehiculo,
           '📌 *Traslado:* '+trasladoTexto,
           '📍 *Origen:* '+(coordOrigen?.display||''),
-          servicio==='I'?'🏁 *Destino:* '+(coordDestino?.display||''):'⏱ *Servicio:* '+hSel+' horas',
-          (tipoTraslado==='P'||tipoTraslado==='D')?'✈ *Aerolinea:* '+aerolinea:'',
-          (tipoTraslado==='P'||tipoTraslado==='D')?'🔢 *Vuelo:* '+vuelo:'',
-          (tipoTraslado==='P'||tipoTraslado==='D')?'🌐 *Salida vuelo:* '+salida:'',
-          (tipoTraslado==='P'||tipoTraslado==='D')?'📞 *Numero cliente:* '+numeroCliente:'',
-          (tipoTraslado==='D' && dropoffDestino)?'🏁 *Destino cliente:* '+dropoffDestino:'',
+          (servicio==='I' && destinoReserva)?'🏁 *Destino:* '+destinoReserva:'',
+          (servicio!=='I')?'⏱ *Servicio:* '+hSel+' horas':'',
+          (tipoTraslado==='P')?'✈ *Aerolinea:* '+aerolinea:'',
+          (tipoTraslado==='P')?'🔢 *Vuelo:* '+vuelo:'',
+          (tipoTraslado==='P')?'🌐 *Llegada vuelo:* '+salida:'',
+          (tipoTraslado==='P')?'📞 *Numero cliente:* '+numeroCliente:'',
           servicio==='I'?'📏 *Distancia:* '+resultado.distanciaKm+' km':'',
           servicio==='I'?'⌛ *Tiempo:* '+resultado.duracionMin+' minutos':'',
           '📅 *Fecha:* '+fecha,
@@ -3986,7 +4005,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           reserva_id: 'LUX-' + Date.now(),
           cliente: nombre,
           origen: coordOrigen?.display || '',
-          destino: (tipoTraslado === 'D' ? dropoffDestino : null) || coordDestino?.display || '',
+          destino: destinoReserva,
           extra_stops: autocompletesStops.filter(function(s){ return s && s.coord; }).map(function(s){ return s.coord; }),
           fecha,
           hora_recogida: hora+':'+min+' '+ampm,
@@ -6241,11 +6260,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         capacidad:'3/6 disponible',
         turista:'Pendiente de asignar',
         estado:'Pendiente',
-        contacto:'+52 55 2772 9551 · hola@toursteotihuacan.mx · @toursteotihuacan',
+        contacto:'+52 55 2772 9551 · luxrides@luxrides.online',
         tarifas:[
-          { label:'1 a 3 personas', price:'$4,000 MXN', note:'Tarifa base privada' },
-          { label:'4+ personas', price:'$1,600 MXN', note:'Tarifa grupo' },
-          { label:'Grupo compartido', price:'$1,350 MXN p/p', note:'Por persona' }
+          { label:'1-3 personas', price:'$4,000 MXN', note:'Tarifa base privada' },
+          { label:'4-7 personas', price:'$1,600 MXN', note:'Tarifa grupo' },
+          { label:'8+', price:'Cotizar', note:'Grupo grande · Escríbenos' }
         ]
       },
       {
@@ -6260,9 +6279,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         estado:'Pagado',
         contacto:'+52 55 2772 9551 · LuxRides Concierge',
         tarifas:[
-          { label:'1 a 3 personas', price:'$3,000 MXN', note:'Reserva compartida' },
-          { label:'4 a 6 personas', price:'$4,000 MXN', note:'Bloque grupal' },
-          { label:'Individual', price:'$2,400 MXN p/p', note:'Por persona' }
+          { label:'1-3 personas', price:'$3,000 MXN', note:'Reserva compartida' },
+          { label:'4-7 personas', price:'$4,000 MXN', note:'Bloque grupal' },
+          { label:'8+', price:'Cotizar', note:'Grupo grande · Escríbenos' }
         ]
       },
       {
@@ -6277,9 +6296,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         estado:'En curso',
         contacto:'+52 55 2772 9551 · LuxRides Concierge',
         tarifas:[
-          { label:'1 a 3 personas', price:'$4,400 MXN', note:'Servicio personalizado' },
-          { label:'4+ personas', price:'$1,700 MXN', note:'Servicio personalizado' },
-          { label:'Grupo compartido', price:'$1,150 MXN p/p', note:'Por persona' }
+          { label:'1-3 personas', price:'$4,400 MXN', note:'Servicio personalizado' },
+          { label:'4-7 personas', price:'$1,700 MXN', note:'Servicio personalizado' },
+          { label:'8+', price:'Cotizar', note:'Grupo grande · Escríbenos' }
         ]
       },
       {
@@ -6294,8 +6313,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         estado:'No pagado',
         contacto:'+52 55 2772 9551 · LuxRides Concierge',
         tarifas:[
-          { label:'1 a 3 personas', price:'$8,000 MXN', note:'Tarifa privada' },
-          { label:'4 a 6 personas', price:'$12,000 MXN', note:'Grupo completo' }
+          { label:'1-3 personas', price:'$8,000 MXN', note:'Tarifa privada' },
+          { label:'4-7 personas', price:'$12,000 MXN', note:'Grupo completo' },
+          { label:'8+', price:'Cotizar', note:'Grupo grande · Escríbenos' }
         ]
       },
       {
@@ -6310,8 +6330,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         estado:'Pagado',
         contacto:'+52 55 2772 9551 · LuxRides Concierge',
         tarifas:[
-          { label:'1 a 3 personas', price:'$7,000 MXN', note:'Tarifa privada' },
-          { label:'4 a 6 personas', price:'$11,000 MXN', note:'Grupo completo' }
+          { label:'1-3 personas', price:'$7,000 MXN', note:'Tarifa privada' },
+          { label:'4-7 personas', price:'$11,000 MXN', note:'Grupo completo' },
+          { label:'8+', price:'Cotizar', note:'Grupo grande · Escríbenos' }
         ]
       },
       {
@@ -6324,10 +6345,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         capacidad:'3/6 disponible',
         turista:'Pendiente de asignar',
         estado:'Pendiente',
-        contacto:'+52 55 2772 9551 · hola@sitioincreible.com',
+        contacto:'+52 55 2772 9551 · luxrides@luxrides.online',
         tarifas:[
-          { label:'1 a 3 personas', price:'$9,000 MXN', note:'Tarifa privada' },
-          { label:'4 a 6 personas', price:'$12,000 MXN', note:'Grupo completo' }
+          { label:'1-3 personas', price:'$9,000 MXN', note:'Tarifa privada' },
+          { label:'4-7 personas', price:'$12,000 MXN', note:'Grupo completo' },
+          { label:'8+', price:'Cotizar', note:'Grupo grande · Escríbenos' }
         ]
       },
       {
@@ -6389,8 +6411,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         estado:'Pagado',
         contacto:'+52 55 2772 9551 · LuxRides Concierge',
         tarifas:[
-          { label:'1 a 3 personas', price:'$9,000 MXN', note:'Tarifa privada' },
-          { label:'4 a 6 personas', price:'$12,500 MXN', note:'Grupo completo' }
+          { label:'1-3 personas', price:'$9,000 MXN', note:'Tarifa privada' },
+          { label:'4-7 personas', price:'$12,500 MXN', note:'Grupo completo' },
+          { label:'8+', price:'Cotizar', note:'Grupo grande · Escríbenos' }
         ]
       },
       {
@@ -6405,8 +6428,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         estado:'Reserva rechazada',
         contacto:'+52 55 2772 9551 · LuxRides Concierge',
         tarifas:[
-          { label:'1 a 3 personas', price:'$7,000 MXN', note:'Tarifa privada' },
-          { label:'4 a 6 personas', price:'$9,500 MXN', note:'Grupo completo' }
+          { label:'1-3 personas', price:'$7,000 MXN', note:'Tarifa privada' },
+          { label:'4-7 personas', price:'$9,500 MXN', note:'Grupo completo' },
+          { label:'8+', price:'Cotizar', note:'Grupo grande · Escríbenos' }
         ]
       }
     ];
@@ -6560,11 +6584,19 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         var selectedIndex = Number(_guiasTourSelections[tour.id] || 0);
         if (!tour.tarifas[selectedIndex]) selectedIndex = 0;
         var tarifa = tour.tarifas[selectedIndex];
-        var payAmount = _guiasParseAmount(tarifa.price);
+        var is8plus = tarifa.label === '8+';
+        var payAmount = is8plus ? null : _guiasParseAmount(tarifa.price);
+        var isGroup = !is8plus && selectedIndex > 0 && tarifa.label !== tarifa.label.match(/hora/i);
         var routeOptions = Array.isArray(tour.routeOptions) ? tour.routeOptions : [];
         var selectedRouteIndex = Number(_guiasRouteSelections[tour.id] || 0);
         if (!routeOptions[selectedRouteIndex]) selectedRouteIndex = 0;
         var selectedRoute = routeOptions[selectedRouteIndex] || '';
+        var paxBtns = tour.tarifas.map(function(item, itemIndex) {
+          var isWa = item.label === '8+';
+          return '<button class="guias-pax-btn' + (itemIndex === selectedIndex ? ' active' : '') + (isWa ? ' wa-btn' : '') + '" ' +
+            'onclick="_guiasTourSelections[\'' + _guiasEscapeHtml(tour.id) + '\']=\'' + itemIndex + '\';renderGuiasCatalogo();">' +
+            _guiasEscapeHtml(item.label) + '</button>';
+        }).join('');
         var options = tour.tarifas.map(function(item, itemIndex) {
           return '<option value="' + itemIndex + '"' + (itemIndex === selectedIndex ? ' selected' : '') + '>' +
             _guiasEscapeHtml(item.label) + '</option>';
@@ -6604,20 +6636,23 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               '<div class="guias-card-pricing">' +
                 '<div class="guias-card-select-wrap">' +
                   '<div class="guias-card-meta-label">Pasajeros / tarifa</div>' +
-                  '<select class="guias-card-select" data-tour-id="' + _guiasEscapeHtml(tour.id) + '">' + options + '</select>' +
+                  '<div class="guias-pax-btns">' + paxBtns + '</div>' +
                 '</div>' +
                 '<div class="guias-card-pricebox">' +
                   '<span class="lbl">Precio</span>' +
-                  '<span class="val">' + _guiasEscapeHtml(tarifa.price) + '</span>' +
-                  '<span class="sub">' + _guiasEscapeHtml(tarifa.note) + '</span>' +
+                  (is8plus
+                    ? '<span class="val" style="font-size:.72rem;color:#16a34a;">WhatsApp</span><span class="sub">Te cotizamos</span>'
+                    : '<span class="val">' + _guiasEscapeHtml(tarifa.price) + '</span><span class="sub">' + _guiasEscapeHtml(isGroup ? 'Por persona' : tarifa.note) + '</span>') +
                 '</div>' +
               '</div>' +
-              '<div class="guias-card-paynote">Pago anticipado requerido para confirmar este tour.</div>' +
+              '<div class="guias-card-paynote">' + (is8plus ? '📲 Para grupos de 8+ personas, contáctanos para cotizar.' : 'Pago anticipado requerido para confirmar este tour.') + '</div>' +
               '<div class="guias-card-actions">' +
-                '<button class="guias-card-btn reserve" onclick="reservarTourCatalogo(\'' + _guiasEscapeHtml(tour.id) + '\')">🧳 Reservar ahora</button>' +
-                (payAmount
-                  ? '<button class="guias-card-btn pay" onclick="abrirPagoTourStripe(\'' + _guiasEscapeHtml(tour.id) + '\')">💳 Pagar con Stripe</button>'
-                  : '<button class="guias-card-btn quote" onclick="solicitarCotizacionTour(\'' + _guiasEscapeHtml(tour.id) + '\')">📝 Solicitar cotizacion</button>') +
+                (is8plus
+                  ? '<button class="guias-card-btn pay" style="background:#25d366;border-color:#1da851;" onclick="(function(){var n=((window.WHATSAPP_CENTRAL||\'' + (WHATSAPP_CENTRAL||'+525527729551') + '\').replace(/\\D/g,\'\'));window.open(\'https://wa.me/\'+n+\'?text=\'+encodeURIComponent(\'Hola LuxRides, quiero cotizar el tour \"' + _guiasEscapeHtml(tour.title) + '\" para un grupo de 8 o más personas.\'),\'_blank\');})()">💬 Cotizar por WhatsApp</button>'
+                  : '<button class="guias-card-btn reserve" onclick="reservarTourCatalogo(\'' + _guiasEscapeHtml(tour.id) + '\')">🧳 Reservar ahora</button>' +
+                    (payAmount
+                      ? '<button class="guias-card-btn pay" onclick="abrirPagoTourStripe(\'' + _guiasEscapeHtml(tour.id) + '\')">💳 Pagar con Stripe</button>'
+                      : '<button class="guias-card-btn quote" onclick="solicitarCotizacionTour(\'' + _guiasEscapeHtml(tour.id) + '\')">📝 Solicitar cotizacion</button>')) +
               '</div>' +
               '<div class="guias-card-contact">Contacto: ' + _guiasEscapeHtml(tour.contacto) + '</div>' +
             '</div>' +
@@ -6748,17 +6783,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         sp('inp-cliente-num',pp.cl);
 
         // Labels extra no cubiertos por aplicarIdioma
-        var xlT={es:{vl:'Datos de Vuelo (solo Pick Up / Drop Off)',h:'Horas de Servicio (Mínimo 2h)'},
-          en:{vl:'Flight Details (Pick Up / Drop Off only)',h:'Service Hours (Minimum 2h)'},
-          fr:{vl:'Détails du vol (Pick Up / Drop Off uniquement)',h:'Heures de service (Minimum 2h)'},
-          pt:{vl:'Dados do voo (somente Pick Up / Drop Off)',h:'Horas de serviço (Mínimo 2h)'},
-          de:{vl:'Flugdaten (nur Pick Up / Drop Off)',h:'Servicestunden (Mindestens 2h)'},
-          it:{vl:'Dati volo (solo Pick Up / Drop Off)',h:'Ore di servizio (Minimo 2h)'},
-          zh:{vl:'航班信息（仅Pick Up/Drop Off）',h:'服务小时（最少2h）'},
-          ja:{vl:'フライト情報（Pick Up / Drop Offのみ）',h:'サービス時間（最低2h）'},
-          ko:{vl:'항공편 정보 (Pick Up/Drop Off에만 해당)',h:'서비스 시간 (최소 2h)'},
-          ar:{vl:'تفاصيل الرحلة (للاستقبال والتوصيل فقط)',h:'ساعات الخدمة (حد أدنى 2h)'},
-          ru:{vl:'Данные рейса (только Pick Up/Drop Off)',h:'Часы обслуживания (мин. 2ч)'}};
+        var xlT={es:{vl:'Datos de Vuelo (solo Pick Up)',h:'Horas de Servicio (Mínimo 2h)'},
+          en:{vl:'Flight Details (Pick Up only)',h:'Service Hours (Minimum 2h)'},
+          fr:{vl:'Détails du vol (Pick Up uniquement)',h:'Heures de service (Minimum 2h)'},
+          pt:{vl:'Dados do voo (somente Pick Up)',h:'Horas de serviço (Mínimo 2h)'},
+          de:{vl:'Flugdaten (nur Pick Up)',h:'Servicestunden (Mindestens 2h)'},
+          it:{vl:'Dati volo (solo Pick Up)',h:'Ore di servizio (Minimo 2h)'},
+          zh:{vl:'航班信息（仅Pick Up）',h:'服务小时（最少2h）'},
+          ja:{vl:'フライト情報（Pick Upのみ）',h:'サービス時間（最低2h）'},
+          ko:{vl:'항공편 정보 (Pick Up에만 해당)',h:'서비스 시간 (최소 2h)'},
+          ar:{vl:'تفاصيل الرحلة (للاستقبال فقط)',h:'ساعات الخدمة (حد أدنى 2h)'},
+          ru:{vl:'Данные рейса (только Pick Up)',h:'Часы обслуживания (мин. 2ч)'}};
         var xl=xlT[lang]||xlT.es;
         var fb=document.querySelector('#flight-box .lbl');if(fb)fb.textContent=xl.vl;
         var hb=document.querySelector('#hours-box .lbl');if(hb)hb.textContent=xl.h;
