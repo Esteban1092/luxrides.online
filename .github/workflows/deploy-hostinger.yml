@@ -1,0 +1,37 @@
+name: Deploy LuxRides To Hostinger
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'luxrides/**'
+      - '.github/workflows/deploy-hostinger.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-hostinger-main
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload site files to Hostinger via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          protocol: ftps
+          port: ${{ secrets.HOSTINGER_FTP_PORT }}
+          local-dir: ./luxrides/
+          server-dir: ${{ secrets.HOSTINGER_TARGET_DIR }}
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/.vercel/**
+            **/node_modules/**
