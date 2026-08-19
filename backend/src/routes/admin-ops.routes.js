@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { env } from '../config/env.js';
 import { requireAdminSession } from '../middleware/admin-auth.js';
+import { isSchemaMissingError } from '../lib/supabase-compat.js';
 import { enviarPushAChofer, enviarPush } from '../services/push.service.js';
 
 const router = Router();
@@ -67,27 +68,20 @@ router.post('/admin/push-notifications', async (req, res, next) => {
       created_at: new Date().toISOString()
     };
 
-    const rows = await supabaseRequest('push_notifications', {
-      method: 'POST',
-      headers: supabaseHeaders(true),
-      body: JSON.stringify(payload)
-    });
-
-    if (payload.chofer_id && payload.titulo) {
-      try {
-        const subscription = await enviarPushAChofer(payload.chofer_id);
-        await enviarPush(subscription, {
-          title: payload.titulo,
-          body: payload.cuerpo || '',
-          tag: 'luxrides-viaje',
-          url: '/ses.html'
-        });
-      } catch (pushError) {
-        console.warn('[admin-push-notifications] web push no enviado:', pushError.message);
+    try {
+      const rows = await supabaseRequest('push_notifications', {
+        method: 'POST',
+        headers: supabaseHeaders(true),
+        body: JSON.stringify(payload)
+      });
+      return res.status(201).json({ ok: true, data: rows?.[0] || null });
+    } catch (error) {
+      if (isSchemaMissingError(error)) {
+        console.warn('[admin-push-notifications] tabla push_notifications no existe aún; se omite', error.message);
+        return res.status(201).json({ ok: true, data: null });
       }
+      throw error;
     }
-
-    res.status(201).json({ ok: true, data: rows?.[0] || null });
   } catch (error) {
     next(error);
   }
@@ -172,6 +166,10 @@ router.delete('/admin/reservas/:reservaId/force', async (req, res, next) => {
           headers: supabaseHeaders()
         });
       } catch (error) {
+        if (isSchemaMissingError(error)) {
+          console.warn('[admin-force-delete] tabla dependiente omitida por schema faltante', table, error.message);
+          continue;
+        }
         console.warn('[admin-force-delete] tabla dependiente error', table, error.message);
       }
     }

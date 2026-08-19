@@ -49,7 +49,7 @@ Sitio web: https://luxrides.online | Telefono: +52 55 2772 9551
 - Precios:
   - 1 a 3 personas: $4,000 MXN
   - 4 en adelante: $1,600 MXN ($1,350 por persona en grupo)
-- Contacto: +52 55 2772 9551 | hola@toursteotihuacan.mx | @toursteotihuacan
+- Contacto: +52 55 2772 9551 | luxrides@luxrides.online
 
 2) Vuelo en Globo sobre Teotihuacan
 - Descripcion: Descubra la magia de volar en globo sobre la Ciudad de los Dioses.
@@ -90,7 +90,7 @@ Sitio web: https://luxrides.online | Telefono: +52 55 2772 9551
 - Precios:
   - 1 a 3 personas: $9,000 MXN
   - 4 a 6 personas: $12,000 MXN
-- Contacto: +52 55 2772 9551 | hola@sitioincreible.com
+- Contacto: +52 55 2772 9551 | luxrides@luxrides.online
 
 7) City Tour Ciudad de Mexico
 - Descripcion: Una inmersion total en la historia y grandeza de la CDMX, incluyendo el Museo Nacional de Antropologia.
@@ -259,6 +259,72 @@ async function llamarGroq(model, contextMessages, maxTokens) {
   return data?.choices?.[0]?.message?.content || '';
 }
 
+function normalizeMessagesForProvider(messages) {
+  return (Array.isArray(messages) ? messages : []).map((m) => {
+    const role = String(m?.role || 'user').toLowerCase();
+    const allowedRole = (role === 'system' || role === 'user' || role === 'assistant') ? role : 'user';
+    return {
+      role: allowedRole,
+      content: String(m?.content || '')
+    };
+  }).filter((m) => m.content);
+}
+
+async function llamarOpenRouter(apiKey, model, contextMessages, maxTokens) {
+  const messages = normalizeMessagesForProvider(contextMessages);
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + apiKey,
+      'HTTP-Referer': env.openRouterSiteUrl,
+      'X-Title': env.openRouterAppName
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      max_tokens: maxTokens,
+      temperature: 0.75
+    })
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data?.error?.message || data?.message || 'OpenRouter API error');
+    err.status = res.status;
+    throw err;
+  }
+  return data?.choices?.[0]?.message?.content || '';
+}
+
+async function llamarOpenRouterFallback(contextMessages, maxTokens) {
+  const apiKeys = Array.isArray(env.openRouterApiKeys) ? env.openRouterApiKeys : [];
+  if (!apiKeys.length) {
+    throw new Error('OpenRouter API keys no configuradas');
+  }
+
+  const models = [
+    'meta-llama/llama-3.3-70b-instruct',
+    'openai/gpt-4o-mini',
+    'mistralai/mistral-small-3.2-24b-instruct:free'
+  ];
+
+  let lastError = null;
+  for (const key of apiKeys) {
+    for (const model of models) {
+      try {
+        const reply = await llamarOpenRouter(key, model, contextMessages, maxTokens);
+        if (reply) return reply;
+      } catch (error) {
+        lastError = error;
+        console.warn('[lovox] OpenRouter fallo con modelo', model, '-', error.message);
+      }
+    }
+  }
+
+  throw (lastError || new Error('No se pudo obtener respuesta desde OpenRouter'));
+}
+
 export async function completarChat(messages) {
   if (!Array.isArray(messages) || messages.length === 0) {
     const err = new Error('messages must be a non-empty array');
@@ -269,7 +335,7 @@ export async function completarChat(messages) {
   const contextMessages = await withLovoxContext(messages);
   const usarBusquedaWeb = shouldUseWebSearch(messages);
 
-  if (usarBusquedaWeb) {
+  if (usarBusquedaWeb && env.groqApiKey) {
     try {
       const reply = await llamarGroq('groq/compound', contextMessages, 1200);
       if (reply) return reply;
@@ -279,5 +345,14 @@ export async function completarChat(messages) {
     }
   }
 
-  return llamarGroq('llama-3.3-70b-versatile', contextMessages, 800);
+  if (env.groqApiKey) {
+    try {
+      const reply = await llamarGroq('llama-3.3-70b-versatile', contextMessages, 800);
+      if (reply) return reply;
+    } catch (error) {
+      console.warn('[lovox] Groq principal fallo, fallback a OpenRouter:', error.message);
+    }
+  }
+
+  return llamarOpenRouterFallback(contextMessages, 800);
 }

@@ -23,12 +23,28 @@ function optionalFirst(names, fallback = '') {
   return fallback;
 }
 
+function csv(name) {
+  const value = optional(name, '');
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export const env = {
   port: Number(optional('PORT', '8787')),
   nodeEnv: optional('NODE_ENV', 'development'),
   frontendOrigin: optional('FRONTEND_ORIGIN', 'https://luxrides.online'),
 
   groqApiKey: optional('GROQ_API_KEY', ''),
+  openRouterApiKeys: Array.from(new Set([
+    ...csv('OPENROUTER_API_KEYS'),
+    optional('OPENROUTER_API_KEY_1', ''),
+    optional('OPENROUTER_API_KEY_2', ''),
+    optional('OPENROUTER_API_KEY', '')
+  ].map((item) => String(item || '').trim()).filter(Boolean))),
+  openRouterSiteUrl: optional('OPENROUTER_SITE_URL', 'https://luxrides.online'),
+  openRouterAppName: optional('OPENROUTER_APP_NAME', 'LuxRides Lovox'),
   hotelsApiKey: optional('HOTELS_API_KEY', ''),
   hotelsApiUrl: optional('HOTELS_API_URL', ''),
   stripeSecretKey: optional('STRIPE_SECRET_KEY', ''),
@@ -55,6 +71,11 @@ export const env = {
     pass: optional('SMTP_PASS', ''),
     from: optional('SMTP_FROM', 'LuxRides <luxrides@luxrides.online>')
   },
+
+  reservationCancellationSecret: optionalFirst(
+    ['RESERVATION_CANCELLATION_SECRET', 'ADMIN_SESSION_SECRET', 'SESSION_SECRET', 'QUOTE_SECRET'],
+    optionalFirst(['ADMIN_PASS', 'ADMIN_PASSWORD', 'DESPACHO_ADMIN_PASS'], '')
+  ),
 
   admin: {
     id: optionalFirst(['ADMIN_ID', 'ADMIN_USER', 'DESPACHO_ADMIN_ID'], 'admin12343'),

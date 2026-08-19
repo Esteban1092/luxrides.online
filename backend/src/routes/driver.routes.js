@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { env } from '../config/env.js';
 import { clearDriverSessionCookie, createDriverSessionCookieValue, requireDriverSession, setDriverSessionCookie } from '../middleware/driver-auth.js';
+import { isSchemaMissingError } from '../lib/supabase-compat.js';
 
 const router = Router();
 
@@ -345,17 +346,32 @@ router.patch('/driver/trips/:id/reject', requireDriverSession, async (req, res, 
     const id = cleanString(req.params.id);
     if (!id) return res.status(400).json({ ok: false, error: 'id invalido' });
 
-    const rows = await supabaseRequest('viajes?id=eq.' + encodeURIComponent(id), {
-      method: 'PATCH',
-      headers: supabaseHeaders(true),
-      body: JSON.stringify({
-        estado: 'rechazado',
-        chofer_id: req.driverSession.choferId,
-        rechazado_en: new Date().toISOString()
-      })
-    });
+    const payload = {
+      estado: 'rechazado',
+      chofer_id: req.driverSession.choferId
+    };
 
-    return res.json({ ok: true, data: rows?.[0] || null });
+    try {
+      const rows = await supabaseRequest('viajes?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: supabaseHeaders(true),
+        body: JSON.stringify({
+          ...payload,
+          rechazado_en: new Date().toISOString()
+        })
+      });
+      return res.json({ ok: true, data: rows?.[0] || null });
+    } catch (error) {
+      if (isSchemaMissingError(error)) {
+        const rows = await supabaseRequest('viajes?id=eq.' + encodeURIComponent(id), {
+          method: 'PATCH',
+          headers: supabaseHeaders(true),
+          body: JSON.stringify(payload)
+        });
+        return res.json({ ok: true, data: rows?.[0] || null });
+      }
+      throw error;
+    }
   } catch (error) {
     next(error);
   }
@@ -583,20 +599,27 @@ router.post('/driver/push-subscription', requireDriverSession, async (req, res, 
     const subscription = req.body?.subscription;
     if (!subscription) return res.status(400).json({ ok: false, error: 'subscription requerido' });
 
-    const rows = await supabaseRequest('push_subscriptions?on_conflict=chofer_id', {
-      method: 'POST',
-      headers: {
-        ...supabaseHeaders(true),
-        Prefer: 'resolution=merge-duplicates,return=representation'
-      },
-      body: JSON.stringify({
-        chofer_id: req.driverSession.choferId,
-        subscription,
-        updated_at: new Date().toISOString()
-      })
-    });
-
-    return res.status(201).json({ ok: true, data: rows?.[0] || null });
+    try {
+      const rows = await supabaseRequest('push_subscriptions?on_conflict=chofer_id', {
+        method: 'POST',
+        headers: {
+          ...supabaseHeaders(true),
+          Prefer: 'resolution=merge-duplicates,return=representation'
+        },
+        body: JSON.stringify({
+          chofer_id: req.driverSession.choferId,
+          subscription,
+          updated_at: new Date().toISOString()
+        })
+      });
+      return res.status(201).json({ ok: true, data: rows?.[0] || null });
+    } catch (error) {
+      if (isSchemaMissingError(error)) {
+        console.warn('[driver-push-subscription] tabla push_subscriptions no existe aún; se omite', error.message);
+        return res.status(201).json({ ok: true, data: null });
+      }
+      throw error;
+    }
   } catch (error) {
     next(error);
   }

@@ -85,6 +85,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json({ limit: '256kb' }));
+app.use(express.urlencoded({ extended: false }));
 
 // Aplicar rate limits
 app.use('/api/', globalLimiter);

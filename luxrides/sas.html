@@ -1463,7 +1463,8 @@
           </div>
 
           <div class="service-note" style="background:rgba(239,68,68,0.10);border:1.5px solid #EF4444;color:#991b1b;font-weight:600;margin-bottom:18px;">
-            <b id="lux-imp-bold">IMPORTANTE:</b> <span id="lux-importante-txt">Todo el flujo operativo debe ejecutarse de manera integrada dentro del navegador, sin redirigir al usuario fuera de la plataforma. El proceso se estructurará estrictamente de la siguiente manera: primero, el cliente efectuará el pago correspondiente (agradeciendo incluir su nombre en el concepto del mismo); posteriormente, una vez verificado dicho pago, se confirmará la reserva y, en ese mismo instante, el sistema procederá con la asignación del chofer.</span>
+            <b>Instrucciones para realizar la reserva</b>
+            <div id="lux-importante-txt"><p style="margin:8px 0 6px;"><b id="lux-imp-bold">IMPORTANTE</b></p><p style="margin:0 0 6px;">Para confirmar su servicio, siga estos pasos:</p><ol style="margin:0;padding-left:20px;"><li>Realice el pago correspondiente a su reserva.</li><li>En el concepto o referencia del pago, escriba su nombre completo.</li><li>Una vez que recibamos y verifiquemos el pago, su reserva quedará confirmada.</li><li>En ese mismo momento, LuxRides asignará automáticamente el conductor que realizará su servicio.</li><li>Todo el proceso se realiza directamente dentro de esta plataforma, sin necesidad de salir de ella.</li></ol></div>
           </div>
 
           <div class="field">
@@ -2852,6 +2853,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       const GOOGLE_MAPS_API_KEY = (window.LuxCfg && LuxCfg.googleMapsKey()) || '';
+      const STADIA_MAPS_API_KEY = (window.LuxCfg && LuxCfg.stadiaMapsKey && LuxCfg.stadiaMapsKey()) || '';
 
       let _directionsService = null;
       let _directionsRenderer = null;
@@ -3232,6 +3234,31 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               });
             }
           } catch (_) {}
+        }
+
+        if (unique.size < 5) {
+          const searchQuery = /mexico|cdmx|mx\b/i.test(q) ? q : `${q}, Mexico`;
+          if (STADIA_MAPS_API_KEY) {
+            try {
+              const url = `https://api.stadiamaps.com/geocoding/v1/autocomplete?text=${encodeURIComponent(searchQuery)}&boundary.country=MX&lang=es&limit=10&api_key=${encodeURIComponent(STADIA_MAPS_API_KEY)}`;
+              const respStadia = await fetch(url);
+              const dataStadia = await respStadia.json().catch(() => ({}));
+              const features = Array.isArray(dataStadia?.features) ? dataStadia.features : [];
+              features.forEach((f) => {
+                const coords = f?.geometry?.coordinates || [];
+                if (!Array.isArray(coords) || coords.length < 2) return;
+                const props = f?.properties || {};
+                const label = String(
+                  props.formatted ||
+                  props.label ||
+                  props.name ||
+                  f?.place_name ||
+                  ''
+                ).trim();
+                add(label, Number(coords[1]), Number(coords[0]));
+              });
+            } catch (_) {}
+          }
         }
 
         if (unique.size < 5) {
@@ -6707,7 +6734,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         var impBold={es:'IMPORTANTE:',en:'IMPORTANT:',fr:'IMPORTANT:',pt:'IMPORTANTE:',
           de:'WICHTIG:',it:'IMPORTANTE:',ar:'هام:',ru:'ВАЖНО:',zh:'重要：',ja:'重要：',ko:'중요:'};
         var impTxt={
-          es:'Todo el flujo operativo debe ejecutarse de manera integrada dentro del navegador, sin redirigir al usuario fuera de la plataforma. El proceso se estructurará estrictamente de la siguiente manera: primero, el cliente efectuará el pago correspondiente (agradeciendo incluir su nombre en el concepto del mismo); posteriormente, una vez verificado dicho pago, se confirmará la reserva y, en ese mismo instante, el sistema procederá con la asignación del chofer.',
+          es:'<p style="margin:8px 0 6px;"><b id="lux-imp-bold">IMPORTANTE</b></p><p style="margin:0 0 6px;">Para confirmar su servicio, siga estos pasos:</p><ol style="margin:0;padding-left:20px;"><li>Realice el pago correspondiente a su reserva.</li><li>En el concepto o referencia del pago, escriba su nombre completo.</li><li>Una vez que recibamos y verifiquemos el pago, su reserva quedará confirmada.</li><li>En ese mismo momento, LuxRides asignará automáticamente el conductor que realizará su servicio.</li><li>Todo el proceso se realiza directamente dentro de esta plataforma, sin necesidad de salir de ella.</li></ol>',
           en:'The entire operational flow must run fully integrated within the browser, without redirecting the user outside the platform. The process must follow this exact sequence: first, the client makes the corresponding payment, including their name in the payment reference; once that payment is verified, the reservation is confirmed and, at that same moment, the system assigns the driver.',
           fr:"L'ensemble du flux opérationnel doit s'exécuter de manière intégrée dans le navigateur, sans rediriger l'utilisateur hors de la plateforme. Le processus doit suivre strictement cette séquence : d'abord, le client effectue le paiement correspondant en indiquant son nom dans la référence ; une fois ce paiement vérifié, la réservation est confirmée et, à ce même instant, le système procède à l'attribution du chauffeur.",
           pt:'Todo o fluxo operacional deve ser executado de forma integrada dentro do navegador, sem redirecionar o usuário para fora da plataforma. O processo deve seguir rigorosamente esta sequência: primeiro, o cliente efetua o pagamento correspondente, incluindo seu nome na referência; depois que esse pagamento for verificado, a reserva é confirmada e, nesse mesmo instante, o sistema faz a atribuição do motorista.',
@@ -6718,8 +6745,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           ko:'전체 운영 흐름은 사용자를 플랫폼 밖으로 이동시키지 않고 브라우저 내에서 통합적으로 실행되어야 합니다. 절차는 다음 순서를 엄격히 따라야 합니다. 먼저 고객이 해당 결제를 진행하고 결제 내역에 이름을 포함해야 하며, 해당 결제가 확인되면 예약이 확정되고 그와 동시에 시스템이 기사 배정을 진행합니다.',
           ar:'يجب أن يُنفَّذ كامل المسار التشغيلي بشكل متكامل داخل المتصفح، دون إعادة توجيه المستخدم إلى خارج المنصة. ويجب أن تتم العملية بالترتيب الدقيق التالي: أولاً، يقوم العميل بإجراء الدفع المستحق مع الإشارة إلى اسمه في مرجع الدفع؛ وبعد التحقق من ذلك الدفع، يتم تأكيد الحجز وفي اللحظة نفسها يقوم النظام بتعيين السائق.',
           ru:'Весь операционный процесс должен выполняться полностью интегрированно внутри браузера, без перенаправления пользователя за пределы платформы. Процесс должен строго следовать такой последовательности: сначала клиент выполняет соответствующую оплату, указывая своё имя в назначении платежа; после подтверждения этой оплаты бронирование подтверждается и в тот же момент система назначает водителя.'};
+        var ittxt=document.getElementById('lux-importante-txt');if(ittxt)ittxt.innerHTML=impTxt[lang]||impTxt.es;
         var ib=document.getElementById('lux-imp-bold');if(ib)ib.textContent=impBold[lang]||'IMPORTANTE:';
-        var ittxt=document.getElementById('lux-importante-txt');if(ittxt)ittxt.textContent=impTxt[lang]||impTxt.es;
 
         var tripNoteBold={es:'DIFERENCIA:',en:'DIFFERENCE:',fr:'DIFFÉRENCE:',pt:'DIFERENÇA:',de:'UNTERSCHIED:',it:'DIFFERENZA:',zh:'区别：',ja:'違い：',ko:'차이점:',ar:'الفرق:',ru:'РАЗНИЦА:'};
         var tripNoteTxt={
