@@ -29,7 +29,7 @@ jobs:
           protocol: ftps
           port: ${{ secrets.HOSTINGER_FTP_PORT }}
           local-dir: ./luxrides/
-          server-dir: ${{ secrets.HOSTINGER_TARGET_DIR }}
+          server-dir: ${{ secrets.HOSTINGER_TARGET_DIR }}/
           exclude: |
             **/.git*
             **/.github/**
