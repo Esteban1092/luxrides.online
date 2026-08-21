@@ -3995,7 +3995,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       async function enviarWhatsApp(){
         if(!resultado) return;
         const esMovil = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
-        const waWindow = esMovil ? null : window.open('about:blank','_blank','noopener,noreferrer');
         const nombre=document.getElementById('inp-nombre').value.trim();
         const fecha=getFechaISO();
         const hora=document.getElementById('inp-hora').value;
@@ -4050,7 +4049,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           timestamp: new Date().toISOString(),
         });
 
-        abrirWhatsAppSeguro(numeroCentral, encodedText, waWindow);
+        abrirWhatsAppSeguro(numeroCentral, encodedText);
       }
 
       function normalizarNumeroWhatsApp(numero){
@@ -4062,7 +4061,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         return soloDigitos;
       }
 
-      function abrirWhatsAppSeguro(numeroCentral, encodedText, waWindow){
+      function abrirWhatsAppSeguro(numeroCentral, encodedText){
         const urlApi = 'https://api.whatsapp.com/send?phone='+numeroCentral+'&text='+encodedText;
         const urlWeb = 'https://web.whatsapp.com/send?phone='+numeroCentral+'&text='+encodedText;
         const urlApp = 'whatsapp://send?phone='+numeroCentral+'&text='+encodedText;
@@ -4078,12 +4077,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           return;
         }
 
-        if (waWindow && !waWindow.closed) {
-          waWindow.location.href = urlWeb;
-          return;
-        }
-
-        window.open(urlWeb, '_blank', 'noopener,noreferrer');
+        window.location.href = urlWeb;
       }
 
       function pagarConClip() {
