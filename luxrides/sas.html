@@ -2302,6 +2302,10 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           endpoints.push({ url: backend + '/api/enviar-reserva', tipo: 'node-backend' });
           endpoints.push({ url: backend + '/api/email/reserva-confirmacion', tipo: 'node-backend' });
         }
+        if (!isLocal && location.origin) {
+          endpoints.push({ url: location.origin + '/api/enviar-reserva', tipo: 'site-proxy' });
+          endpoints.push({ url: location.origin + '/api/email/reserva-confirmacion', tipo: 'site-proxy' });
+        }
         if (isLocal) {
           endpoints.push({ url: 'http://localhost:8787/api/enviar-reserva', tipo: 'node-local' });
           endpoints.push({ url: 'http://localhost:8787/api/email/reserva-confirmacion', tipo: 'node-local' });
@@ -2379,7 +2383,10 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           booking_source: datos.booking_source || (slugSafe ? 'concierge_profile' : 'web')
         });
         try {
-          const base = (window.LuxCfg && LuxCfg.backendUrl ? LuxCfg.backendUrl() : '') || (window.LuxCfg && LuxCfg.apiBaseUrl ? LuxCfg.apiBaseUrl() : '');
+          const host = (location.hostname || '').toLowerCase();
+          const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+          const configuredBase = (window.LuxCfg && LuxCfg.backendUrl ? LuxCfg.backendUrl() : '') || (window.LuxCfg && LuxCfg.apiBaseUrl ? LuxCfg.apiBaseUrl() : '');
+          const base = !isLocal && location.origin ? location.origin : configuredBase;
           const res = await fetch((base || '') + '/api/reservas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
