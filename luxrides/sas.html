@@ -1468,7 +1468,7 @@
           </div>
 
           <div class="field">
-            <label class="lbl" data-i18n="form.nombre">Nombre del Cliente</label>
+            <label id="lbl-nombre" class="lbl" data-i18n="form.nombre">Nombre del Cliente</label>
             <div class="icon-wrap">
               <span class="ico">👤</span>
               <input type="text" id="inp-nombre" placeholder="Ej: Estebanquito"/>
@@ -1487,7 +1487,7 @@
           </div>
 
           <div class="field">
-            <label class="lbl" data-i18n="form.tipo_svc">Tipo de Servicio</label>
+            <label id="lbl-servicio" class="lbl" data-i18n="form.tipo_svc">Tipo de Servicio</label>
             <div class="btn-row">
               <button class="btn-toggle active" data-svc="I" onclick="setServicio('I')">🧭 Por Kilometraje</button>
               <button class="btn-toggle" data-svc="T" onclick="setServicio('T')">⏱️ Por Tiempo</button>
@@ -1495,7 +1495,7 @@
           </div>
 
           <div class="field">
-            <label class="lbl" data-i18n="form.tipo_traslado">Tipo de Traslado</label>
+            <label id="lbl-traslado" class="lbl" data-i18n="form.tipo_traslado">Tipo de Traslado</label>
             <div class="btn-row" id="trip-row">
               <button class="btn-toggle active" data-trip="N" onclick="setTraslado('N')">🚘 Normal</button>
               <button class="btn-toggle" data-trip="P" onclick="setTraslado('P')">🛬 Pick Up</button>
@@ -1549,7 +1549,7 @@
           </div>
 
           <div class="field" id="field-origen">
-            <label class="lbl" data-i18n="form.origen">Origen</label>
+            <label id="lbl-origen" class="lbl" data-i18n="form.origen">Origen</label>
             <div class="icon-wrap">
               <span class="ico">📍</span>
               <input type="text" id="inp-origen" placeholder="Ej: Club de Golf Bosques"/>
@@ -1557,7 +1557,7 @@
           </div>
 
           <div class="field" id="field-destino">
-            <label class="lbl" data-i18n="form.destino">Destino del cliente</label>
+            <label id="lbl-destino" class="lbl" data-i18n="form.destino">Destino del cliente</label>
             <div class="icon-wrap">
               <span class="ico">🏁</span>
               <input type="text" id="inp-destino" placeholder="Ej: Pujol"/>
@@ -1599,7 +1599,7 @@
           <button onclick="usarUbicacion()" style="width:100%;padding:11px;margin-bottom:12px;background:rgba(212,175,55,0.15);border:1px solid var(--gold);color:var(--gold);font-family:'Outfit',sans-serif;font-size:0.875rem;cursor:pointer;border-radius:8px;">📍 Usar mi ubicación</button>
 
           <div class="field">
-            <label class="lbl" data-i18n="form.pasajeros">Pasajeros</label>
+            <label id="lbl-pax" class="lbl" data-i18n="form.pasajeros">Pasajeros</label>
             <div class="pax-row" id="pax-row"></div>
             <div class="vehicle-hint" id="vehicle-hint">Sedán VIP Diamond</div>
             <div class="pax-contact" id="pax-contact" style="display:none;margin-top:8px;padding:9px 10px;border:1px solid rgba(212,175,55,0.3);background:rgba(212,175,55,0.1);border-radius:8px;color:var(--gold);font-size:0.84rem;line-height:1.4;"></div>
@@ -5812,9 +5812,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       const btnUbic = document.querySelector('button[onclick="usarUbicacion()"]');
       if (btnUbic) btnUbic.textContent = t('btn_ubic');
 
-      const lblEls = document.querySelectorAll('#panel .lbl');
-      const lblKeys = ['lbl_nombre','lbl_servicio','lbl_traslado','lbl_origen','lbl_destino','lbl_pax'];
-      lblEls.forEach((el, i) => { if (lblKeys[i]) el.textContent = t(lblKeys[i]); });
+      const labelTargets = {
+        lbl_nombre: document.getElementById('lbl-nombre'),
+        lbl_servicio: document.getElementById('lbl-servicio'),
+        lbl_traslado: document.getElementById('lbl-traslado'),
+        lbl_origen: document.getElementById('lbl-origen'),
+        lbl_destino: document.getElementById('lbl-destino'),
+        lbl_pax: document.getElementById('lbl-pax')
+      };
+      Object.entries(labelTargets).forEach(([key, el]) => {
+        if (el) el.textContent = t(key);
+      });
 
       const dateWrap = document.querySelector('.date-wrap .lbl');
       if (dateWrap) dateWrap.textContent = t('lbl_fecha');
