@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'luxrides/**'
+      - 'backend/**'
       - '.github/workflows/deploy-hostinger.yml'
   workflow_dispatch:
 
@@ -16,6 +17,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      HOSTINGER_BACKEND_DIR: ${{ secrets.HOSTINGER_BACKEND_DIR }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,3 +38,20 @@ jobs:
             **/.github/**
             **/.vercel/**
             **/node_modules/**
+
+      - name: Upload backend files to Hostinger via FTP
+        if: ${{ env.HOSTINGER_BACKEND_DIR != '' }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          protocol: ftps
+          port: ${{ secrets.HOSTINGER_FTP_PORT }}
+          local-dir: ./backend/
+          server-dir: ${{ env.HOSTINGER_BACKEND_DIR }}/
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/.env
