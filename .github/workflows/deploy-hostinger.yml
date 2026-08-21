@@ -17,8 +17,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      HOSTINGER_BACKEND_DIR: ${{ secrets.HOSTINGER_BACKEND_DIR }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,7 +38,6 @@ jobs:
             **/node_modules/**
 
       - name: Upload backend files to Hostinger via FTP
-        if: ${{ env.HOSTINGER_BACKEND_DIR != '' }}
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.HOSTINGER_FTP_SERVER }}
@@ -49,7 +46,7 @@ jobs:
           protocol: ftps
           port: ${{ secrets.HOSTINGER_FTP_PORT }}
           local-dir: ./backend/
-          server-dir: ${{ env.HOSTINGER_BACKEND_DIR }}/
+          server-dir: ${{ secrets.HOSTINGER_TARGET_DIR }}/backend/
           exclude: |
             **/.git*
             **/.github/**
