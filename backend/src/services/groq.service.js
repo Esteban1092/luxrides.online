@@ -347,7 +347,7 @@ export async function completarChat(messages) {
 
   if (env.groqApiKey) {
     try {
-      const reply = await llamarGroq('llama-3.3-70b-versatile', contextMessages, 800);
+      const reply = await llamarGroq('llama-3.1-8b-instant', contextMessages, 800);
       if (reply) return reply;
     } catch (error) {
       console.warn('[lovox] Groq principal fallo, fallback a OpenRouter:', error.message);
