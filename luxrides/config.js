@@ -10,17 +10,17 @@
     WHATSAPP_CENTRAL:       '+525527729551',
     VAPID_PUBLIC_KEY:       'BBsJe9xah2PJMkXNAW5NyDrafEZOroWdwrm1us9UWs776HBOdunUAejz4Ouz52CTz3_t6pTedvrWKK-brczYw1o',
     HOSTINGER_ORIGIN:       'https://luxrides.online',
-    BACKEND_URL:            'https://luxrides.online'
+    BACKEND_URL:            'https://luxrides-online.onrender.com'
   };
 
   function get(k) { return CFG[k]; }
 
   function backendUrl() {
-    return 'https://luxrides.online';
+    return 'https://luxrides-online.onrender.com';
   }
 
   function apiBaseUrl() {
-    return 'https://luxrides.online';
+    return 'https://luxrides-online.onrender.com';
   }
 
   function loadGoogleMaps(callbackName) {
