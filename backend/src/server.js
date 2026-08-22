@@ -28,6 +28,10 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 
+app.get('/', (req, res) => {
+  res.redirect(302, '/sas.html');
+});
+
 // Webhook de Stripe: raw body obligatorio antes de express.json()
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 
