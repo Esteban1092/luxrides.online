@@ -115,7 +115,7 @@ app.use('/api', authRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-app.listen(env.port, () => {
+app.listen(env.port, '0.0.0.0', () => {
   console.log('[luxrides-backend] escuchando en puerto ' + env.port);
   console.log('[luxrides-backend] origin permitido: ' + env.frontendOrigin);
 });
