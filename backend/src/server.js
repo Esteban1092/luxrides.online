@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
 import { rateLimit } from 'express-rate-limit';
 
 import { env } from './config/env.js';
@@ -22,6 +23,7 @@ import { errorHandler, notFound } from './middleware/error.js';
 
 const app = express();
 const PORT = process.env.PORT || 8787;
+const frontendDir = path.resolve(process.cwd(), '../luxrides');
 
 app.disable('x-powered-by');
 app.use(helmet({
@@ -29,8 +31,14 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 
+app.use(express.static(frontendDir));
+
 app.get('/', (req, res) => {
-  res.redirect(302, '/sas.html');
+  res.sendFile(path.join(frontendDir, 'sas.html'), (error) => {
+    if (error && !res.headersSent) {
+      res.status(404).json({ ok: false, error: 'Frontend no disponible en este deploy' });
+    }
+  });
 });
 
 // Webhook de Stripe: raw body obligatorio antes de express.json()
