@@ -15,12 +15,19 @@
 
   function get(k) { return CFG[k]; }
 
+  function backendOrigin() {
+    if (window.location.hostname.endsWith('.onrender.com')) {
+      return window.location.origin;
+    }
+    return CFG.BACKEND_URL;
+  }
+
   function backendUrl() {
-    return 'https://luxrides.online';
+    return backendOrigin();
   }
 
   function apiBaseUrl() {
-    return 'https://luxrides.online';
+    return backendOrigin();
   }
 
   function loadGoogleMaps(callbackName) {

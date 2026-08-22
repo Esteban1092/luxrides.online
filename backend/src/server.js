@@ -79,6 +79,7 @@ function isOriginPermitido(origin) {
   try {
     const host = new URL(origin).hostname.toLowerCase();
     if (host === 'luxrides.online' || host.endsWith('.luxrides.online')) return true;
+    if (host.endsWith('.onrender.com')) return true;
     if (host.endsWith('.vercel.app') || host.endsWith('.vercel.dev')) return true;
     if (host.endsWith('.app.github.dev')) return true;
   } catch (e) {
