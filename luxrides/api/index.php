@@ -24,17 +24,16 @@ $configuredUpstream = $envFirst([
     'LUXRIDES_BACKEND_URL',
     'BACKEND_URL',
     'NODE_BACKEND_URL'
-], 'https://luxrides-online.onrender.com');
+]);
 if ($configuredUpstream !== '') {
     $backendCandidates[] = $configuredUpstream;
 }
 
 if ($isVercel) {
     // En Vercel se usa backend publico.
-    $backendCandidates[] = 'https://luxrides-online.onrender.com';
+    $backendCandidates[] = 'https://luxrides.online';
 } else {
-    // En Hostinger se usa el backend de Render para evitar 503 del Node local.
-    $backendCandidates[] = 'https://luxrides-online.onrender.com';
+    // En Hostinger el backend corre local en el mismo servidor.
     $backendCandidates[] = 'http://127.0.0.1:8787';
     $backendCandidates[] = 'http://localhost:8787';
 }
