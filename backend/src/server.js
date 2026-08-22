@@ -21,6 +21,7 @@ import authRoutes from './routes/auth.routes.js';
 import { errorHandler, notFound } from './middleware/error.js';
 
 const app = express();
+const PORT = process.env.PORT || 8787;
 
 app.disable('x-powered-by');
 app.use(helmet({
@@ -115,7 +116,7 @@ app.use('/api', authRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-app.listen(env.port, '0.0.0.0', () => {
-  console.log('[luxrides-backend] escuchando en puerto ' + env.port);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`[luxrides-backend] escuchando en puerto ${PORT}`);
   console.log('[luxrides-backend] origin permitido: ' + env.frontendOrigin);
 });
