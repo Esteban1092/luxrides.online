@@ -205,6 +205,7 @@
       @media(min-width:480px){.inner{padding:28px 24px 32px 24px;}}
       .drag-handle{display:block;width:48px;height:6px;background:rgba(0,0,0,0.14);border-radius:3px;margin:12px auto 5px;cursor:grab;flex-shrink:0;}
       .drag-handle:active{cursor:grabbing;}
+      .drag-handle,.brand{touch-action:none;}
       @media(min-width:768px){.drag-handle{display:block;background:rgba(0,0,0,0.10);}}
       .brand{text-align:center;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);}
       .brand h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;letter-spacing:0.2em;color:var(--gold);}
@@ -4905,6 +4906,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           return true;
         }
 
+        function isTouchDragTarget(el, clientY) {
+          if (!isDragTarget(el)) return false;
+          if (el.closest && (el.closest('.drag-handle') || el.closest('.brand'))) return true;
+          var rect = panel.getBoundingClientRect();
+          return clientY <= rect.top + Math.min(150, rect.height * 0.22);
+        }
+
         function dragStart(clientX, clientY, touchTarget) {
           if (!isDragTarget(touchTarget)) return;
           startX = clientX;
@@ -4930,8 +4938,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           moved = true;
           var newX = startLeft + dx;
           var newY = startTop + dy;
+          var bottomNav = document.getElementById('bottom-nav');
+          var navHeight = bottomNav ? bottomNav.getBoundingClientRect().height : 0;
+          var maxTop = Math.max(0, window.innerHeight - navHeight - 88);
           newX = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, newX));
-          newY = Math.max(0, Math.min(window.innerHeight - 60, newY));
+          newY = Math.max(0, Math.min(maxTop, newY));
           panel.style.left = newX + 'px';
           panel.style.top = newY + 'px';
         }
@@ -4947,9 +4958,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         }
 
         panel.addEventListener('touchstart', function(e) {
-          var isDH = e.target.classList && e.target.classList.contains('drag-handle');
-          if (!isDH && e.target.closest) isDH = !!e.target.closest('.drag-handle');
-          if (isDH) {
+          if (isTouchDragTarget(e.target, e.touches[0].clientY)) {
             dragStart(e.touches[0].clientX, e.touches[0].clientY, e.target);
           }
         }, { passive: true });
