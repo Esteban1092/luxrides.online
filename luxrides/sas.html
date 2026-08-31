@@ -157,10 +157,10 @@
       .lux-theme-switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.25);transition:transform .25s;}
       [data-theme="dark"] .lux-theme-switch{background:rgba(212,175,55,0.35);border-color:rgba(212,175,55,0.5);}
       [data-theme="dark"] .lux-theme-switch::after{transform:translateX(20px);background:#D4AF37;}
-      .iovox-hdr-btns{display:flex;align-items:center;gap:6px;}
-      .iovox-hdr-btn{width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
-      .iovox-hdr-btn:hover{background:rgba(212,175,55,0.2);color:#D4AF37;}
-      .iovox-hdr-btn.active{background:rgba(212,175,55,0.28);color:#f5e6a3;border:1px solid rgba(212,175,55,.45);}
+      .iovox-hdr-btns{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+      .iovox-hdr-btn{min-width:38px;height:34px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.045));color:rgba(255,255,255,0.72);font-size:.86rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .18s ease,background .22s,border-color .22s,color .22s,box-shadow .22s;box-shadow:inset 0 1px 0 rgba(255,255,255,.08);}
+      .iovox-hdr-btn:hover{background:rgba(212,175,55,0.16);border-color:rgba(212,175,55,.34);color:#D4AF37;transform:translateY(-1px);}
+      .iovox-hdr-btn.active{background:linear-gradient(135deg,rgba(212,175,55,0.32),rgba(212,175,55,0.14));color:#f5e6a3;border-color:rgba(212,175,55,.55);box-shadow:0 10px 26px rgba(212,175,55,.16),inset 0 1px 0 rgba(255,255,255,.16);}
       body{background:var(--bg);color:var(--fg);font-family:'Outfit',sans-serif;width:100%;min-height:100vh;margin:0;padding:0;overflow:auto;}
       #panel{
         position:fixed;
@@ -7302,19 +7302,19 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
       .nav-tab.active .iovox-nav-icon{color:#D4AF37;}
       #iovox-overlay{position:fixed;inset:0;z-index:9900;background:rgba(8,8,16,.75);backdrop-filter:blur(8px);display:none;align-items:flex-end;justify-content:center;}
       #iovox-overlay.show{display:flex;}
-      #iovox-panel{width:100%;max-width:480px;height:91vh;background:linear-gradient(168deg,#09090f 0%,#100e1c 55%,#16112b 100%);border-radius:24px 24px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -12px 50px rgba(0,0,0,.7),0 0 0 1px rgba(212,175,55,.1);animation:iovoxUp .38s cubic-bezier(.28,1.1,.52,1) both;}
+      #iovox-panel{width:100%;max-width:520px;height:91vh;background:linear-gradient(168deg,#09090f 0%,#100e1c 55%,#16112b 100%);border-radius:24px 24px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -12px 50px rgba(0,0,0,.7),0 0 0 1px rgba(212,175,55,.1);animation:iovoxUp .38s cubic-bezier(.28,1.1,.52,1) both;}
       @keyframes iovoxUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
-      #iovox-header{padding:16px 18px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(212,175,55,.13);flex-shrink:0;background:rgba(255,255,255,.02);}
-      .iovox-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#1a1428,#2a1f42);border:2px solid rgba(212,175,55,.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 18px rgba(212,175,55,.25);}
+      #iovox-header{padding:15px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(212,175,55,.13);flex-shrink:0;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.015));}
+      .iovox-avatar{width:48px;height:42px;border-radius:18px;background:linear-gradient(135deg,#20182f,#2d2444);border:1px solid rgba(212,175,55,.52);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 10px 26px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.08);}
       .iovox-avatar svg{width:28px;height:28px;color:rgba(255,255,255,.85);}
-      .iovox-hdr-info{flex:1;}
+      .iovox-hdr-info{flex:1;min-width:0;}
       .iovox-hdr-name{font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:#f5e6a3;letter-spacing:.5px;}
       .iovox-hdr-sub{font-size:.7rem;color:rgba(212,175,55,.6);margin-top:1px;display:flex;align-items:center;gap:5px;}
       .iovox-conn{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;border:1px solid rgba(212,175,55,.3);background:rgba(212,175,55,.08);color:#f5d57b;font-size:.62rem;letter-spacing:.04em;}
       .iovox-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block;animation:iovoxDot 2.4s infinite;}
       @keyframes iovoxDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
-      #iovox-close{background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.5);font-size:1rem;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s;}
-      #iovox-close:hover{background:rgba(212,175,55,.15);color:#D4AF37;}
+      #iovox-close{background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.64);font-size:1rem;width:38px;height:34px;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .18s ease,background .2s,color .2s,border-color .2s;flex-shrink:0;}
+      #iovox-close:hover{background:rgba(239,68,68,.16);border-color:rgba(239,68,68,.34);color:#fecaca;transform:translateY(-1px);}
       #iovox-messages{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 14px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}
       #iovox-messages::-webkit-scrollbar{width:3px;}
       #iovox-messages::-webkit-scrollbar-thumb{background:rgba(212,175,55,.2);border-radius:4px;}
@@ -7340,6 +7340,20 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
       #iovox-send{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#9a7a10);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;transition:transform .15s,opacity .2s;color:#0a0a12;font-weight:700;}
       #iovox-send:hover{transform:scale(1.1);}
       #iovox-send:disabled{opacity:.4;cursor:default;transform:none;}
+      @media(max-width:520px){
+        #iovox-panel{height:100dvh;max-width:none;border-radius:0;}
+        #iovox-header{padding:12px 10px 10px;gap:8px;align-items:flex-start;}
+        .iovox-avatar{width:42px;height:38px;border-radius:15px;}
+        .iovox-avatar svg{width:24px;height:24px;}
+        .iovox-hdr-name{font-size:.88rem;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .iovox-hdr-sub{font-size:.62rem;gap:4px;flex-wrap:wrap;}
+        .iovox-conn{font-size:.56rem;padding:2px 6px;}
+        .iovox-hdr-btns{gap:5px;}
+        .iovox-hdr-btn{min-width:34px;width:34px;height:32px;border-radius:14px;font-size:.78rem;}
+        #iovox-close{width:36px;height:32px;border-radius:14px;font-size:.92rem;}
+        #iovox-messages{padding:14px 12px;}
+        .iovox-msg{max-width:90%;}
+      }
     </style>
 
     <div id="iovox-overlay" onclick="if(event.target===this)cerrarAsistente()">
@@ -7449,8 +7463,17 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
       function _speechText(raw){
         return String(raw || '')
           .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '$1')
+          .replace(/`([^`]+)`/g, '$1')
           .replace(/\*\*(.+?)\*\*/g, '$1')
+          .replace(/__(.+?)__/g, '$1')
+          .replace(/(^|\s)[*_~#>]+(?=\S)/g, '$1')
+          .replace(/[\*_~#>`•]+/g, '')
+          .replace(/^\s*[-–—]\s+/gm, '')
+          .replace(/\s*[-–—]\s*/g, ', ')
+          .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
           .replace(/\n+/g, '. ')
+          .replace(/\.{2,}/g, '.')
+          .replace(/\s+([,.!?;:])/g, '$1')
           .replace(/\s+/g, ' ')
           .trim();
       }
