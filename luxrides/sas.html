@@ -2385,7 +2385,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           const host = (location.hostname || '').toLowerCase();
           const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1';
           const configuredBase = (window.LuxCfg && LuxCfg.backendUrl ? LuxCfg.backendUrl() : '') || (window.LuxCfg && LuxCfg.apiBaseUrl ? LuxCfg.apiBaseUrl() : '');
-          const base = !isLocal && location.origin ? location.origin : configuredBase;
+          const base = configuredBase || (!isLocal && location.origin ? location.origin : '');
           const res = await fetch((base || '') + '/api/reservas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
