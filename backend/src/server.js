@@ -19,6 +19,7 @@ import reservationRoutes from './routes/reservation.routes.js';
 import quoteRoutes from './routes/quote.routes.js';
 import stripeRoutes from './routes/stripe.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import mayahuelRoutes from './routes/mayahuel.routes.js';
 import { errorHandler, notFound } from './middleware/error.js';
 
 const app = express();
@@ -121,6 +122,7 @@ app.use('/api', lovoxRoutes);
 app.use('/api', quoteRoutes);
 app.use('/api', stripeRoutes);
 app.use('/api', authRoutes);
+app.use('/api', mayahuelRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -943,6 +943,7 @@
       }
       #top-profile-card.show{display:block;}
       body.guias-fullscreen #top-profile-card{display:none !important;}
+      body.pass-fullscreen #top-profile-card{display:none !important;}
       .tpc-wrap{position:relative;}
       .tpc-main{
         display:flex;align-items:center;gap:9px;
@@ -1334,6 +1335,71 @@
         font-family:'Outfit',sans-serif;font-size:.68rem;font-weight:600;
         color:#D4AF37;letter-spacing:.1em;text-transform:uppercase;
       }
+      #pass-panel{
+        position:fixed;inset:0;z-index:1000;
+        width:100vw;height:auto;display:none;overflow:hidden;
+        background:#0d0a08;color:#f8ead0;
+      }
+      #pass-panel.show{display:block;}
+      #pass-anim-wrap{position:relative;width:100%;height:100%;overflow:hidden;background:linear-gradient(135deg,#130d09 0%,#2a1610 44%,#0e1812 100%);}
+      #pass-anim-wrap::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(255,238,180,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,238,180,.05) 1px,transparent 1px);background-size:28px 28px;opacity:.55;}
+      .pass-curtain{position:absolute;top:0;bottom:0;width:51%;z-index:2;background:repeating-linear-gradient(90deg,#5b1414 0 16px,#7f1d1d 16px 32px,#4a0f0f 32px 46px);box-shadow:inset 0 0 38px rgba(0,0,0,.44);}
+      .pass-curtain.left{left:0;transform-origin:left center;}
+      .pass-curtain.right{right:0;transform-origin:right center;}
+      .pass-anim-run .pass-curtain{animation:passCurtainOpen 1.25s cubic-bezier(.74,0,.2,1) .72s both;}
+      @keyframes passCurtainOpen{to{transform:scaleX(.05);opacity:.72;}}
+      .pass-hero{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none;opacity:0;}
+      .pass-hero-title{font-family:'Playfair Display',serif;font-size:clamp(2.8rem,9vw,7rem);font-weight:900;letter-spacing:.08em;text-align:center;line-height:.95;color:#f4d46a;text-shadow:0 18px 60px rgba(0,0,0,.5);}
+      .pass-hero-title span{display:block;font-family:'Outfit',sans-serif;font-size:clamp(.72rem,2vw,1.05rem);letter-spacing:.55em;text-transform:uppercase;color:#fff4cc;margin-top:18px;}
+      .pass-anim-run .pass-hero{animation:passHeroFade 2.3s ease both;}
+      @keyframes passHeroFade{0%{opacity:0;transform:scale(.96)}18%,72%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.04)}}
+      .pass-orbit{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;}
+      .pass-orbit span{position:absolute;left:50%;top:50%;font-size:clamp(2rem,5vw,4.2rem);filter:drop-shadow(0 12px 24px rgba(0,0,0,.38));animation:passSpin 3.2s ease-in-out infinite;}
+      .pass-orbit span:nth-child(1){transform-origin:-150px -40px;animation-delay:.05s;}
+      .pass-orbit span:nth-child(2){transform-origin:130px 30px;animation-delay:.28s;}
+      .pass-orbit span:nth-child(3){transform-origin:-40px 145px;animation-delay:.52s;}
+      .pass-anim-run .pass-orbit{animation:passOrbitFade 4s ease both;}
+      @keyframes passOrbitFade{0%,18%{opacity:0}32%,86%{opacity:1}100%{opacity:.18}}
+      @keyframes passSpin{0%{transform:rotate(0deg) translateX(120px) rotate(0deg)}100%{transform:rotate(360deg) translateX(120px) rotate(-360deg)}}
+      .pass-content{position:absolute;inset:0;z-index:4;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:32px clamp(16px,4vw,52px) calc(112px + env(safe-area-inset-bottom,0px));opacity:0;}
+      .pass-anim-run .pass-content{animation:passContentIn .72s cubic-bezier(.2,.8,.2,1) 2.45s both;}
+      @keyframes passContentIn{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+      .pass-topline{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px;}
+      .pass-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,4rem);font-weight:900;color:#f4d46a;line-height:1;}
+      .pass-title small{display:block;font-family:'Outfit',sans-serif;font-size:.72rem;letter-spacing:.36em;text-transform:uppercase;color:#f6e6bd;margin-bottom:8px;}
+      .pass-ticket{border:1px solid rgba(244,212,106,.35);border-radius:18px;padding:11px 14px;background:rgba(255,255,255,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font-size:.8rem;color:#f8ead0;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);}
+      .pass-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:18px;align-items:start;}
+      .pass-card{background:linear-gradient(180deg,rgba(255,250,239,.97),rgba(247,239,220,.95));color:#21180b;border:1px solid rgba(244,212,106,.22);border-radius:22px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.24);}
+      .pass-restaurant{display:flex;gap:14px;align-items:center;cursor:pointer;transition:transform .22s ease,box-shadow .22s ease;}
+      .pass-restaurant:hover{transform:translateY(-2px);box-shadow:0 30px 80px rgba(0,0,0,.3);}
+      .pass-rest-logo{width:62px;height:62px;border-radius:20px;background:linear-gradient(135deg,#f4d46a,#16a34a);display:flex;align-items:center;justify-content:center;font-size:2rem;box-shadow:0 12px 30px rgba(22,163,74,.2);}
+      .pass-rest-name{font-family:'Playfair Display',serif;font-size:1.55rem;font-weight:900;color:#162016;}
+      .pass-rest-sub{font-size:.8rem;color:#75603a;margin-top:3px;line-height:1.45;}
+      .pass-map{height:250px;border-radius:20px;overflow:hidden;border:1px solid rgba(244,212,106,.25);background:#efe1bd;}
+      .pass-map iframe{width:100%;height:100%;border:0;filter:saturate(.9) contrast(.98);}
+      .pass-section-title{font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#9a7419;margin:18px 0 10px;}
+      .mayahuel-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start;}
+      .mayahuel-stage{position:relative;min-height:300px;border-radius:22px;padding:60px 18px 18px;background:linear-gradient(180deg,#fdf6df,#efe3bf);border:1px solid rgba(139,104,23,.18);overflow:hidden;}
+      .mayahuel-stage::before{content:'MAYAHUEL';position:absolute;top:16px;left:50%;transform:translateX(-50%);width:min(360px,82%);height:30px;border-radius:0 0 18px 18px;background:#3f2614;color:#f5d979;font-size:.72rem;font-weight:900;letter-spacing:.28em;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 20px rgba(63,38,20,.18);}
+      .mayahuel-tables{display:grid;grid-template-columns:repeat(3,minmax(74px,1fr));gap:14px;max-width:520px;margin:0 auto;}
+      .maya-table{min-height:82px;border:0;border-radius:18px;padding:10px 8px !important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:'Outfit',sans-serif;cursor:pointer;color:#102016 !important;box-shadow:0 12px 24px rgba(0,0,0,.11);transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease;}
+      .maya-table.available{background:linear-gradient(135deg,#dcfce7,#86efac) !important;border:1px solid rgba(22,163,74,.35) !important;}
+      .maya-table.reserved{background:linear-gradient(135deg,#e5e7eb,#cbd5e1) !important;border:1px solid rgba(100,116,139,.35) !important;color:#475569 !important;}
+      .maya-table.occupied{background:linear-gradient(135deg,#fecaca,#ef4444) !important;border:1px solid rgba(185,28,28,.36) !important;color:#fff !important;}
+      .maya-table.available:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 18px 32px rgba(22,163,74,.22);}
+      .maya-table.selected{outline:3px solid rgba(244,212,106,.72);outline-offset:3px;}
+      .maya-table-num{font-size:1rem;font-weight:900;}
+      .maya-table-meta{font-size:.65rem;font-weight:700;opacity:.75;}
+      .maya-legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;justify-content:center;color:#5c4b2a;font-size:.7rem;}
+      .maya-legend span{display:inline-flex;align-items:center;gap:5px;}.maya-dot{width:10px;height:10px;border-radius:50%;display:inline-block;}.maya-dot.green{background:#22c55e}.maya-dot.gray{background:#94a3b8}.maya-dot.red{background:#ef4444}
+      .maya-reserve-box{position:sticky;top:18px;}
+      .maya-form{display:grid;gap:9px;}
+      .maya-form input{width:100%;padding:12px 13px !important;border:1px solid rgba(139,104,23,.18) !important;border-radius:13px;background:#fffaf0 !important;color:#20170c !important;font-size:.86rem !important;}
+      .maya-form button{width:100%;padding:12px 14px !important;border:0 !important;border-radius:14px;background:linear-gradient(135deg,#16a34a,#15803d) !important;color:#fff !important;font-weight:900;cursor:pointer;box-shadow:0 16px 28px rgba(22,163,74,.22);}
+      .maya-form button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;}
+      .maya-selected{font-size:.82rem;color:#5f4e2b;background:#fff7df;border:1px dashed rgba(139,104,23,.22);padding:10px 12px;border-radius:13px;line-height:1.45;}
+      @media(max-width:900px){.pass-grid,.mayahuel-layout{grid-template-columns:1fr;}.pass-topline{align-items:flex-start;flex-direction:column;}.maya-reserve-box{position:static;}.pass-map{height:220px;}}
+      @media(max-width:520px){.pass-content{padding:24px 14px calc(108px + env(safe-area-inset-bottom,0px));}.pass-card{border-radius:18px;padding:14px;}.pass-restaurant{align-items:flex-start;}.pass-rest-logo{width:54px;height:54px;border-radius:17px;font-size:1.7rem;}.mayahuel-stage{padding:56px 10px 14px;}.mayahuel-tables{gap:10px;grid-template-columns:repeat(3,minmax(0,1fr));}.maya-table{min-height:76px;border-radius:15px;padding:9px 4px !important;}}
       .vf-header{
         display:flex;align-items:center;gap:10px;
         padding:15px 18px 12px;
@@ -5999,6 +6065,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         <div class="nav-tab-label">Guías</div>
         <div class="nav-tab-dot"></div>
       </div>
+      <div class="nav-tab" id="nav-pass" onclick="switchTab('pass')">
+        <div class="nav-tab-icon">🛒</div>
+        <div class="nav-tab-label">Pass</div>
+        <div class="nav-tab-dot"></div>
+      </div>
       <div class="nav-tab" id="nav-iovox" onclick="switchTab('iovox')">
         <div class="nav-tab-icon iovox-nav-icon">
           <svg width="22" height="22" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -6231,6 +6302,67 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       </div>
     </div>
 
+    <div id="pass-panel">
+      <div id="pass-anim-wrap">
+        <div class="pass-curtain left"></div>
+        <div class="pass-curtain right"></div>
+        <div class="pass-hero">
+          <div class="pass-hero-title">LuxRides<span>Pass</span></div>
+        </div>
+        <div class="pass-orbit"><span>🍽️</span><span>🎟️</span><span>🛒</span></div>
+        <div class="pass-content">
+          <div class="pass-topline">
+            <div class="pass-title"><small>Experiencias asociadas</small>LuxRides Pass</div>
+            <div class="pass-ticket">🎟️ MAYAHUELVIP · 10% reservado desde LuxRides</div>
+          </div>
+          <div class="pass-grid">
+            <section class="pass-card pass-restaurant" onclick="mostrarMayahuelCatalogo()">
+              <div class="pass-rest-logo">🍽️</div>
+              <div>
+                <div class="pass-rest-name">Mayahuel</div>
+                <div class="pass-rest-sub">Restaurante en San Francisco Mazapa, Teotihuacán. Reserva mesa antes o después de tu tour.</div>
+              </div>
+            </section>
+            <section class="pass-card">
+              <div class="pass-section-title" style="margin-top:0;">Ubicación</div>
+              <div class="pass-map">
+                <iframe title="Mapa Restaurante Mayahuel" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=San%20Francisco%20Mazapa%20Teotihuacan%20Restaurante%20Mayahuel&output=embed"></iframe>
+              </div>
+            </section>
+          </div>
+          <section class="pass-card" id="mayahuel-catalog" style="margin-top:18px;display:none;">
+            <div class="pass-section-title" style="margin-top:0;">Catálogo de mesas</div>
+            <div class="mayahuel-layout">
+              <div>
+                <div class="mayahuel-stage">
+                  <div class="mayahuel-tables" id="mayahuel-tables">
+                    <div class="panel-loading"><div class="panel-spinner"></div><div>Cargando mesas…</div></div>
+                  </div>
+                </div>
+                <div class="maya-legend">
+                  <span><i class="maya-dot green"></i>Disponible</span>
+                  <span><i class="maya-dot gray"></i>Reservada</span>
+                  <span><i class="maya-dot red"></i>Llena</span>
+                </div>
+              </div>
+              <aside class="maya-reserve-box pass-card">
+                <div class="pass-section-title" style="margin-top:0;">Reservar mesa</div>
+                <div class="maya-selected" id="maya-selected">Elige una mesa verde disponible.</div>
+                <form class="maya-form" onsubmit="reservarMayahuelMesa(event)">
+                  <input id="maya-name" type="text" placeholder="Nombre completo" required />
+                  <input id="maya-phone" type="tel" placeholder="WhatsApp o teléfono" />
+                  <input id="maya-email" type="email" placeholder="Gmail para confirmación" />
+                  <input id="maya-time" type="datetime-local" required />
+                  <input id="maya-guests" type="number" min="1" max="20" value="2" placeholder="Personas" required />
+                  <button id="maya-reserve-btn" type="submit" disabled>Reservar Mayahuel</button>
+                </form>
+              </aside>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
     <script>
     function actualizarTopProfileCard() {
       const card = document.getElementById('top-profile-card');
@@ -6290,30 +6422,153 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
     setTimeout(actualizarTopProfileCard, 800);
 
     let _activeTab = 'inicio';
+    let _mayahuelTables = [];
+    let _mayahuelSelectedTable = null;
+    let _mayahuelLoaded = false;
 
     function switchTab(tab) {
       _activeTab = tab;
       const panelEl   = document.getElementById('panel');
       const guiasEl   = document.getElementById('guias-panel');
+      const passEl    = document.getElementById('pass-panel');
       const viajesEl  = document.getElementById('viajes-panel');
       const factEl    = document.getElementById('facturas-panel');
 
       if (panelEl) panelEl.style.display = tab === 'inicio' ? '' : 'none';
       if (guiasEl) guiasEl.classList.toggle('show', tab === 'guias');
+      if (passEl) passEl.classList.toggle('show', tab === 'pass');
       if (viajesEl) viajesEl.classList.toggle('show', tab === 'viajes');
       if (factEl) factEl.classList.toggle('show', tab === 'facturas');
       document.body.classList.toggle('guias-fullscreen', tab === 'guias');
+      document.body.classList.toggle('pass-fullscreen', tab === 'pass');
 
-      ['inicio','guias','iovox'].forEach(t => {
+      ['inicio','guias','pass','iovox'].forEach(t => {
         const el = document.getElementById('nav-' + t);
         if (el) el.classList.toggle('active', t === tab);
       });
 
       closeTpcDropdown();
       if (tab === 'guias') reiniciarAnimacionGuias();
+      if (tab === 'pass') iniciarLuxPass();
       if (tab === 'iovox') abrirAsistente();
       if (tab === 'viajes') cargarViajes();
       if (tab === 'facturas') cargarFacturas();
+    }
+
+    function passApiBase() {
+      return ((window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || location.origin || '').replace(/\/+$/, '');
+    }
+
+    function iniciarLuxPass() {
+      const wrap = document.getElementById('pass-anim-wrap');
+      if (wrap) {
+        wrap.classList.remove('pass-anim-run');
+        void wrap.offsetWidth;
+        wrap.classList.add('pass-anim-run');
+      }
+      setTimeout(mostrarMayahuelCatalogo, _mayahuelLoaded ? 250 : 2100);
+    }
+
+    function mostrarMayahuelCatalogo() {
+      const catalog = document.getElementById('mayahuel-catalog');
+      if (catalog) catalog.style.display = 'block';
+      cargarMayahuelMesas();
+    }
+
+    function normalizarEstadoMesa(status) {
+      const raw = String(status || 'AVAILABLE').toUpperCase();
+      if (raw === 'OCCUPIED') return 'occupied';
+      if (raw === 'RESERVED') return 'reserved';
+      return 'available';
+    }
+
+    function renderMayahuelMesas() {
+      const wrap = document.getElementById('mayahuel-tables');
+      if (!wrap) return;
+      if (!_mayahuelTables.length) {
+        wrap.innerHTML = '<div class="maya-selected">No hay mesas cargadas por el momento.</div>';
+        return;
+      }
+      wrap.innerHTML = _mayahuelTables.map(function(table) {
+        const state = normalizarEstadoMesa(table.status);
+        const disabled = state !== 'available' ? ' disabled' : '';
+        const selected = _mayahuelSelectedTable && _mayahuelSelectedTable.id === table.id ? ' selected' : '';
+        const label = state === 'available' ? 'Disponible' : (state === 'reserved' ? 'Reservada' : 'Llena');
+        return '<button class="maya-table ' + state + selected + '" data-table-id="' + table.id + '" onclick="seleccionarMesaMayahuel(\'' + table.id + '\')"' + disabled + '>' +
+          '<span class="maya-table-num">' + table.table_number + '</span>' +
+          '<span class="maya-table-meta">' + table.capacity + ' pax</span>' +
+          '<span class="maya-table-meta">' + label + '</span>' +
+        '</button>';
+      }).join('');
+    }
+
+    async function cargarMayahuelMesas() {
+      const wrap = document.getElementById('mayahuel-tables');
+      if (!_mayahuelLoaded && wrap) wrap.innerHTML = '<div class="panel-loading"><div class="panel-spinner"></div><div>Cargando mesas…</div></div>';
+      try {
+        const res = await fetch(passApiBase() + '/api/mayahuel/tables', { headers: { 'Accept': 'application/json' } });
+        const body = await res.json().catch(function(){ return {}; });
+        if (!res.ok || !body.ok) throw new Error(body.error || 'No se pudieron cargar las mesas');
+        _mayahuelTables = Array.isArray(body.data) ? body.data : [];
+        _mayahuelLoaded = true;
+        renderMayahuelMesas();
+      } catch (error) {
+        console.error('Mayahuel mesas:', error);
+        if (wrap) wrap.innerHTML = '<div class="maya-selected">No se pudieron cargar las mesas. Intenta nuevamente.</div>';
+      }
+    }
+
+    function seleccionarMesaMayahuel(tableId) {
+      const table = _mayahuelTables.find(function(item){ return String(item.id) === String(tableId); });
+      if (!table || normalizarEstadoMesa(table.status) !== 'available') return;
+      _mayahuelSelectedTable = table;
+      const box = document.getElementById('maya-selected');
+      const btn = document.getElementById('maya-reserve-btn');
+      if (box) box.textContent = table.table_number + ' · ' + table.zone_name + ' · hasta ' + table.capacity + ' personas';
+      if (btn) btn.disabled = false;
+      renderMayahuelMesas();
+    }
+
+    async function reservarMayahuelMesa(event) {
+      event.preventDefault();
+      if (!_mayahuelSelectedTable) {
+        mostrarToast('Elige una mesa disponible primero', 'err');
+        return;
+      }
+      const guests = Number(document.getElementById('maya-guests').value || 0);
+      if (guests > Number(_mayahuelSelectedTable.capacity || 0)) {
+        mostrarToast('Esa mesa no tiene capacidad suficiente', 'err');
+        return;
+      }
+      const btn = document.getElementById('maya-reserve-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Reservando…'; }
+      try {
+        const payload = {
+          table_id: _mayahuelSelectedTable.id,
+          table_number: _mayahuelSelectedTable.table_number,
+          customer_name: document.getElementById('maya-name').value.trim(),
+          customer_phone: document.getElementById('maya-phone').value.trim(),
+          customer_email: document.getElementById('maya-email').value.trim() || (document.getElementById('inp-email') ? document.getElementById('inp-email').value.trim() : ''),
+          reservation_time: new Date(document.getElementById('maya-time').value).toISOString(),
+          guest_count: guests
+        };
+        const res = await fetch(passApiBase() + '/api/mayahuel/reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const body = await res.json().catch(function(){ return {}; });
+        if (!res.ok || !body.ok) throw new Error(body.error || 'No se pudo reservar');
+        mostrarToast('✅ Mesa Mayahuel reservada y correo enviado');
+        _mayahuelSelectedTable = null;
+        event.target.reset();
+        if (btn) btn.textContent = 'Reservar Mayahuel';
+        await cargarMayahuelMesas();
+      } catch (error) {
+        console.error('Reserva Mayahuel:', error);
+        mostrarToast('⚠️ ' + error.message, 'err');
+        if (btn) { btn.disabled = false; btn.textContent = 'Reservar Mayahuel'; }
+      }
     }
 
     document.addEventListener('lux:langchange', function() {
@@ -6770,16 +7025,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         var sp=function(id,v){var e=document.getElementById(id);if(e&&v)e.placeholder=v;};
 
         // Nav labels
-        var navT={es:{i:'Inicio',g:'Guías',o:'Iovox'},
-          en:{i:'Home',g:'Guides',o:'Iovox'},fr:{i:'Accueil',g:'Guides',o:'Iovox'},
-          pt:{i:'Início',g:'Guias',o:'Iovox'},de:{i:'Start',g:'Guides',o:'Iovox'},
-          it:{i:'Home',g:'Guide',o:'Iovox'},zh:{i:'主页',g:'导览',o:'Iovox'},
-          ja:{i:'ホーム',g:'ガイド',o:'Iovox'},ko:{i:'홈',g:'가이드',o:'Iovox'},
-          ar:{i:'الرئيسية',g:'المرشدون',o:'Iovox'},
-          ru:{i:'Главная',g:'Гиды',o:'Iovox'}};
+        var navT={es:{i:'Inicio',g:'Guías',p:'Pass',o:'Iovox'},
+          en:{i:'Home',g:'Guides',p:'Pass',o:'Iovox'},fr:{i:'Accueil',g:'Guides',p:'Pass',o:'Iovox'},
+          pt:{i:'Início',g:'Guias',p:'Pass',o:'Iovox'},de:{i:'Start',g:'Guides',p:'Pass',o:'Iovox'},
+          it:{i:'Home',g:'Guide',p:'Pass',o:'Iovox'},zh:{i:'主页',g:'导览',p:'Pass',o:'Iovox'},
+          ja:{i:'ホーム',g:'ガイド',p:'Pass',o:'Iovox'},ko:{i:'홈',g:'가이드',p:'Pass',o:'Iovox'},
+          ar:{i:'الرئيسية',g:'المرشدون',p:'Pass',o:'Iovox'},
+          ru:{i:'Главная',g:'Гиды',p:'Pass',o:'Iovox'}};
         var nt=navT[lang]||navT.es;
         q('#nav-inicio .nav-tab-label',nt.i);
         q('#nav-guias .nav-tab-label',nt.g);
+        q('#nav-pass .nav-tab-label',nt.p);
         q('#nav-iovox .nav-tab-label',nt.o);
 
         // Mensaje IMPORTANTE
