@@ -155,14 +155,20 @@ router.post('/mayahuel/admin/login', (req, res) => {
 router.get('/mayahuel/admin/dashboard', requireMayahuelSession, async (req, res, next) => {
   try {
     if (!env.supabaseUrl || !env.supabaseServiceKey) {
-      return res.json({ ok: true, tables: fallbackTables, reservations: [], source: 'fallback' });
+      return res.json({ ok: true, tables: fallbackTables, reservations: [], redemptions: [], source: 'fallback' });
     }
     const [tables, reservations] = await Promise.all([
       supabaseRequest('mayahuel_tables?select=*&order=pos_y.asc,pos_x.asc', { headers: supabaseHeaders() }),
       supabaseRequest('mayahuel_reservations?select=*,mayahuel_tables(table_number,zone_name,capacity)&status=eq.CONFIRMED&order=reservation_time.asc', { headers: supabaseHeaders() })
     ]);
+    let redemptions = [];
+    try {
+      redemptions = await supabaseRequest('mayahuel_promo_redemptions?select=*&order=redeemed_at.desc&limit=30', { headers: supabaseHeaders() });
+    } catch (error) {
+      console.warn('[mayahuel-redemptions]', error.message);
+    }
     res.set('Cache-Control', 'no-store');
-    return res.json({ ok: true, tables: tables || [], reservations: reservations || [], source: 'supabase' });
+    return res.json({ ok: true, tables: tables || [], reservations: reservations || [], redemptions: redemptions || [], source: 'supabase' });
   } catch (error) {
     next(error);
   }
@@ -196,6 +202,43 @@ router.patch('/mayahuel/admin/tables/:id', requireMayahuelSession,
       return res.json({ ok: true, data: tableRows[0] });
     } catch (error) {
       next(error);
+    }
+  }
+);
+
+router.post('/mayahuel/promos/redeem',
+  body('code').isString().trim().isLength({ min: 2, max: 50 }),
+  body('customer_name').isString().trim().isLength({ min: 2, max: 100 }),
+  body('customer_contact').isString().trim().isLength({ min: 5, max: 100 }),
+  body('table_number').optional({ checkFalsy: true }).isString().isLength({ max: 20 }),
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+
+    try {
+      if (!env.supabaseUrl || !env.supabaseServiceKey) {
+        return res.status(503).json({ ok: false, error: 'El canje de tickets no esta disponible en este momento.' });
+      }
+
+      const rows = await supabaseRequest('rpc/redeem_mayahuel_promo', {
+        method: 'POST',
+        headers: supabaseHeaders(),
+        body: JSON.stringify({
+          p_code: clean(req.body.code),
+          p_customer_name: clean(req.body.customer_name),
+          p_customer_contact: clean(req.body.customer_contact),
+          p_table_number: clean(req.body.table_number) || null
+        })
+      });
+
+      const result = rows?.[0];
+      if (!result?.is_valid) {
+        return res.status(400).json({ ok: false, error: result?.message || 'No se pudo validar el ticket.' });
+      }
+      return res.status(201).json({ ok: true, message: result.message, redemption: result.redemption });
+    } catch (error) {
+      console.error('[mayahuel-redeem]', error.message);
+      return res.status(503).json({ ok: false, error: 'El sistema de tickets no esta disponible en este momento. Intenta mas tarde.' });
     }
   }
 );

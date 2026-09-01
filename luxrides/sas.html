@@ -1428,6 +1428,29 @@
       .maya-selected.is-confirmed{display:flex;align-items:center;gap:8px;margin-bottom:2px;background:#dcfce7;border:1px solid rgba(22,163,74,.4);color:#166534;font-weight:900;box-shadow:0 9px 22px rgba(22,163,74,.14);animation:mayaBadgeIn .3s cubic-bezier(.2,.8,.2,1) both;}
       .maya-selected.is-confirmed::before{content:'✓';display:grid;place-items:center;width:22px;height:22px;flex:0 0 22px;border-radius:50%;background:#16a34a;color:#fff;font-size:.72rem;}
       @keyframes mayaBadgeIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+      .pass-ticket{cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
+      .pass-ticket:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 14px 32px rgba(244,212,106,.22);background:rgba(255,255,255,.14);}
+      .pass-ticket:active{transform:scale(.97);}
+      .ticket-modal{position:fixed;inset:0;z-index:1300;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(8,6,3,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+      .ticket-modal.show{display:flex;animation:ticketFadeIn .2s ease both;}
+      @keyframes ticketFadeIn{from{opacity:0}to{opacity:1}}
+      .ticket-modal-card{position:relative;width:min(420px,100%);padding:26px 22px;border-radius:20px;background:linear-gradient(180deg,rgba(255,250,239,.98),rgba(247,239,220,.97));color:#21180b;border:1px solid rgba(244,212,106,.3);box-shadow:0 30px 80px rgba(0,0,0,.4);animation:ticketPopIn .28s cubic-bezier(.2,.8,.2,1) both;}
+      @keyframes ticketPopIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+      .ticket-modal-close{position:absolute;top:14px;right:14px;width:30px;height:30px;border:0;border-radius:50%;background:rgba(139,104,23,.12);color:#5c4b2a;font-size:.9rem;cursor:pointer;}
+      .ticket-modal-close:hover{background:rgba(139,104,23,.22);}
+      .ticket-modal-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;margin-right:26px;}
+      .ticket-modal-sub{font-size:.8rem;color:#75603a;margin:8px 0 16px;line-height:1.45;}
+      #ticket-form{display:grid;gap:9px;}
+      #ticket-form input{width:100%;padding:12px 13px;border:1px solid rgba(139,104,23,.18);border-radius:13px;background:#fffaf0;color:#20170c;font-size:.86rem;}
+      #ticket-form input::placeholder{color:#777;}
+      #ticket-form button{width:100%;padding:12px 14px;border:0;border-radius:14px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:900;cursor:pointer;box-shadow:0 16px 28px rgba(22,163,74,.22);transition:transform .2s ease;}
+      #ticket-form button:hover:not(:disabled){transform:scale(1.02);}
+      #ticket-form button:disabled{opacity:.6;cursor:not-allowed;}
+      .ticket-result{margin-top:12px;font-size:.82rem;padding:11px 13px;border-radius:13px;line-height:1.5;display:none;}
+      .ticket-result.show{display:block;animation:mayaBadgeIn .3s cubic-bezier(.2,.8,.2,1) both;}
+      .ticket-result.ok{background:#dcfce7;border:1px solid rgba(22,163,74,.4);color:#166534;font-weight:700;}
+      .ticket-result.err{background:#fee2e2;border:1px solid rgba(239,68,68,.4);color:#991b1b;font-weight:700;}
+      @media(max-width:520px){.ticket-modal-card{padding:22px 16px;}}
       @media(max-width:900px){.pass-grid,.mayahuel-layout{grid-template-columns:1fr;}.pass-topline{align-items:flex-start;flex-direction:column;}.maya-reserve-box{position:static;}.pass-map{height:220px;}}
       @media(max-width:520px){.pass-content{padding:24px 14px calc(108px + env(safe-area-inset-bottom,0px));}.pass-card{border-radius:18px;padding:14px;}.pass-restaurant{align-items:flex-start;}.pass-rest-logo{width:54px;height:54px;border-radius:17px;font-size:1.7rem;}.pass-backbar{top:-24px;margin:-4px 0 14px;}.mayahuel-stage{padding:56px 10px 14px;}.mayahuel-tables{gap:10px;grid-template-columns:repeat(3,minmax(0,1fr));}.maya-table{min-height:76px;border-radius:15px;padding:9px 4px !important;}.maya-reserve-box{padding:0;}}
       .vf-header{
@@ -6344,7 +6367,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           <div class="pass-overview" id="pass-overview">
             <div class="pass-topline">
               <div class="pass-title"><small>Experiencias asociadas</small>LuxRides Pass</div>
-              <div class="pass-ticket">🎟️ MAYAHUELVIP · 10% reservado desde LuxRides</div>
+              <div class="pass-ticket" id="pass-ticket-btn" role="button" tabindex="0" onclick="abrirCanjeTicket()" onkeydown="if(event.key==='Enter')abrirCanjeTicket()">🎟️ Canjear ticket Mayahuel</div>
             </div>
             <div class="pass-grid pass-grid-single">
               <section class="pass-card pass-restaurant" onclick="mostrarMayahuelCatalogo()">
@@ -6399,6 +6422,21 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           </section>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div id="ticket-modal" class="ticket-modal">
+      <div class="ticket-modal-card">
+        <button class="ticket-modal-close" type="button" onclick="cerrarCanjeTicket()" aria-label="Cerrar">✕</button>
+        <div class="ticket-modal-title">🎟️ Canjear ticket Mayahuel</div>
+        <div class="ticket-modal-sub">Ingresa el código de tu ticket y tus datos para validarlo en tiempo real.</div>
+        <form id="ticket-form" onsubmit="canjearTicket(event)">
+          <input id="ticket-code" type="text" placeholder="Código del ticket (ej: MAYAHUELVIP)" aria-label="Código del ticket" autocomplete="off" required />
+          <input id="ticket-name" type="text" placeholder="Nombre completo" aria-label="Nombre completo" autocomplete="name" required />
+          <input id="ticket-contact" type="text" placeholder="Correo o teléfono de contacto" aria-label="Correo o teléfono de contacto" autocomplete="email" required />
+          <button id="ticket-submit-btn" type="submit">Validar y canjear</button>
+        </form>
+        <div class="ticket-result" id="ticket-result"></div>
       </div>
     </div>
 
@@ -6660,8 +6698,71 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
     }
 
+    function abrirCanjeTicket() {
+      const modal = document.getElementById('ticket-modal');
+      if (!modal) return;
+      const result = document.getElementById('ticket-result');
+      if (result) { result.className = 'ticket-result'; result.textContent = ''; }
+      const user = window._getUser && window._getUser();
+      const perfil = window._getPerfil && window._getPerfil();
+      const nameInp = document.getElementById('ticket-name');
+      const contactInp = document.getElementById('ticket-contact');
+      if (nameInp && !nameInp.value) nameInp.value = (perfil && perfil.nombre_completo) || '';
+      if (contactInp && !contactInp.value) contactInp.value = (user && user.email) || (document.getElementById('inp-email') ? document.getElementById('inp-email').value.trim() : '');
+      modal.classList.add('show');
+    }
+
+    function cerrarCanjeTicket() {
+      const modal = document.getElementById('ticket-modal');
+      if (modal) modal.classList.remove('show');
+    }
+
+    async function canjearTicket(event) {
+      event.preventDefault();
+      const btn = document.getElementById('ticket-submit-btn');
+      const result = document.getElementById('ticket-result');
+      const payload = {
+        code: document.getElementById('ticket-code').value.trim(),
+        customer_name: document.getElementById('ticket-name').value.trim(),
+        customer_contact: document.getElementById('ticket-contact').value.trim()
+      };
+      if (btn) { btn.disabled = true; btn.textContent = 'Validando…'; }
+      if (result) { result.className = 'ticket-result'; result.textContent = ''; }
+      try {
+        const res = await fetch(passApiBase() + '/api/mayahuel/promos/redeem', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const body = await res.json().catch(function(){ return {}; });
+        if (!res.ok || !body.ok) throw new Error(body.error || 'No se pudo canjear el ticket');
+        const promoTitle = (body.redemption && body.redemption.promo_title) || 'Promoción Mayahuel';
+        if (result) {
+          result.textContent = '✓ ' + promoTitle + ' aplicada. ¡Muestra esta pantalla en el restaurante!';
+          result.className = 'ticket-result show ok';
+        }
+        mostrarToast('🎟️ Ticket canjeado con éxito');
+        event.target.reset();
+      } catch (error) {
+        if (result) {
+          result.textContent = '⚠️ ' + error.message;
+          result.className = 'ticket-result show err';
+        }
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Validar y canjear'; }
+      }
+    }
+
     document.addEventListener('lux:langchange', function() {
       actualizarTopProfileCard();
+    });
+
+    document.addEventListener('click', function(e) {
+      const modal = document.getElementById('ticket-modal');
+      if (modal && modal.classList.contains('show') && e.target === modal) cerrarCanjeTicket();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') cerrarCanjeTicket();
     });
 
     function reiniciarAnimacionGuias() {
