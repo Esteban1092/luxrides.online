@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#080a09">
+  <title>Mayahuel | Admin de Tickets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#080a09;--panel:#111512;--line:#293129;--gold:#d7ae42;--gold-soft:#f2dc98;--text:#f5f2e9;--muted:#979f98;--green:#34c96b;--red:#ef4b4b}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}button,input,select{font:inherit}
+    body{background:radial-gradient(circle at 80% -10%,rgba(215,174,66,.12),transparent 32%),linear-gradient(180deg,#0d100e,#080a09 56%);min-height:100vh}
+    .login{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 50% 15%,#20251f,#080a09 58%)}
+    .login.hidden{display:none}.login-card{width:min(390px,100%);padding:34px;border:1px solid rgba(215,174,66,.4);background:rgba(17,21,18,.94);box-shadow:0 26px 80px rgba(0,0,0,.5);border-radius:8px;text-align:center}
+    .brand-mark{width:62px;height:62px;margin:0 auto 16px;display:grid;place-items:center;border-radius:50%;background:var(--gold);color:#151109;font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800}.login h1{font:800 1.9rem 'Playfair Display',serif;margin:0}.login p{color:var(--muted);font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;margin:8px 0 24px}
+    .login input{width:100%;height:50px;border:1px solid var(--line);border-radius:6px;background:#090c0a;color:#fff;text-align:center;outline:none;padding:0 14px}.login input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(215,174,66,.12)}
+    .primary{width:100%;height:48px;margin-top:12px;border:0;border-radius:6px;background:var(--gold);color:#181207;font-weight:800;cursor:pointer;transition:.2s}.primary:hover{background:#e7c35e;transform:translateY(-1px)}.login-error{min-height:20px;color:#ff8d8d;font-size:.8rem;margin-top:10px}
+    .app{display:none;min-height:100vh}.app.ready{display:block}
+    .sidebar{position:fixed;inset:0 auto 0 0;width:245px;padding:28px 18px;border-right:1px solid var(--line);background:#0b0e0c;z-index:5}.side-brand{display:flex;align-items:center;gap:11px;padding:0 8px 28px;border-bottom:1px solid var(--line)}.side-logo{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:var(--gold);color:#151109;font:800 1.2rem 'Playfair Display',serif}.side-brand strong{font:700 1.25rem 'Playfair Display',serif}.side-brand small{display:block;color:var(--muted);font:500 .62rem 'DM Sans';letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+    .side-label{margin:28px 10px 10px;color:#626b63;font-size:.62rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.side-item{display:flex;align-items:center;gap:10px;padding:12px;border-radius:6px;color:#c8cec9;font-size:.86rem}.side-item.active{background:rgba(215,174,66,.12);color:var(--gold-soft);border-left:2px solid var(--gold)}
+    .logout{position:absolute;left:18px;right:18px;bottom:25px;border:1px solid var(--line);background:transparent;color:#aeb5af;border-radius:6px;padding:10px;cursor:pointer}
+    main{margin-left:245px;padding:30px clamp(20px,3vw,48px) 52px}.topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:28px}.eyebrow{color:var(--gold);font-size:.64rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase}.topbar h1{font:800 clamp(1.8rem,3vw,2.7rem) 'Playfair Display',serif;margin:5px 0 0}.top-actions{display:flex;align-items:center;gap:10px}.sync{color:var(--muted);font-size:.72rem}.refresh{height:40px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:#d7ddd8;cursor:pointer}.refresh:hover{border-color:var(--gold);color:var(--gold-soft)}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{padding:17px 18px;border:1px solid var(--line);border-radius:7px;background:var(--panel)}.stat-label{color:var(--muted);font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}.stat-value{font:800 1.8rem 'Playfair Display',serif;margin-top:6px}
+    .workspace{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}.board,.create-panel{border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;padding:17px 20px;border-bottom:1px solid var(--line)}.panel-head h2{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;margin:0}.panel-head span{color:var(--muted);font-size:.7rem}
+    .ticket-list{max-height:640px;overflow-y:auto}.ticket-empty{padding:60px 20px;text-align:center;color:var(--muted);font-size:.85rem}
+    .ticket-row{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--line)}.ticket-row:last-child{border-bottom:0}
+    .ticket-icon{width:46px;height:46px;flex:0 0 46px;display:grid;place-items:center;border-radius:12px;background:#171c18;font-size:1.4rem;border:1px solid var(--line)}
+    .ticket-main{flex:1;min-width:0}.ticket-main strong{display:block;font-size:.94rem}.ticket-main small{color:var(--muted);font-size:.72rem}
+    .ticket-code{display:inline-flex;margin-top:5px;padding:3px 8px;border-radius:4px;background:rgba(215,174,66,.14);color:var(--gold-soft);font-size:.62rem;font-weight:800;letter-spacing:.08em}
+    .ticket-meta{text-align:right;flex:0 0 auto}.ticket-uses{font-size:.82rem;font-weight:800}.ticket-uses small{display:block;color:var(--muted);font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+    .chip{display:inline-flex;margin-top:6px;padding:4px 9px;border-radius:999px;font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.chip.active{background:rgba(52,201,107,.16);color:var(--green)}.chip.expired{background:rgba(239,75,75,.16);color:var(--red)}
+    .create-panel{position:sticky;top:20px}.create-body{padding:20px}form{display:grid;gap:10px}
+    label{font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:-4px}
+    input,select{width:100%;height:42px;border:1px solid var(--line);border-radius:6px;background:#0c100d;color:#fff;padding:0 12px;outline:none}
+    input:focus,select:focus{border-color:var(--gold)}
+    .icon-presets{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 4px}.icon-preset{width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:#0c100d;font-size:1.1rem;cursor:pointer;display:grid;place-items:center}.icon-preset:hover{border-color:var(--gold)}
+    .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .submit-btn{height:46px;border:0;border-radius:6px;background:var(--gold);color:#181207;font-weight:800;cursor:pointer;margin-top:4px}.submit-btn:hover{background:#e7c35e}.submit-btn:disabled{opacity:.6;cursor:not-allowed}
+    .form-error{min-height:18px;color:#ff8d8d;font-size:.76rem}
+    .loading{padding:60px;text-align:center;color:var(--muted)}
+    .toast{position:fixed;right:22px;bottom:22px;z-index:30;max-width:330px;padding:13px 16px;border-radius:6px;background:#202620;border:1px solid #3b463d;box-shadow:0 18px 40px rgba(0,0,0,.45);font-size:.8rem;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}.toast.show{transform:translateY(0);opacity:1}.toast.error{border-color:#8f3434;color:#ffabab}
+    @media(max-width:950px){.sidebar{position:static;width:auto;height:auto;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-right:0;border-bottom:1px solid var(--line)}.side-brand{padding:0;border:0}.side-label,.side-item{display:none}.logout{position:static;width:auto}main{margin-left:0;padding:22px 16px 40px}.workspace{grid-template-columns:1fr}.create-panel{position:static}}
+    @media(max-width:560px){.topbar{align-items:flex-start;flex-direction:column}.top-actions{width:100%;justify-content:space-between}.stats{grid-template-columns:repeat(3,1fr)}.stat{padding:12px 10px}.stat-value{font-size:1.45rem}.stat-label{font-size:.55rem}.row-2{grid-template-columns:1fr}.ticket-meta{text-align:left}}
+  </style>
+</head>
+<body>
+  <section class="login" id="login-screen">
+    <div class="login-card">
+      <div class="brand-mark">🎟️</div>
+      <h1>Tickets Mayahuel</h1>
+      <p>Panel de administración</p>
+      <form id="login-form">
+        <input id="password" type="password" placeholder="Contraseña de acceso" autocomplete="current-password" required autofocus>
+        <button class="primary" type="submit">Ingresar al panel</button>
+        <div class="login-error" id="login-error"></div>
+      </form>
+    </div>
+  </section>
+
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <div class="side-brand"><div class="side-logo">🎟️</div><div><strong>Tickets</strong><small>Mayahuel</small></div></div>
+      <div class="side-label">Operación</div>
+      <div class="side-item active">🎫 Tickets y promos</div>
+      <button class="logout" type="button" onclick="cerrarSesion()">Cerrar sesión</button>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div><div class="eyebrow">Marketing en tiempo real</div><h1>Tickets Mayahuel</h1></div>
+        <div class="top-actions"><span class="sync" id="sync-label">Sincronizando...</span><button class="refresh" type="button" onclick="cargarTickets()">Actualizar</button></div>
+      </header>
+      <section class="stats">
+        <article class="stat"><div class="stat-label">Total tickets</div><div class="stat-value" id="stat-total">0</div></article>
+        <article class="stat"><div class="stat-label">Activos</div><div class="stat-value" id="stat-active">0</div></article>
+        <article class="stat"><div class="stat-label">Canjes totales</div><div class="stat-value" id="stat-uses">0</div></article>
+      </section>
+      <section class="workspace">
+        <div class="board">
+          <div class="panel-head"><h2>Tickets creados</h2><span>Uso en tiempo real</span></div>
+          <div class="ticket-list" id="ticket-list"><div class="loading">Cargando tickets...</div></div>
+        </div>
+        <aside class="create-panel">
+          <div class="panel-head"><h2>Crear ticket</h2></div>
+          <div class="create-body">
+            <form id="ticket-form">
+              <label>Código del ticket</label>
+              <input id="f-code" type="text" placeholder="Ej: MAYAHUELVIP" required>
+              <label>Nombre del lugar</label>
+              <input id="f-venue" type="text" placeholder="Mayahuel" value="Mayahuel" required>
+              <label>¿De qué se trata?</label>
+              <input id="f-desc" type="text" placeholder="Ej: 10% en comida" required>
+              <label>Ícono</label>
+              <div class="icon-presets">
+                <button type="button" class="icon-preset" data-icon="🍽️">🍽️</button>
+                <button type="button" class="icon-preset" data-icon="🍹">🍹</button>
+                <button type="button" class="icon-preset" data-icon="🎁">🎁</button>
+                <button type="button" class="icon-preset" data-icon="🎂">🎂</button>
+                <button type="button" class="icon-preset" data-icon="🥃">🥃</button>
+                <button type="button" class="icon-preset" data-icon="🎟️">🎟️</button>
+              </div>
+              <input id="f-icon" type="text" placeholder="Emoji del ticket" value="🎟️" maxlength="4" required>
+              <div class="row-2">
+                <div>
+                  <label>Tipo de descuento</label>
+                  <select id="f-discount-type">
+                    <option value="PERCENTAGE">Porcentaje</option>
+                    <option value="FIXED_AMOUNT">Monto fijo</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Valor</label>
+                  <input id="f-discount-value" type="number" min="0" step="0.01" placeholder="10" required>
+                </div>
+              </div>
+              <div class="row-2">
+                <div>
+                  <label>Máximo de canjes</label>
+                  <input id="f-max-uses" type="number" min="1" placeholder="100" value="100" required>
+                </div>
+                <div>
+                  <label>Vence</label>
+                  <input id="f-expiration" type="datetime-local" required>
+                </div>
+              </div>
+              <button class="submit-btn" type="submit">Crear ticket</button>
+              <div class="form-error" id="form-error"></div>
+            </form>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script src="../config.js"></script>
+  <script>
+    var API_BASE = (window.LuxCfg && LuxCfg.apiBaseUrl ? LuxCfg.apiBaseUrl() : location.origin).replace(/\/+$/, '');
+    var TOKEN_KEY = 'mayahuel_tickets_admin_session';
+    var token = sessionStorage.getItem(TOKEN_KEY) || '';
+    var tickets = [];
+    var refreshTimer = null;
+
+    function api(path, options) {
+      options = options || {};
+      options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+      if (token) options.headers.Authorization = 'Bearer ' + token;
+      return fetch(API_BASE + '/api' + path, options).then(async function(response) {
+        var data = await response.json().catch(function(){ return {}; });
+        if (response.status === 401 && path !== '/mayahuel/tickets-admin/login') cerrarSesion(true);
+        if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo completar la operación');
+        return data;
+      });
+    }
+
+    function showToast(message, isError) {
+      var el = document.getElementById('toast');
+      el.textContent = message;
+      el.className = 'toast show' + (isError ? ' error' : '');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(function(){ el.className = 'toast'; }, 2800);
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
+      });
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      var error = document.getElementById('login-error');
+      error.textContent = '';
+      try {
+        var result = await api('/mayahuel/tickets-admin/login', { method: 'POST', body: JSON.stringify({ password: document.getElementById('password').value }) });
+        token = result.sessionToken;
+        sessionStorage.setItem(TOKEN_KEY, token);
+        abrirPanel();
+      } catch (err) {
+        error.textContent = err.message;
+      }
+    });
+
+    function abrirPanel() {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('app').classList.add('ready');
+      cargarTickets();
+      clearInterval(refreshTimer);
+      refreshTimer = setInterval(cargarTickets, 15000);
+    }
+
+    function cerrarSesion(silent) {
+      token = '';
+      sessionStorage.removeItem(TOKEN_KEY);
+      clearInterval(refreshTimer);
+      document.getElementById('app').classList.remove('ready');
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('password').value = '';
+      if (!silent) showToast('Sesión cerrada');
+    }
+
+    function ticketStatus(ticket) {
+      var expired = Date.now() > new Date(ticket.expiration_date).getTime();
+      var exhausted = Number(ticket.uses_count || 0) >= Number(ticket.max_uses || 0);
+      return (ticket.is_active && !expired && !exhausted) ? 'active' : 'expired';
+    }
+
+    function formatDiscount(ticket) {
+      return ticket.discount_type === 'PERCENTAGE' ? Number(ticket.discount_value) + '%' : '$' + Number(ticket.discount_value);
+    }
+
+    function renderTickets() {
+      var wrap = document.getElementById('ticket-list');
+      if (!tickets.length) { wrap.innerHTML = '<div class="ticket-empty">Todavía no has creado ningún ticket.</div>'; }
+      else {
+        wrap.innerHTML = tickets.map(function(ticket) {
+          var status = ticketStatus(ticket);
+          var expiry = new Date(ticket.expiration_date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+          return '<div class="ticket-row">' +
+            '<div class="ticket-icon">' + escapeHtml(ticket.icon || '🎟️') + '</div>' +
+            '<div class="ticket-main"><strong>' + escapeHtml(ticket.venue_name) + ' · ' + escapeHtml(ticket.description) + '</strong>' +
+              '<small>' + formatDiscount(ticket) + ' de descuento · Vence ' + expiry + '</small>' +
+              '<div class="ticket-code">' + escapeHtml(ticket.code) + '</div>' +
+            '</div>' +
+            '<div class="ticket-meta"><div class="ticket-uses">' + Number(ticket.uses_count || 0) + '/' + Number(ticket.max_uses || 0) + '<small>Canjes</small></div>' +
+              '<span class="chip ' + status + '">' + (status === 'active' ? 'Activo' : 'Caducado') + '</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+      document.getElementById('stat-total').textContent = tickets.length;
+      document.getElementById('stat-active').textContent = tickets.filter(function(t){ return ticketStatus(t) === 'active'; }).length;
+      document.getElementById('stat-uses').textContent = tickets.reduce(function(sum, t){ return sum + Number(t.uses_count || 0); }, 0);
+    }
+
+    async function cargarTickets() {
+      try {
+        var result = await api('/mayahuel/tickets-admin/list');
+        tickets = result.data || [];
+        renderTickets();
+        document.getElementById('sync-label').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    document.querySelectorAll('.icon-preset').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.getElementById('f-icon').value = btn.getAttribute('data-icon');
+      });
+    });
+
+    document.getElementById('ticket-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      var errorEl = document.getElementById('form-error');
+      errorEl.textContent = '';
+      var submitBtn = event.target.querySelector('.submit-btn');
+      submitBtn.disabled = true;
+      try {
+        var payload = {
+          code: document.getElementById('f-code').value.trim(),
+          venue_name: document.getElementById('f-venue').value.trim(),
+          description: document.getElementById('f-desc').value.trim(),
+          icon: document.getElementById('f-icon').value.trim() || '🎟️',
+          discount_type: document.getElementById('f-discount-type').value,
+          discount_value: Number(document.getElementById('f-discount-value').value),
+          max_uses: Number(document.getElementById('f-max-uses').value),
+          expiration_date: new Date(document.getElementById('f-expiration').value).toISOString()
+        };
+        await api('/mayahuel/tickets-admin/tickets', { method: 'POST', body: JSON.stringify(payload) });
+        showToast('🎟️ Ticket creado con éxito');
+        event.target.reset();
+        document.getElementById('f-venue').value = 'Mayahuel';
+        document.getElementById('f-icon').value = '🎟️';
+        document.getElementById('f-max-uses').value = '100';
+        await cargarTickets();
+      } catch (err) {
+        errorEl.textContent = err.message;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    if (token) abrirPanel();
+  </script>
+</body>
+</html>

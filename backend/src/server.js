@@ -106,6 +106,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/api/', globalLimiter);
 app.use('/api/admin/login', strictLimiter);
 app.use('/api/mayahuel/admin/login', strictLimiter);
+app.use('/api/mayahuel/tickets-admin/login', strictLimiter);
 app.use('/api/mayahuel/promos/redeem', strictLimiter);
 app.use('/api/stripe/pagar', strictLimiter);
 app.use('/api/chat', chatLimiter);

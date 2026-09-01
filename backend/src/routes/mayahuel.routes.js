@@ -6,6 +6,7 @@ import { env } from '../config/env.js';
 
 const router = Router();
 const MAYAHUEL_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const TICKETS_ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
 const fallbackInfo = {
   name: 'Restaurante Mayahuel',
@@ -61,6 +62,40 @@ function requireMayahuelSession(req, res, next) {
   const session = readMayahuelSession(req);
   if (!session) return res.status(401).json({ ok: false, error: 'Sesion Mayahuel expirada o no autorizada.' });
   req.mayahuelSession = session;
+  next();
+}
+
+function signTicketsAdminSession(payload) {
+  return crypto.createHmac('sha256', env.ticketsAdmin.sessionSecret).update(payload).digest('base64url');
+}
+
+function createTicketsAdminSession() {
+  const data = { role: 'mayahuel_tickets', exp: Date.now() + TICKETS_ADMIN_SESSION_TTL_MS };
+  const payload = Buffer.from(JSON.stringify(data)).toString('base64url');
+  return payload + '.' + signTicketsAdminSession(payload);
+}
+
+function readTicketsAdminSession(req) {
+  const auth = String(req.headers?.authorization || '');
+  if (!auth.toLowerCase().startsWith('bearer ')) return null;
+  const [payload, signature] = auth.slice(7).trim().split('.');
+  if (!payload || !signature) return null;
+  const expected = signTicketsAdminSession(payload);
+  const suppliedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (suppliedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) return null;
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    return data?.role === 'mayahuel_tickets' && Number(data.exp) > Date.now() ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function requireTicketsAdminSession(req, res, next) {
+  const session = readTicketsAdminSession(req);
+  if (!session) return res.status(401).json({ ok: false, error: 'Sesion de tickets expirada o no autorizada.' });
+  req.ticketsAdminSession = session;
   next();
 }
 
@@ -239,6 +274,106 @@ router.post('/mayahuel/promos/redeem',
     } catch (error) {
       console.error('[mayahuel-redeem]', error.message);
       return res.status(503).json({ ok: false, error: 'El sistema de tickets no esta disponible en este momento. Intenta mas tarde.' });
+    }
+  }
+);
+
+router.get('/mayahuel/promos/public', async (req, res, next) => {
+  try {
+    if (!env.supabaseUrl || !env.supabaseServiceKey) {
+      return res.json({ ok: true, data: [], source: 'fallback' });
+    }
+    const rows = await supabaseRequest('mayahuel_promotions?select=code,venue_name,description,icon,discount_type,discount_value,expiration_date,max_uses,uses_count,is_active&order=is_active.desc,expiration_date.asc', { headers: supabaseHeaders() });
+    const now = Date.now();
+    const data = (rows || []).map((promo) => {
+      const expired = now > new Date(promo.expiration_date).getTime();
+      const exhausted = Number(promo.uses_count || 0) >= Number(promo.max_uses || 0);
+      const redeemable = Boolean(promo.is_active) && !expired && !exhausted;
+      return {
+        code: promo.code,
+        venue_name: promo.venue_name,
+        description: promo.description,
+        icon: promo.icon,
+        discount_type: promo.discount_type,
+        discount_value: promo.discount_value,
+        expiration_date: promo.expiration_date,
+        redeemable,
+        status: redeemable ? 'active' : 'expired'
+      };
+    });
+    res.set('Cache-Control', 'no-store');
+    return res.json({ ok: true, data, source: 'supabase' });
+  } catch (error) {
+    console.warn('[mayahuel-promos-public]', error.message);
+    return res.json({ ok: true, data: [], source: 'fallback' });
+  }
+});
+
+router.post('/mayahuel/tickets-admin/login', (req, res) => {
+  const supplied = Buffer.from(clean(req.body?.password));
+  const expected = Buffer.from(env.ticketsAdmin.pass);
+  const valid = supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+  if (!valid) return res.status(401).json({ ok: false, error: 'Contrasena incorrecta' });
+  res.set('Cache-Control', 'no-store');
+  return res.json({ ok: true, sessionToken: createTicketsAdminSession(), expiresIn: TICKETS_ADMIN_SESSION_TTL_MS });
+});
+
+router.get('/mayahuel/tickets-admin/list', requireTicketsAdminSession, async (req, res, next) => {
+  try {
+    if (!env.supabaseUrl || !env.supabaseServiceKey) {
+      return res.json({ ok: true, data: [], source: 'fallback' });
+    }
+    const rows = await supabaseRequest('mayahuel_promotions?select=*&order=created_at.desc', { headers: supabaseHeaders() });
+    res.set('Cache-Control', 'no-store');
+    return res.json({ ok: true, data: rows || [], source: 'supabase' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/mayahuel/tickets-admin/tickets', requireTicketsAdminSession,
+  body('code').isString().trim().isLength({ min: 2, max: 50 }),
+  body('venue_name').isString().trim().isLength({ min: 2, max: 100 }),
+  body('description').isString().trim().isLength({ min: 2, max: 200 }),
+  body('icon').isString().trim().isLength({ min: 1, max: 10 }),
+  body('discount_type').isIn(['PERCENTAGE', 'FIXED_AMOUNT']),
+  body('discount_value').isFloat({ min: 0 }),
+  body('max_uses').isInt({ min: 1, max: 100000 }),
+  body('expiration_date').isISO8601(),
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+
+    try {
+      if (!env.supabaseUrl || !env.supabaseServiceKey) {
+        return res.status(503).json({ ok: false, error: 'La creacion de tickets no esta disponible en este momento.' });
+      }
+      const payload = {
+        code: clean(req.body.code).toUpperCase(),
+        title: clean(req.body.description),
+        venue_name: clean(req.body.venue_name),
+        description: clean(req.body.description),
+        icon: clean(req.body.icon),
+        discount_type: clean(req.body.discount_type),
+        discount_value: Number(req.body.discount_value),
+        applicable_to: 'MAYAHUEL_ONLY',
+        borne_by: 'MAYAHUEL',
+        max_uses: Number(req.body.max_uses),
+        expiration_date: new Date(req.body.expiration_date).toISOString(),
+        is_active: true
+      };
+      const rows = await supabaseRequest('mayahuel_promotions', {
+        method: 'POST',
+        headers: supabaseHeaders(true),
+        body: JSON.stringify(payload)
+      });
+      return res.status(201).json({ ok: true, data: rows?.[0] || payload });
+    } catch (error) {
+      if (error.status === 409 || /duplicate/i.test(String(error.message || ''))) {
+        return res.status(409).json({ ok: false, error: 'Ya existe un ticket con ese codigo.' });
+      }
+      console.error('[mayahuel-tickets-create]', error.message);
+      return res.status(503).json({ ok: false, error: 'No se pudo crear el ticket. Verifica que la migracion de tickets este aplicada.' });
     }
   }
 );

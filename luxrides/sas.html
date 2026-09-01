@@ -6083,6 +6083,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
     document.addEventListener('DOMContentLoaded', function() {
       setTimeout(actualizarTopProfileCard, 100);
+      const ticketCode = new URLSearchParams(location.search).get('ticket');
+      if (ticketCode) {
+        setTimeout(function() {
+          switchTab('pass');
+          abrirCanjeTicket(ticketCode);
+        }, 400);
+      }
     });
     </script>
 
@@ -6698,15 +6705,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
     }
 
-    function abrirCanjeTicket() {
+    function abrirCanjeTicket(codePrefill) {
       const modal = document.getElementById('ticket-modal');
       if (!modal) return;
       const result = document.getElementById('ticket-result');
       if (result) { result.className = 'ticket-result'; result.textContent = ''; }
       const user = window._getUser && window._getUser();
       const perfil = window._getPerfil && window._getPerfil();
+      const codeInp = document.getElementById('ticket-code');
       const nameInp = document.getElementById('ticket-name');
       const contactInp = document.getElementById('ticket-contact');
+      if (codeInp && codePrefill) codeInp.value = codePrefill;
       if (nameInp && !nameInp.value) nameInp.value = (perfil && perfil.nombre_completo) || '';
       if (contactInp && !contactInp.value) contactInp.value = (user && user.email) || (document.getElementById('inp-email') ? document.getElementById('inp-email').value.trim() : '');
       modal.classList.add('show');

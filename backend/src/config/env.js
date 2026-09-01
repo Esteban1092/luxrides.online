@@ -90,5 +90,10 @@ export const env = {
   mayahuel: {
     pass: optional('MAYAHUEL_ADMIN_PASS', 'mayahuelgrill'),
     sessionSecret: optionalFirst(['MAYAHUEL_SESSION_SECRET', 'ADMIN_SESSION_SECRET', 'SESSION_SECRET', 'QUOTE_SECRET'], optional('MAYAHUEL_ADMIN_PASS', 'mayahuelgrill'))
+  },
+
+  ticketsAdmin: {
+    pass: optional('MAYAHUEL_TICKETS_ADMIN_PASS', '13112025'),
+    sessionSecret: optionalFirst(['MAYAHUEL_TICKETS_SESSION_SECRET', 'MAYAHUEL_SESSION_SECRET', 'SESSION_SECRET', 'QUOTE_SECRET'], optional('MAYAHUEL_TICKETS_ADMIN_PASS', '13112025'))
   }
 };

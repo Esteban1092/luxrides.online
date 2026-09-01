@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0a0704">
+  <title>LuxRides Tickets | Promociones activas</title>
+  <meta name="description" content="Tickets y promociones activas de LuxRides. Canjea tu ticket antes de que expire.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--gold:#f4d46a;--gold-2:#d4af37;--ink:#0a0704;--card:#fffaf0;--green:#22c55e;--red:#ef4444}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;font-family:'Outfit',sans-serif;background:var(--ink);color:#f8ead0;overflow-x:hidden}
+    body{
+      background:
+        radial-gradient(circle at 15% 0%, rgba(244,212,106,.14), transparent 40%),
+        radial-gradient(circle at 85% 15%, rgba(22,163,74,.10), transparent 45%),
+        linear-gradient(160deg,#130d09 0%,#1c120c 45%,#0a0704 100%);
+      min-height:100vh;
+    }
+    .sparks{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+    .spark{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(244,212,106,.9),transparent 70%);opacity:.55;animation:floatUp linear infinite;}
+    @keyframes floatUp{
+      0%{transform:translateY(0) translateX(0) scale(.6);opacity:0}
+      10%{opacity:.6}
+      90%{opacity:.4}
+      100%{transform:translateY(-120vh) translateX(var(--drift,20px)) scale(1.1);opacity:0}
+    }
+    header{position:relative;z-index:2;text-align:center;padding:56px 20px 30px;}
+    .eyebrow{font-size:.72rem;font-weight:800;letter-spacing:.34em;text-transform:uppercase;color:var(--gold-2);animation:eyebrowIn .7s ease both;}
+    h1{font-family:'Playfair Display',serif;font-size:clamp(2.4rem,7vw,4.6rem);font-weight:900;margin:10px 0 6px;letter-spacing:.02em;
+      background:linear-gradient(120deg,#fff7d6,#f4d46a 45%,#c8952c 70%,#f4d46a);background-size:220% auto;
+      -webkit-background-clip:text;background-clip:text;color:transparent;animation:shineText 4.5s linear infinite, heroIn .8s cubic-bezier(.2,.8,.2,1) both .1s;}
+    @keyframes shineText{to{background-position:220% center;}}
+    @keyframes heroIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes eyebrowIn{from{opacity:0;letter-spacing:.6em}to{opacity:1;letter-spacing:.34em}}
+    header p{max-width:520px;margin:0 auto;color:#e3d2a4;font-size:.92rem;line-height:1.6;animation:heroIn .8s ease both .25s;}
+    .wrap{position:relative;z-index:2;max-width:1180px;margin:0 auto;padding:10px 20px 90px;}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:26px;margin-top:34px;}
+    .card{
+      position:relative;border-radius:26px;padding:0;overflow:hidden;background:linear-gradient(180deg,var(--card),#f4ead0);
+      color:#20170c;box-shadow:0 30px 70px rgba(0,0,0,.4);opacity:0;transform:translateY(28px) scale(.96);
+      animation:cardIn .6s cubic-bezier(.2,.8,.2,1) forwards;
+      transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s ease;
+    }
+    .card:hover{transform:translateY(-8px) scale(1.02) rotateZ(-.3deg);box-shadow:0 40px 90px rgba(0,0,0,.5);}
+    @keyframes cardIn{to{opacity:1;transform:translateY(0) scale(1);}}
+    .card::before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.55),transparent 60%);transform:translateX(-120%);animation:sweep 3.2s ease-in-out infinite;pointer-events:none;}
+    @keyframes sweep{0%,55%{transform:translateX(-120%)}75%{transform:translateX(120%)}100%{transform:translateX(120%)}}
+    .card.expired{filter:grayscale(.55);}
+    .ribbon{position:absolute;top:16px;right:-34px;transform:rotate(38deg);padding:6px 46px;font-size:.62rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;box-shadow:0 6px 14px rgba(0,0,0,.25);z-index:3;}
+    .ribbon.active{background:linear-gradient(135deg,#4ade80,#16a34a);color:#08290f;animation:pulseRibbon 1.8s ease-in-out infinite;}
+    .ribbon.expired{background:linear-gradient(135deg,#fca5a5,#dc2626);color:#3a0808;}
+    @keyframes pulseRibbon{0%,100%{filter:brightness(1)}50%{filter:brightness(1.28)}}
+    .card-body{position:relative;padding:30px 24px 26px;text-align:center;}
+    .icon{font-size:3rem;display:inline-block;filter:drop-shadow(0 10px 18px rgba(0,0,0,.22));animation:iconFloat 3.2s ease-in-out infinite;}
+    @keyframes iconFloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-7px) rotate(-4deg)}}
+    .venue{font-family:'Playfair Display',serif;font-weight:900;font-size:1.85rem;margin:10px 0 2px;letter-spacing:.01em;}
+    .desc{font-size:.92rem;color:#5c4b2a;font-weight:600;margin-bottom:14px;}
+    .discount-pill{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:linear-gradient(135deg,#fff3cd,#f4d46a);color:#5a4200;font-weight:900;font-size:.9rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.6);}
+    .code-tag{margin-top:14px;font-family:'Outfit',sans-serif;font-size:.68rem;font-weight:800;letter-spacing:.14em;color:#8a7133;background:rgba(139,104,23,.1);border:1px dashed rgba(139,104,23,.32);border-radius:10px;padding:8px 10px;}
+    .expiry{margin-top:16px;font-size:.72rem;color:#7a6740;font-weight:700;}
+    .expiry b{color:#3d2e0f;}
+    .cta{display:block;margin-top:18px;padding:13px 16px;border-radius:14px;font-weight:800;font-size:.86rem;text-decoration:none;transition:transform .2s ease,box-shadow .2s ease;}
+    .cta.enabled{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;box-shadow:0 16px 30px rgba(22,163,74,.28);}
+    .cta.enabled:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 20px 38px rgba(22,163,74,.36);}
+    .cta.disabled{background:#e6dcc2;color:#9a8b64;cursor:not-allowed;pointer-events:none;}
+    .state-msg{position:relative;z-index:2;text-align:center;padding:70px 20px;color:#c9b988;font-size:.95rem;}
+    .spinner{width:34px;height:34px;border-radius:50%;border:3px solid rgba(244,212,106,.25);border-top-color:var(--gold);margin:0 auto 14px;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    footer{position:relative;z-index:2;text-align:center;padding:20px;color:#8a7852;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;}
+  </style>
+</head>
+<body>
+  <div class="sparks" id="sparks"></div>
+
+  <header>
+    <div class="eyebrow">LuxRides Pass</div>
+    <h1>Tickets &amp; Promociones</h1>
+    <p>Descubre los tickets activos de nuestros restaurantes aliados. Cánjealos directo en LuxRides antes de que expiren.</p>
+  </header>
+
+  <div class="wrap">
+    <div class="grid" id="tickets-grid">
+      <div class="state-msg" id="tickets-state"><div class="spinner"></div>Cargando tickets...</div>
+    </div>
+  </div>
+
+  <footer>LuxRides Mexico · Tickets promocionales</footer>
+
+  <script src="../config.js"></script>
+  <script>
+    function apiBase() {
+      return ((window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || location.origin).replace(/\/+$/, '');
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
+      });
+    }
+
+    function formatDiscount(type, value) {
+      if (type === 'PERCENTAGE') return Number(value) + '% OFF';
+      return '$' + Number(value) + ' MXN OFF';
+    }
+
+    function formatExpiry(iso) {
+      var date = new Date(iso);
+      return date.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) + ' · ' + date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function ticketRedeemUrl(code) {
+      return '../sas.html?ticket=' + encodeURIComponent(code);
+    }
+
+    function renderTickets(tickets) {
+      var grid = document.getElementById('tickets-grid');
+      var state = document.getElementById('tickets-state');
+      if (!tickets.length) {
+        grid.innerHTML = '';
+        state.style.display = 'block';
+        state.innerHTML = 'No hay tickets activos por el momento. Vuelve pronto ✨';
+        return;
+      }
+      state.style.display = 'none';
+      grid.innerHTML = tickets.map(function(ticket, index) {
+        var expired = ticket.status !== 'active';
+        var ribbon = expired ? '<div class="ribbon expired">Caducado</div>' : '<div class="ribbon active">Activo</div>';
+        var cta = expired
+          ? '<span class="cta disabled">Ticket no disponible</span>'
+          : '<a class="cta enabled" href="' + ticketRedeemUrl(ticket.code) + '">Canjear en LuxRides →</a>';
+        return '<div class="card' + (expired ? ' expired' : '') + '" style="animation-delay:' + (index * 0.08) + 's">' +
+          ribbon +
+          '<div class="card-body">' +
+            '<div class="icon">' + escapeHtml(ticket.icon || '🎟️') + '</div>' +
+            '<div class="venue">' + escapeHtml(ticket.venue_name) + '</div>' +
+            '<div class="desc">' + escapeHtml(ticket.description) + '</div>' +
+            '<div class="discount-pill">🏷️ ' + formatDiscount(ticket.discount_type, ticket.discount_value) + '</div>' +
+            '<div class="code-tag">CÓDIGO: ' + escapeHtml(ticket.code) + '</div>' +
+            '<div class="expiry">' + (expired ? 'Venció el ' : 'Vence el ') + '<b>' + formatExpiry(ticket.expiration_date) + '</b></div>' +
+            cta +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    async function cargarTickets() {
+      try {
+        var res = await fetch(apiBase() + '/api/mayahuel/promos/public', { headers: { 'Accept': 'application/json' } });
+        var body = await res.json().catch(function(){ return {}; });
+        if (!res.ok || !body.ok) throw new Error(body.error || 'No se pudieron cargar los tickets');
+        renderTickets(Array.isArray(body.data) ? body.data : []);
+      } catch (error) {
+        console.error('Tickets LuxRides:', error);
+        var state = document.getElementById('tickets-state');
+        state.style.display = 'block';
+        state.innerHTML = 'No se pudieron cargar los tickets. Intenta de nuevo en un momento.';
+      }
+    }
+
+    function spawnSparks() {
+      var wrap = document.getElementById('sparks');
+      for (var i = 0; i < 26; i++) {
+        var spark = document.createElement('div');
+        spark.className = 'spark';
+        var size = 3 + Math.random() * 6;
+        spark.style.width = size + 'px';
+        spark.style.height = size + 'px';
+        spark.style.left = Math.random() * 100 + 'vw';
+        spark.style.bottom = (-10 - Math.random() * 20) + 'vh';
+        spark.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
+        spark.style.animationDuration = (9 + Math.random() * 10) + 's';
+        spark.style.animationDelay = (Math.random() * 8) + 's';
+        wrap.appendChild(spark);
+      }
+    }
+
+    spawnSparks();
+    cargarTickets();
+    setInterval(cargarTickets, 20000);
+  </script>
+</body>
+</html>
