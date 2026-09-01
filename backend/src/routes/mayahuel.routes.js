@@ -250,7 +250,7 @@ router.get('/mayahuel/admin/dashboard', requireMayahuelSession, async (req, res,
     ]);
     let redemptions = [];
     try {
-      redemptions = await supabaseRequest('mayahuel_promo_redemptions?select=*&order=redeemed_at.desc&limit=30', { headers: supabaseHeaders() });
+      redemptions = await supabaseRequest('mayahuel_promo_redemptions?select=*,mayahuel_promotions!inner(venue_name)&mayahuel_promotions.venue_name=eq.Mayahuel&order=redeemed_at.desc&limit=30', { headers: supabaseHeaders() });
     } catch (error) {
       console.warn('[mayahuel-redemptions]', error.message);
     }
