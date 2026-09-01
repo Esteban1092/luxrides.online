@@ -190,7 +190,10 @@ async function sendTicketRedemptionEmail(email, redemption) {
     scale: 3,
     height: 14,
     includetext: true,
-    textxalign: 'center'
+    textxalign: 'center',
+    backgroundcolor: 'e5e7eb',
+    barcolor: '374151',
+    textcolor: '374151'
   });
   const title = redemption?.promo_title || 'Ticket LuxRides';
   const discount = redemption?.discount_type === 'PERCENTAGE'
@@ -212,7 +215,7 @@ async function sendTicketRedemptionEmail(email, redemption) {
             <div style="display:inline-block;padding:6px 12px;border-radius:999px;background:#e4f8e9;color:#166534;font-size:12px;font-weight:bold;letter-spacing:1px;">CANJE CONFIRMADO · UN SOLO USO</div>
             <p style="margin:19px 0 2px;color:#6b5b35;font-size:14px;">${title}</p>
             <h3 style="margin:7px 0 20px;color:#166534;font-size:25px;">${discount}</h3>
-            <div style="padding:18px 14px 14px;border:1px dashed #c9a74d;border-radius:12px;background:#ffffff;">
+            <div style="padding:18px 14px 14px;border:1px dashed #c9a74d;border-radius:12px;background:#e5e7eb;">
               <div style="margin:0 0 10px;color:#6b5b35;font-size:11px;font-weight:bold;letter-spacing:1.5px;">PRESENTA ESTE CÓDIGO EN MAYAHUEL</div>
               <img src="cid:ticket-barcode" alt="Codigo de barras del ticket" style="display:block;max-width:100%;height:auto;margin:0 auto;" />
             </div>
