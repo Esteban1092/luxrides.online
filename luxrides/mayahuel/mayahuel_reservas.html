@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+	<meta name="theme-color" content="#080a09">
+	<title>Mayahuel | Reservas</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+	<style>
+		:root{--bg:#080a09;--panel:#111512;--panel-2:#171c18;--line:#293129;--gold:#d7ae42;--gold-soft:#f2dc98;--text:#f5f2e9;--muted:#979f98;--green:#34c96b;--red:#ef4b4b;--gray:#8e9690}
+		*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}button,input{font:inherit}
+		body{background:radial-gradient(circle at 80% -10%,rgba(215,174,66,.12),transparent 32%),linear-gradient(180deg,#0d100e,#080a09 56%);min-height:100vh}
+		.login{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 50% 15%,#20251f,#080a09 58%)}
+		.login.hidden{display:none}.login-card{width:min(390px,100%);padding:34px;border:1px solid rgba(215,174,66,.4);background:rgba(17,21,18,.94);box-shadow:0 26px 80px rgba(0,0,0,.5);border-radius:8px;text-align:center}
+		.brand-mark{width:62px;height:62px;margin:0 auto 16px;display:grid;place-items:center;border-radius:50%;background:var(--gold);color:#151109;font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800}.login h1{font:800 2rem 'Playfair Display',serif;margin:0}.login p{color:var(--muted);font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;margin:8px 0 24px}
+		.login input{width:100%;height:50px;border:1px solid var(--line);border-radius:6px;background:#090c0a;color:#fff;text-align:center;outline:none;padding:0 14px}.login input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(215,174,66,.12)}
+		.primary{width:100%;height:48px;margin-top:12px;border:0;border-radius:6px;background:var(--gold);color:#181207;font-weight:800;cursor:pointer;transition:.2s}.primary:hover{background:#e7c35e;transform:translateY(-1px)}.login-error{min-height:20px;color:#ff8d8d;font-size:.8rem;margin-top:10px}
+		.app{display:none;min-height:100vh}.app.ready{display:block}.sidebar{position:fixed;inset:0 auto 0 0;width:245px;padding:28px 18px;border-right:1px solid var(--line);background:#0b0e0c;z-index:5}.side-brand{display:flex;align-items:center;gap:11px;padding:0 8px 28px;border-bottom:1px solid var(--line)}.side-logo{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:var(--gold);color:#151109;font:800 1.2rem 'Playfair Display',serif}.side-brand strong{font:700 1.25rem 'Playfair Display',serif}.side-brand small{display:block;color:var(--muted);font:500 .62rem 'DM Sans';letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+		.side-label{margin:28px 10px 10px;color:#626b63;font-size:.62rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.side-item{display:flex;align-items:center;gap:10px;padding:12px;border-radius:6px;color:#c8cec9;font-size:.86rem}.side-item.active{background:rgba(215,174,66,.12);color:var(--gold-soft);border-left:2px solid var(--gold)}.legend{margin-top:auto;position:absolute;left:18px;right:18px;bottom:82px;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:6px}.legend-row{display:flex;align-items:center;gap:9px;color:#aeb5af;font-size:.72rem;margin:8px 0}.dot{width:9px;height:9px;border-radius:50%}.dot.green{background:var(--green)}.dot.gray{background:var(--gray)}.dot.red{background:var(--red)}.logout{position:absolute;left:18px;right:18px;bottom:25px;border:1px solid var(--line);background:transparent;color:#aeb5af;border-radius:6px;padding:10px;cursor:pointer}
+		main{margin-left:245px;padding:30px clamp(20px,3vw,48px) 52px}.topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:28px}.eyebrow{color:var(--gold);font-size:.64rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase}.topbar h1{font:800 clamp(1.8rem,3vw,2.7rem) 'Playfair Display',serif;margin:5px 0 0}.top-actions{display:flex;align-items:center;gap:10px}.sync{color:var(--muted);font-size:.72rem}.refresh{height:40px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:#d7ddd8;cursor:pointer}.refresh:hover{border-color:var(--gold);color:var(--gold-soft)}
+		.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{padding:17px 18px;border:1px solid var(--line);border-radius:7px;background:var(--panel)}.stat-label{color:var(--muted);font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}.stat-value{font:800 1.8rem 'Playfair Display',serif;margin-top:6px}.stat.free .stat-value{color:var(--green)}.stat.booked .stat-value{color:#bac1bc}.stat.busy .stat-value{color:var(--red)}
+		.workspace{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}.board,.details{border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;padding:17px 20px;border-bottom:1px solid var(--line)}.panel-head h2{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;margin:0}.panel-head span{color:var(--muted);font-size:.7rem}.floor{position:relative;min-height:520px;padding:74px 28px 36px;background:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px),#0d110e;background-size:32px 32px}.floor-sign{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:min(380px,72%);padding:10px;text-align:center;background:#291c0c;border-bottom:2px solid var(--gold);color:var(--gold-soft);font:700 .7rem 'Playfair Display';letter-spacing:.25em}.tables{display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:42px 28px;max-width:760px;margin:25px auto 0}
+		.table-wrap{position:relative;min-height:150px;display:grid;place-items:center}.chair{position:absolute;width:34px;height:18px;border:1px solid #454d46;border-radius:5px;background:#202620}.chair.top{top:4px}.chair.bottom{bottom:4px}.chair.left{left:5px;top:50%;transform:translateY(-50%) rotate(90deg)}.chair.right{right:5px;top:50%;transform:translateY(-50%) rotate(90deg)}
+		.table-btn{position:relative;z-index:2;width:112px;height:112px;border:2px solid;border-radius:50%;color:#fff;cursor:pointer;box-shadow:0 15px 34px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.22);transition:transform .2s,box-shadow .2s}.table-btn:hover{transform:scale(1.05);box-shadow:0 20px 42px rgba(0,0,0,.4)}.table-btn.available{background:linear-gradient(145deg,#2fd26a,#177c3d);border-color:#65e792}.table-btn.reserved{background:linear-gradient(145deg,#a4aaa6,#656c67);border-color:#c6ccc8}.table-btn.occupied{background:linear-gradient(145deg,#f05a5a,#a92020);border-color:#ff8a8a}.table-number{display:block;font:800 1.15rem 'Playfair Display',serif}.table-cap{display:block;font-size:.66rem;margin-top:4px;opacity:.86}.table-state{display:block;font-size:.57rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-top:5px}
+		.details{position:sticky;top:20px;min-height:390px}.detail-body{padding:22px}.empty{display:grid;place-items:center;text-align:center;min-height:290px;color:var(--muted)}.empty-icon{width:54px;height:54px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;font-size:1.4rem;margin:0 auto 12px}.detail-status{display:inline-flex;padding:5px 8px;border-radius:4px;background:#303632;color:#d8ddda;font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.detail-body h3{font:800 1.7rem 'Playfair Display',serif;margin:14px 0 4px}.detail-zone{color:var(--muted);font-size:.76rem}.client-card{margin-top:20px;padding:16px;border-left:3px solid var(--gold);background:#0c100d}.client-name{font-weight:800;font-size:1rem}.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}.data-item{padding:11px;background:#151a16;border:1px solid #252c26;border-radius:5px}.data-item small{display:block;color:var(--muted);font-size:.59rem;text-transform:uppercase;letter-spacing:.09em}.data-item strong{display:block;margin-top:4px;font-size:.78rem}.contact{margin-top:12px;color:#b9c0ba;font-size:.74rem;line-height:1.7;overflow-wrap:anywhere}.detail-action{width:100%;margin-top:18px;padding:11px;border-radius:5px;border:1px solid var(--line);background:#1b211c;color:#fff;font-weight:700;cursor:pointer}.detail-action.danger{border-color:rgba(239,75,75,.4);color:#ff9090}.detail-action:hover{filter:brightness(1.2)}.loading{padding:80px;text-align:center;color:var(--muted)}.toast{position:fixed;right:22px;bottom:22px;z-index:30;max-width:330px;padding:13px 16px;border-radius:6px;background:#202620;border:1px solid #3b463d;box-shadow:0 18px 40px rgba(0,0,0,.45);font-size:.8rem;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}.toast.show{transform:translateY(0);opacity:1}.toast.error{border-color:#8f3434;color:#ffabab}
+		@media(max-width:950px){.sidebar{position:static;width:auto;height:auto;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-right:0;border-bottom:1px solid var(--line)}.side-brand{padding:0;border:0}.side-label,.side-item,.legend{display:none}.logout{position:static;width:auto}.app main{margin-left:0;padding:22px 16px 40px}.workspace{grid-template-columns:1fr}.details{position:static}.tables{grid-template-columns:repeat(3,minmax(100px,1fr));gap:32px 12px}.floor{min-height:460px;padding-left:12px;padding-right:12px}}
+		@media(max-width:560px){.topbar{align-items:flex-start;flex-direction:column}.top-actions{width:100%;justify-content:space-between}.stats{grid-template-columns:repeat(3,1fr)}.stat{padding:12px 10px}.stat-value{font-size:1.45rem}.stat-label{font-size:.55rem}.floor{padding-top:68px}.tables{grid-template-columns:repeat(2,minmax(120px,1fr));gap:28px 10px}.table-btn{width:100px;height:100px}.chair.left{left:1px}.chair.right{right:1px}.data-grid{grid-template-columns:1fr}.panel-head{padding:14px}.side-brand strong{font-size:1rem}.side-logo{width:34px;height:34px}.logout{padding:8px;font-size:.72rem}}
+	</style>
+</head>
+<body>
+	<section class="login" id="login-screen">
+		<div class="login-card">
+			<div class="brand-mark">M</div>
+			<h1>Mayahuel</h1>
+			<p>Control de mesas y reservas</p>
+			<form id="login-form">
+				<input id="password" type="password" placeholder="Contraseña de acceso" autocomplete="current-password" required autofocus>
+				<button class="primary" type="submit">Ingresar al panel</button>
+				<div class="login-error" id="login-error"></div>
+			</form>
+		</div>
+	</section>
+
+	<div class="app" id="app">
+		<aside class="sidebar">
+			<div class="side-brand"><div class="side-logo">M</div><div><strong>Mayahuel</strong><small>Reservas</small></div></div>
+			<div class="side-label">Operación</div>
+			<div class="side-item active">▦ Plano de mesas</div>
+			<div class="legend">
+				<div class="legend-row"><span class="dot green"></span>Libre</div>
+				<div class="legend-row"><span class="dot gray"></span>Reserva LuxRides</div>
+				<div class="legend-row"><span class="dot red"></span>Ocupada en restaurante</div>
+			</div>
+			<button class="logout" type="button" onclick="cerrarSesion()">Cerrar sesión</button>
+		</aside>
+
+		<main>
+			<header class="topbar">
+				<div><div class="eyebrow">Operación en tiempo real</div><h1>Mesas Mayahuel</h1></div>
+				<div class="top-actions"><span class="sync" id="sync-label">Sincronizando...</span><button class="refresh" type="button" onclick="cargarDashboard()">Actualizar</button></div>
+			</header>
+			<section class="stats">
+				<article class="stat free"><div class="stat-label">Libres</div><div class="stat-value" id="count-free">0</div></article>
+				<article class="stat booked"><div class="stat-label">LuxRides</div><div class="stat-value" id="count-reserved">0</div></article>
+				<article class="stat busy"><div class="stat-label">Ocupadas</div><div class="stat-value" id="count-occupied">0</div></article>
+			</section>
+			<section class="workspace">
+				<div class="board">
+					<div class="panel-head"><h2>Plano del restaurante</h2><span>Toca una mesa para ver o cambiar su estado</span></div>
+					<div class="floor"><div class="floor-sign">MAYAHUEL GRILL</div><div class="tables" id="tables"><div class="loading">Cargando mesas...</div></div></div>
+				</div>
+				<aside class="details">
+					<div class="panel-head"><h2>Detalle</h2><span id="detail-clock"></span></div>
+					<div class="detail-body" id="detail"><div class="empty"><div><div class="empty-icon">M</div>Selecciona una mesa para consultar sus datos.</div></div></div>
+				</aside>
+			</section>
+		</main>
+	</div>
+	<div class="toast" id="toast"></div>
+
+	<script src="../config.js"></script>
+	<script>
+		var API_BASE = (window.LuxCfg && LuxCfg.apiBaseUrl ? LuxCfg.apiBaseUrl() : location.origin).replace(/\/+$/, '');
+		var TOKEN_KEY = 'mayahuel_staff_session';
+		var token = sessionStorage.getItem(TOKEN_KEY) || '';
+		var tables = [];
+		var reservations = [];
+		var selectedTableId = '';
+		var refreshTimer = null;
+
+		function api(path, options) {
+			options = options || {};
+			options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+			if (token) options.headers.Authorization = 'Bearer ' + token;
+			return fetch(API_BASE + '/api' + path, options).then(async function(response) {
+				var data = await response.json().catch(function(){ return {}; });
+				if (response.status === 401 && path !== '/mayahuel/admin/login') cerrarSesion(true);
+				if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo completar la operación');
+				return data;
+			});
+		}
+
+		function showToast(message, isError) {
+			var el = document.getElementById('toast');
+			el.textContent = message;
+			el.className = 'toast show' + (isError ? ' error' : '');
+			clearTimeout(showToast.timer);
+			showToast.timer = setTimeout(function(){ el.className = 'toast'; }, 2800);
+		}
+
+		document.getElementById('login-form').addEventListener('submit', async function(event) {
+			event.preventDefault();
+			var error = document.getElementById('login-error');
+			error.textContent = '';
+			try {
+				var result = await api('/mayahuel/admin/login', { method: 'POST', body: JSON.stringify({ password: document.getElementById('password').value }) });
+				token = result.sessionToken;
+				sessionStorage.setItem(TOKEN_KEY, token);
+				abrirPanel();
+			} catch (err) {
+				error.textContent = err.message;
+			}
+		});
+
+		function abrirPanel() {
+			document.getElementById('login-screen').classList.add('hidden');
+			document.getElementById('app').classList.add('ready');
+			cargarDashboard();
+			clearInterval(refreshTimer);
+			refreshTimer = setInterval(cargarDashboard, 15000);
+		}
+
+		function cerrarSesion(silent) {
+			token = '';
+			sessionStorage.removeItem(TOKEN_KEY);
+			clearInterval(refreshTimer);
+			document.getElementById('app').classList.remove('ready');
+			document.getElementById('login-screen').classList.remove('hidden');
+			document.getElementById('password').value = '';
+			if (!silent) showToast('Sesión cerrada');
+		}
+
+		async function cargarDashboard() {
+			try {
+				var result = await api('/mayahuel/admin/dashboard');
+				tables = result.tables || [];
+				reservations = result.reservations || [];
+				renderTables();
+				renderStats();
+				if (selectedTableId) renderDetail(selectedTableId);
+				document.getElementById('sync-label').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+			} catch (err) {
+				showToast(err.message, true);
+			}
+		}
+
+		function stateClass(status) {
+			if (status === 'RESERVED') return 'reserved';
+			if (status === 'OCCUPIED') return 'occupied';
+			return 'available';
+		}
+
+		function stateLabel(status) {
+			if (status === 'RESERVED') return 'LuxRides';
+			if (status === 'OCCUPIED') return 'Ocupada';
+			return 'Libre';
+		}
+
+		function escapeHtml(value) {
+			return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
+				return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
+			});
+		}
+
+		function renderTables() {
+			var wrap = document.getElementById('tables');
+			if (!tables.length) { wrap.innerHTML = '<div class="loading">No hay mesas configuradas.</div>'; return; }
+			wrap.innerHTML = tables.map(function(table) {
+				return '<div class="table-wrap">' +
+					'<i class="chair top"></i><i class="chair right"></i><i class="chair bottom"></i><i class="chair left"></i>' +
+					'<button class="table-btn ' + stateClass(table.status) + '" type="button" onclick="selectTable(\'' + escapeHtml(table.id) + '\')">' +
+						'<span class="table-number">' + escapeHtml(table.table_number) + '</span>' +
+						'<span class="table-cap">' + Number(table.capacity || 0) + ' personas</span>' +
+						'<span class="table-state">' + stateLabel(table.status) + '</span>' +
+					'</button></div>';
+			}).join('');
+		}
+
+		function renderStats() {
+			document.getElementById('count-free').textContent = tables.filter(function(t){ return t.status === 'AVAILABLE'; }).length;
+			document.getElementById('count-reserved').textContent = tables.filter(function(t){ return t.status === 'RESERVED'; }).length;
+			document.getElementById('count-occupied').textContent = tables.filter(function(t){ return t.status === 'OCCUPIED'; }).length;
+		}
+
+		function reservationFor(tableId) {
+			return reservations.find(function(item){ return String(item.table_id) === String(tableId); }) || null;
+		}
+
+		function selectTable(tableId) {
+			selectedTableId = tableId;
+			renderDetail(tableId);
+		}
+
+		function renderDetail(tableId) {
+			var table = tables.find(function(item){ return String(item.id) === String(tableId); });
+			if (!table) return;
+			var reservation = reservationFor(table.id);
+			var html = '<span class="detail-status">' + stateLabel(table.status) + '</span>' +
+				'<h3>Mesa ' + escapeHtml(table.table_number) + '</h3><div class="detail-zone">' + escapeHtml(table.zone_name) + ' · Capacidad ' + Number(table.capacity || 0) + '</div>';
+			if (table.status === 'RESERVED' && reservation) {
+				var date = new Date(reservation.reservation_time);
+				html += '<div class="client-card"><div class="client-name">' + escapeHtml(reservation.customer_name) + '</div>' +
+					'<div class="data-grid"><div class="data-item"><small>Personas</small><strong>' + Number(reservation.guest_count || 0) + '</strong></div>' +
+					'<div class="data-item"><small>Reserva</small><strong>' + date.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) + ' · ' + date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) + '</strong></div></div>' +
+					'<div class="contact">Tel: ' + escapeHtml(reservation.customer_phone || 'No proporcionado') + '<br>Correo: ' + escapeHtml(reservation.customer_email || 'No proporcionado') + '</div></div>' +
+					'<button class="detail-action danger" type="button" onclick="setTableStatus(\'' + escapeHtml(table.id) + '\',\'AVAILABLE\')">Finalizar reserva y liberar mesa</button>';
+			} else if (table.status === 'RESERVED') {
+				html += '<div class="client-card"><div class="client-name">Reserva LuxRides</div><div class="contact">La mesa está reservada, pero no se encontró una reserva activa asociada. Actualiza el panel o libérala si ya terminó el servicio.</div></div>' +
+					'<button class="detail-action danger" type="button" onclick="setTableStatus(\'' + escapeHtml(table.id) + '\',\'AVAILABLE\')">Liberar mesa</button>';
+			} else if (table.status === 'OCCUPIED') {
+				html += '<div class="client-card"><div class="client-name">Ocupación directa</div><div class="contact">Esta mesa fue marcada por el personal y no proviene de LuxRides.</div></div>' +
+					'<button class="detail-action" type="button" onclick="setTableStatus(\'' + escapeHtml(table.id) + '\',\'AVAILABLE\')">Liberar mesa</button>';
+			} else {
+				html += '<div class="client-card"><div class="client-name">Mesa disponible</div><div class="contact">No tiene una reserva activa. Puedes marcarla ocupada para clientes que llegaron directamente al restaurante.</div></div>' +
+					'<button class="detail-action" type="button" onclick="setTableStatus(\'' + escapeHtml(table.id) + '\',\'OCCUPIED\')">Marcar ocupada en restaurante</button>';
+			}
+			document.getElementById('detail').innerHTML = html;
+		}
+
+		async function setTableStatus(tableId, status) {
+			var message = status === 'OCCUPIED' ? '¿Marcar esta mesa como ocupada?' : '¿Liberar esta mesa ahora?';
+			if (!window.confirm(message)) return;
+			try {
+				await api('/mayahuel/admin/tables/' + encodeURIComponent(tableId), { method: 'PATCH', body: JSON.stringify({ status: status }) });
+				showToast(status === 'OCCUPIED' ? 'Mesa marcada como ocupada' : 'Mesa liberada');
+				await cargarDashboard();
+			} catch (err) {
+				showToast(err.message, true);
+			}
+		}
+
+		function updateClock() {
+			document.getElementById('detail-clock').textContent = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+		}
+		setInterval(updateClock, 30000);
+		updateClock();
+		if (token) abrirPanel();
+	</script>
+</body>
+</html>

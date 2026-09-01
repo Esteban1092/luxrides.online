@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import nodemailer from 'nodemailer';
+import crypto from 'node:crypto';
 import { env } from '../config/env.js';
 
 const router = Router();
+const MAYAHUEL_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
 const fallbackInfo = {
   name: 'Restaurante Mayahuel',
@@ -26,6 +28,40 @@ let mailer = null;
 
 function clean(value) {
   return String(value || '').trim();
+}
+
+function signMayahuelSession(payload) {
+  return crypto.createHmac('sha256', env.mayahuel.sessionSecret).update(payload).digest('base64url');
+}
+
+function createMayahuelSession() {
+  const data = { role: 'mayahuel', exp: Date.now() + MAYAHUEL_SESSION_TTL_MS };
+  const payload = Buffer.from(JSON.stringify(data)).toString('base64url');
+  return payload + '.' + signMayahuelSession(payload);
+}
+
+function readMayahuelSession(req) {
+  const auth = String(req.headers?.authorization || '');
+  if (!auth.toLowerCase().startsWith('bearer ')) return null;
+  const [payload, signature] = auth.slice(7).trim().split('.');
+  if (!payload || !signature) return null;
+  const expected = signMayahuelSession(payload);
+  const suppliedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (suppliedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) return null;
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    return data?.role === 'mayahuel' && Number(data.exp) > Date.now() ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function requireMayahuelSession(req, res, next) {
+  const session = readMayahuelSession(req);
+  if (!session) return res.status(401).json({ ok: false, error: 'Sesion Mayahuel expirada o no autorizada.' });
+  req.mayahuelSession = session;
+  next();
 }
 
 function supabaseHeaders(preferRepresentation = false) {
@@ -106,6 +142,63 @@ async function sendReservationEmail(payload, table) {
 
   return { ok: true, skipped: false, recipients };
 }
+
+router.post('/mayahuel/admin/login', (req, res) => {
+  const supplied = Buffer.from(clean(req.body?.password));
+  const expected = Buffer.from(env.mayahuel.pass);
+  const valid = supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+  if (!valid) return res.status(401).json({ ok: false, error: 'Contrasena incorrecta' });
+  res.set('Cache-Control', 'no-store');
+  return res.json({ ok: true, sessionToken: createMayahuelSession(), expiresIn: MAYAHUEL_SESSION_TTL_MS });
+});
+
+router.get('/mayahuel/admin/dashboard', requireMayahuelSession, async (req, res, next) => {
+  try {
+    if (!env.supabaseUrl || !env.supabaseServiceKey) {
+      return res.json({ ok: true, tables: fallbackTables, reservations: [], source: 'fallback' });
+    }
+    const [tables, reservations] = await Promise.all([
+      supabaseRequest('mayahuel_tables?select=*&order=pos_y.asc,pos_x.asc', { headers: supabaseHeaders() }),
+      supabaseRequest('mayahuel_reservations?select=*,mayahuel_tables(table_number,zone_name,capacity)&status=eq.CONFIRMED&order=reservation_time.asc', { headers: supabaseHeaders() })
+    ]);
+    res.set('Cache-Control', 'no-store');
+    return res.json({ ok: true, tables: tables || [], reservations: reservations || [], source: 'supabase' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/mayahuel/admin/tables/:id', requireMayahuelSession,
+  body('status').isIn(['AVAILABLE', 'OCCUPIED']),
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    try {
+      if (!env.supabaseUrl || !env.supabaseServiceKey) {
+        const table = fallbackTables.find((item) => item.id === req.params.id);
+        if (!table) return res.status(404).json({ ok: false, error: 'Mesa no encontrada' });
+        table.status = req.body.status;
+        return res.json({ ok: true, data: table, source: 'fallback' });
+      }
+      const tableRows = await supabaseRequest('mayahuel_tables?id=eq.' + encodeURIComponent(req.params.id), {
+        method: 'PATCH',
+        headers: supabaseHeaders(true),
+        body: JSON.stringify({ status: req.body.status })
+      });
+      if (!tableRows?.length) return res.status(404).json({ ok: false, error: 'Mesa no encontrada' });
+      if (req.body.status === 'AVAILABLE') {
+        await supabaseRequest('mayahuel_reservations?table_id=eq.' + encodeURIComponent(req.params.id) + '&status=eq.CONFIRMED', {
+          method: 'PATCH',
+          headers: supabaseHeaders(),
+          body: JSON.stringify({ status: 'COMPLETED' })
+        });
+      }
+      return res.json({ ok: true, data: tableRows[0] });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 router.get('/mayahuel/info', async (req, res, next) => {
   try {

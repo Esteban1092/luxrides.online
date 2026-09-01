@@ -105,6 +105,7 @@ app.use(express.urlencoded({ extended: false }));
 // Aplicar rate limits
 app.use('/api/', globalLimiter);
 app.use('/api/admin/login', strictLimiter);
+app.use('/api/mayahuel/admin/login', strictLimiter);
 app.use('/api/stripe/pagar', strictLimiter);
 app.use('/api/chat', chatLimiter);
 app.use('/api/lovox/speak', chatLimiter);

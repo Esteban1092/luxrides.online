@@ -85,5 +85,10 @@ export const env = {
 
   driver: {
     sessionSecret: optionalFirst(['DRIVER_SESSION_SECRET', 'ADMIN_SESSION_SECRET', 'SESSION_SECRET', 'QUOTE_SECRET'], optionalFirst(['ADMIN_PASS', 'ADMIN_PASSWORD', 'DESPACHO_ADMIN_PASS'], ''))
+  },
+
+  mayahuel: {
+    pass: optional('MAYAHUEL_ADMIN_PASS', 'mayahuelgrill'),
+    sessionSecret: optionalFirst(['MAYAHUEL_SESSION_SECRET', 'ADMIN_SESSION_SECRET', 'SESSION_SECRET', 'QUOTE_SECRET'], optional('MAYAHUEL_ADMIN_PASS', 'mayahuelgrill'))
   }
 };
