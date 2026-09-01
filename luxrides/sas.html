@@ -1428,8 +1428,8 @@
       .maya-selected.is-confirmed{display:flex;align-items:center;gap:8px;margin-bottom:2px;background:#dcfce7;border:1px solid rgba(22,163,74,.4);color:#166534;font-weight:900;box-shadow:0 9px 22px rgba(22,163,74,.14);animation:mayaBadgeIn .3s cubic-bezier(.2,.8,.2,1) both;}
       .maya-selected.is-confirmed::before{content:'✓';display:grid;place-items:center;width:22px;height:22px;flex:0 0 22px;border-radius:50%;background:#16a34a;color:#fff;font-size:.72rem;}
       @keyframes mayaBadgeIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
-      .pass-ticket{display:inline-flex;align-items:center;gap:9px;border:1px solid rgba(244,212,106,.45);cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
-      .pass-ticket::after{content:'→';display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:rgba(244,212,106,.2);font-weight:900;}
+      .pass-ticket{width:auto !important;min-width:0 !important;height:36px !important;padding:0 11px !important;display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(244,212,106,.45);border-radius:18px !important;background:rgba(255,255,255,.08);color:#f8ead0;cursor:pointer;white-space:nowrap;font-family:'Outfit',sans-serif;font-size:.72rem !important;font-weight:700;line-height:1;transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
+      .pass-ticket::after{content:'→';display:grid;place-items:center;width:17px;height:17px;border-radius:50%;background:rgba(244,212,106,.2);font-size:.75rem;font-weight:900;}
       .pass-ticket:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 14px 32px rgba(244,212,106,.22);background:rgba(244,212,106,.14);}
       .pass-ticket:active{transform:scale(.97);}
       .ticket-modal{position:fixed;inset:0;z-index:1300;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(8,6,3,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
@@ -1456,7 +1456,7 @@
       .ticket-history-empty{font-size:.76rem;color:#8a7a5e;}
       .ticket-history-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;margin-top:6px;border:1px solid rgba(220,38,38,.3);border-radius:10px;background:#fff0f0;color:#991b1b;font-size:.76rem;font-weight:800;}
       .ticket-history-item small{font-weight:600;color:#b45353;}
-      @media(max-width:520px){.ticket-modal-card{padding:22px 16px;}}
+      @media(max-width:520px){.ticket-modal-card{padding:22px 16px;}.pass-ticket{height:34px !important;padding:0 10px !important;font-size:.68rem !important;}}
       @media(max-width:900px){.pass-grid,.mayahuel-layout{grid-template-columns:1fr;}.pass-topline{align-items:flex-start;flex-direction:column;}.maya-reserve-box{position:static;}.pass-map{height:220px;}}
       @media(max-width:520px){.pass-content{padding:24px 14px calc(108px + env(safe-area-inset-bottom,0px));}.pass-card{border-radius:18px;padding:14px;}.pass-restaurant{align-items:flex-start;}.pass-rest-logo{width:54px;height:54px;border-radius:17px;font-size:1.7rem;}.pass-backbar{top:-24px;margin:-4px 0 14px;}.mayahuel-stage{padding:56px 10px 14px;}.mayahuel-tables{gap:10px;grid-template-columns:repeat(3,minmax(0,1fr));}.maya-table{min-height:76px;border-radius:15px;padding:9px 4px !important;}.maya-reserve-box{padding:0;}}
       .vf-header{
