@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import nodemailer from 'nodemailer';
 import crypto from 'node:crypto';
+import bwipjs from 'bwip-js';
 import { env } from '../config/env.js';
 
 const router = Router();
@@ -178,6 +179,49 @@ async function sendReservationEmail(payload, table) {
   return { ok: true, skipped: false, recipients };
 }
 
+async function sendTicketRedemptionEmail(email, redemption) {
+  const transport = getMailer();
+  if (!transport) return { ok: false, skipped: true, reason: 'smtp_not_configured' };
+
+  const voucherCode = String(redemption?.id || '').replace(/-/g, '').toUpperCase();
+  const barcode = await bwipjs.toBuffer({
+    bcid: 'code128',
+    text: voucherCode,
+    scale: 3,
+    height: 14,
+    includetext: true,
+    textxalign: 'center'
+  });
+  const title = redemption?.promo_title || 'Ticket LuxRides';
+  const discount = redemption?.discount_type === 'PERCENTAGE'
+    ? Number(redemption.discount_value) + '% de descuento'
+    : '$' + Number(redemption?.discount_value || 0) + ' MXN de descuento';
+
+  await transport.sendMail({
+    from: env.smtp.from,
+    to: email,
+    subject: 'LuxRides Pass - Tu ticket esta listo',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1f2937;">
+        <div style="padding:24px;background:#102018;color:#f8e7b1;text-align:center;">
+          <div style="font-size:13px;letter-spacing:2px;font-weight:800;">LUXRIDES PASS</div>
+          <h2 style="margin:10px 0 0;font-size:26px;">Ticket canjeado</h2>
+        </div>
+        <div style="padding:26px;border:1px solid #eadfbf;background:#fffaf0;text-align:center;">
+          <p style="margin:0;color:#6b5b35;">${title}</p>
+          <h3 style="margin:8px 0;color:#166534;font-size:24px;">${discount}</h3>
+          <p style="margin:18px 0 12px;font-size:14px;">Muestra este codigo de barras en Mayahuel para aplicar tu beneficio.</p>
+          <img src="cid:ticket-barcode" alt="Codigo de barras del ticket" style="max-width:100%;height:auto;background:#fff;padding:10px;" />
+          <p style="margin:14px 0 0;font-size:12px;color:#6b7280;">Codigo: ${redemption?.promo_code || ''} · Un solo uso</p>
+        </div>
+      </div>
+    `,
+    attachments: [{ filename: 'ticket-luxrides.png', content: barcode, cid: 'ticket-barcode', contentType: 'image/png' }]
+  });
+
+  return { ok: true, skipped: false };
+}
+
 router.post('/mayahuel/admin/login', (req, res) => {
   const supplied = Buffer.from(clean(req.body?.password));
   const expected = Buffer.from(env.mayahuel.pass);
@@ -244,7 +288,7 @@ router.patch('/mayahuel/admin/tables/:id', requireMayahuelSession,
 router.post('/mayahuel/promos/redeem',
   body('code').isString().trim().isLength({ min: 2, max: 50 }),
   body('customer_name').isString().trim().isLength({ min: 2, max: 100 }),
-  body('customer_contact').isString().trim().isLength({ min: 5, max: 100 }),
+  body('customer_email').isEmail().normalizeEmail(),
   body('table_number').optional({ checkFalsy: true }).isString().isLength({ max: 20 }),
   async (req, res, next) => {
     const errors = validationResult(req);
@@ -261,7 +305,7 @@ router.post('/mayahuel/promos/redeem',
         body: JSON.stringify({
           p_code: clean(req.body.code),
           p_customer_name: clean(req.body.customer_name),
-          p_customer_contact: clean(req.body.customer_contact),
+          p_customer_contact: clean(req.body.customer_email),
           p_table_number: clean(req.body.table_number) || null
         })
       });
@@ -270,7 +314,14 @@ router.post('/mayahuel/promos/redeem',
       if (!result?.is_valid) {
         return res.status(400).json({ ok: false, error: result?.message || 'No se pudo validar el ticket.' });
       }
-      return res.status(201).json({ ok: true, message: result.message, redemption: result.redemption });
+      let emailStatus;
+      try {
+        emailStatus = await sendTicketRedemptionEmail(clean(req.body.customer_email), result.redemption);
+      } catch (emailError) {
+        console.error('[mayahuel-ticket-email]', emailError.message);
+        emailStatus = { ok: false, error: 'No se pudo enviar el correo del ticket.' };
+      }
+      return res.status(201).json({ ok: true, message: result.message, redemption: result.redemption, email_status: emailStatus });
     } catch (error) {
       console.error('[mayahuel-redeem]', error.message);
       return res.status(503).json({ ok: false, error: 'El sistema de tickets no esta disponible en este momento. Intenta mas tarde.' });

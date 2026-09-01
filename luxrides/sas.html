@@ -1428,8 +1428,9 @@
       .maya-selected.is-confirmed{display:flex;align-items:center;gap:8px;margin-bottom:2px;background:#dcfce7;border:1px solid rgba(22,163,74,.4);color:#166534;font-weight:900;box-shadow:0 9px 22px rgba(22,163,74,.14);animation:mayaBadgeIn .3s cubic-bezier(.2,.8,.2,1) both;}
       .maya-selected.is-confirmed::before{content:'✓';display:grid;place-items:center;width:22px;height:22px;flex:0 0 22px;border-radius:50%;background:#16a34a;color:#fff;font-size:.72rem;}
       @keyframes mayaBadgeIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
-      .pass-ticket{cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
-      .pass-ticket:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 14px 32px rgba(244,212,106,.22);background:rgba(255,255,255,.14);}
+      .pass-ticket{display:inline-flex;align-items:center;gap:9px;border:1px solid rgba(244,212,106,.45);cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
+      .pass-ticket::after{content:'→';display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:rgba(244,212,106,.2);font-weight:900;}
+      .pass-ticket:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 14px 32px rgba(244,212,106,.22);background:rgba(244,212,106,.14);}
       .pass-ticket:active{transform:scale(.97);}
       .ticket-modal{position:fixed;inset:0;z-index:1300;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(8,6,3,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
       .ticket-modal.show{display:flex;animation:ticketFadeIn .2s ease both;}
@@ -6379,7 +6380,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           <div class="pass-overview" id="pass-overview">
             <div class="pass-topline">
               <div class="pass-title"><small>Experiencias asociadas</small>LuxRides Pass</div>
-              <div class="pass-ticket" id="pass-ticket-btn" role="button" tabindex="0" onclick="abrirCanjeTicket()" onkeydown="if(event.key==='Enter')abrirCanjeTicket()">🎟️ Canjear ticket Mayahuel</div>
+              <button class="pass-ticket" id="pass-ticket-btn" type="button" onclick="abrirCanjeTicket()">🎟️ Canjear tickets</button>
             </div>
             <div class="pass-grid pass-grid-single">
               <section class="pass-card pass-restaurant" onclick="mostrarMayahuelCatalogo()">
@@ -6440,12 +6441,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
     <div id="ticket-modal" class="ticket-modal">
       <div class="ticket-modal-card">
         <button class="ticket-modal-close" type="button" onclick="cerrarCanjeTicket()" aria-label="Cerrar">✕</button>
-        <div class="ticket-modal-title">🎟️ Canjear ticket Mayahuel</div>
-        <div class="ticket-modal-sub">Ingresa el código de tu ticket y tus datos para validarlo en tiempo real.</div>
+        <div class="ticket-modal-title">🎟️ Canjear tickets</div>
+        <div class="ticket-modal-sub">Inicia sesión para validar tu código y recibir el comprobante con código de barras en tu correo.</div>
         <form id="ticket-form" onsubmit="canjearTicket(event)">
           <input id="ticket-code" type="text" placeholder="Código del ticket (ej: MAYAHUELVIP)" aria-label="Código del ticket" autocomplete="off" required />
           <input id="ticket-name" type="text" placeholder="Nombre completo" aria-label="Nombre completo" autocomplete="name" required />
-          <input id="ticket-contact" type="text" placeholder="Correo o teléfono de contacto" aria-label="Correo o teléfono de contacto" autocomplete="email" required />
+          <input id="ticket-contact" type="email" placeholder="Correo donde recibir tu ticket" aria-label="Correo donde recibir tu ticket" autocomplete="email" required />
           <button id="ticket-submit-btn" type="submit">Validar y canjear</button>
         </form>
         <div class="ticket-result" id="ticket-result"></div>
@@ -6669,6 +6670,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
     async function reservarMayahuelMesa(event) {
       event.preventDefault();
+      if (!requerirSesionLuxRides()) return;
       if (!_mayahuelSelectedTable) {
         mostrarToast('Elige una mesa disponible primero', 'err');
         return;
@@ -6715,6 +6717,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
     }
 
     function abrirCanjeTicket(codePrefill) {
+      if (!requerirSesionLuxRides()) return;
       const modal = document.getElementById('ticket-modal');
       if (!modal) return;
       const result = document.getElementById('ticket-result');
@@ -6731,6 +6734,14 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       modal.classList.add('show');
     }
 
+    function requerirSesionLuxRides() {
+      const user = window._getUser && window._getUser();
+      if (user) return true;
+      mostrarToast('Inicia sesión para reservar o canjear tickets.', 'err');
+      if (typeof abrirAuth === 'function') abrirAuth();
+      return false;
+    }
+
     function cerrarCanjeTicket() {
       const modal = document.getElementById('ticket-modal');
       if (modal) modal.classList.remove('show');
@@ -6743,7 +6754,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       const payload = {
         code: document.getElementById('ticket-code').value.trim(),
         customer_name: document.getElementById('ticket-name').value.trim(),
-        customer_contact: document.getElementById('ticket-contact').value.trim()
+        customer_email: document.getElementById('ticket-contact').value.trim()
       };
       if (ticketYaCanjeado(payload.code)) {
         if (result) {
@@ -6763,9 +6774,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const body = await res.json().catch(function(){ return {}; });
         if (!res.ok || !body.ok) throw new Error(body.error || 'No se pudo canjear el ticket');
         const promoTitle = (body.redemption && body.redemption.promo_title) || 'Promoción Mayahuel';
+        const emailSent = body.email_status && body.email_status.ok;
         if (result) {
-          result.textContent = '✓ ' + promoTitle + ' aplicada. ¡Muestra esta pantalla en el restaurante!';
-          result.className = 'ticket-result show ok';
+          result.textContent = emailSent
+            ? '✓ ' + promoTitle + ' aplicada. Revisa tu correo: ahí está tu código de barras para mostrar en el restaurante.'
+            : '✓ ' + promoTitle + ' aplicada. Muestra esta pantalla en el restaurante.';
+          result.className = 'ticket-result show ' + (emailSent ? 'ok' : 'err');
         }
         guardarTicketCanjeado(payload.code, promoTitle);
         renderHistorialTickets();
