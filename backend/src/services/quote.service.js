@@ -3,31 +3,31 @@ import { env } from '../config/env.js';
 
 const TOUR_PRICING = {
   'teotihuacan-basilica': {
-    '1 a 3 personas': { amountMx: 4000, note: 'Tarifa base privada' },
-    '4+ personas': { amountMx: 1600, note: 'Tarifa grupo' },
+    '1-3 personas': { amountMx: 4000, note: 'Tarifa base privada' },
+    '4-7 personas': { amountMx: 1600, note: 'Tarifa grupo' },
     'Grupo compartido': { amountMx: 1350, note: 'Por persona' }
   },
   'globo-teotihuacan': {
-    '1 a 3 personas': { amountMx: 3000, note: 'Reserva compartida' },
-    '4 a 6 personas': { amountMx: 4000, note: 'Bloque grupal' },
+    '1-3 personas': { amountMx: 3000, note: 'Reserva compartida' },
+    '4-7 personas': { amountMx: 4000, note: 'Bloque grupal' },
     'Individual': { amountMx: 2400, note: 'Por persona' }
   },
   'xochimilco-coyoacan-frida': {
-    '1 a 3 personas': { amountMx: 4400, note: 'Servicio personalizado' },
-    '4+ personas': { amountMx: 1700, note: 'Servicio personalizado' },
+    '1-3 personas': { amountMx: 4400, note: 'Servicio personalizado' },
+    '4-7 personas': { amountMx: 1700, note: 'Servicio personalizado' },
     'Grupo compartido': { amountMx: 1150, note: 'Por persona' }
   },
   'taxco-cuernavaca': {
-    '1 a 3 personas': { amountMx: 8000, note: 'Tarifa privada' },
-    '4 a 6 personas': { amountMx: 12000, note: 'Grupo completo' }
+    '1-3 personas': { amountMx: 8000, note: 'Tarifa privada' },
+    '4-7 personas': { amountMx: 12000, note: 'Grupo completo' }
   },
   'puebla-cholula': {
-    '1 a 3 personas': { amountMx: 7000, note: 'Tarifa privada' },
-    '4 a 6 personas': { amountMx: 11000, note: 'Grupo completo' }
+    '1-3 personas': { amountMx: 7000, note: 'Tarifa privada' },
+    '4-7 personas': { amountMx: 11000, note: 'Grupo completo' }
   },
   'san-miguel': {
-    '1 a 3 personas': { amountMx: 9000, note: 'Tarifa privada' },
-    '4 a 6 personas': { amountMx: 12000, note: 'Grupo completo' }
+    '1-3 personas': { amountMx: 9000, note: 'Tarifa privada' },
+    '4-7 personas': { amountMx: 12000, note: 'Grupo completo' }
   },
   'city-tour-cdmx': {
     '3 horas': { amountMx: 2100, note: 'Minimo 3 horas' },
@@ -35,12 +35,12 @@ const TOUR_PRICING = {
     '5 horas': { amountMx: 3500, note: 'Tarifa extendida' }
   },
   'mariposa-valle': {
-    '1 a 3 personas': { amountMx: 9000, note: 'Tarifa privada' },
-    '4 a 6 personas': { amountMx: 12500, note: 'Grupo completo' }
+    '1-3 personas': { amountMx: 9000, note: 'Tarifa privada' },
+    '4-7 personas': { amountMx: 12500, note: 'Grupo completo' }
   },
   'avandaro-refugio': {
-    '1 a 3 personas': { amountMx: 7000, note: 'Tarifa privada' },
-    '4 a 6 personas': { amountMx: 9500, note: 'Grupo completo' }
+    '1-3 personas': { amountMx: 7000, note: 'Tarifa privada' },
+    '4-7 personas': { amountMx: 9500, note: 'Grupo completo' }
   }
 };
 
@@ -123,8 +123,8 @@ function calcTransferTotal(service, distanceKm, tolls, passengers, hours, transf
   if (transferType === 'P') return isSuv ? 2900 : 1900;
   if (transferType === 'D') return isSuv ? 3800 : 2550;
   if (service === 'I') {
-    const base = isSuv ? 300 : 200;
-    const perKm = isSuv ? 45 : 35;
+    const base = isSuv ? 320 : 240;
+    const perKm = isSuv ? 45 : 30;
     return Math.round(base + Math.max(0, distanceKm - 4) * perKm + tolls);
   }
   if (Number(hours) >= 10) return isSuv ? 7000 : 4800;

@@ -1017,6 +1017,7 @@
         border-radius:21px;
       }
       .nav-tab:active{background:rgba(255,255,255,0.08);transform:scale(.96);}
+      @media(hover:hover){.nav-tab:hover{transform:scale(1.05) translateY(-2px);background:rgba(255,255,255,.09);box-shadow:0 10px 24px rgba(0,0,0,.2);}}
       .nav-tab-icon{font-size:1.25rem;line-height:1;transition:transform .22s cubic-bezier(.4,0,.2,1),filter .22s;}
       .nav-tab-label{
         font-family:'Outfit',sans-serif;font-size:.54rem;font-weight:600;
@@ -1368,15 +1369,24 @@
       .pass-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,4rem);font-weight:900;color:#f4d46a;line-height:1;}
       .pass-title small{display:block;font-family:'Outfit',sans-serif;font-size:.72rem;letter-spacing:.36em;text-transform:uppercase;color:#f6e6bd;margin-bottom:8px;}
       .pass-ticket{border:1px solid rgba(244,212,106,.35);border-radius:18px;padding:11px 14px;background:rgba(255,255,255,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font-size:.8rem;color:#f8ead0;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);}
+      .pass-overview.is-hidden{display:none;}
+      .pass-detail{display:none;animation:passDetailIn .4s cubic-bezier(.2,.8,.2,1) both;}
+      .pass-detail.is-active{display:block;}
+      @keyframes passDetailIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+      .pass-backbar{position:sticky;top:-32px;z-index:8;display:flex;align-items:center;gap:12px;margin:-8px 0 18px;padding:12px 14px;border:1px solid rgba(244,212,106,.3);border-radius:16px;background:rgba(28,18,12,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 16px 36px rgba(0,0,0,.25);}
+      .pass-back-btn{width:40px;height:40px;flex:0 0 40px;border:1px solid rgba(244,212,106,.34) !important;border-radius:50% !important;padding:0 !important;background:rgba(255,255,255,.08) !important;color:#f4d46a !important;font-size:1.3rem !important;cursor:pointer;}
+      .pass-back-title{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:900;color:#f8ead0;}
       .pass-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:18px;align-items:start;}
+      .pass-grid.pass-grid-single{grid-template-columns:minmax(280px,760px);}
       .pass-card{background:linear-gradient(180deg,rgba(255,250,239,.97),rgba(247,239,220,.95));color:#21180b;border:1px solid rgba(244,212,106,.22);border-radius:22px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.24);}
       .pass-restaurant{display:flex;gap:14px;align-items:center;cursor:pointer;transition:transform .22s ease,box-shadow .22s ease;}
       .pass-restaurant:hover{transform:translateY(-2px);box-shadow:0 30px 80px rgba(0,0,0,.3);}
       .pass-rest-logo{width:62px;height:62px;border-radius:20px;background:linear-gradient(135deg,#f4d46a,#16a34a);display:flex;align-items:center;justify-content:center;font-size:2rem;box-shadow:0 12px 30px rgba(22,163,74,.2);}
       .pass-rest-name{font-family:'Playfair Display',serif;font-size:1.55rem;font-weight:900;color:#162016;}
       .pass-rest-sub{font-size:.8rem;color:#75603a;margin-top:3px;line-height:1.45;}
-      .pass-map{height:250px;border-radius:20px;overflow:hidden;border:1px solid rgba(244,212,106,.25);background:#efe1bd;}
-      .pass-map iframe{width:100%;height:100%;border:0;filter:saturate(.9) contrast(.98);}
+      .pass-map{position:relative;height:250px;border-radius:20px;overflow:hidden;border:1px solid rgba(244,212,106,.25);background:#efe1bd;}
+      .pass-map::after{content:'Vista de ubicación · LuxRides';position:absolute;left:12px;bottom:12px;padding:7px 10px;border-radius:10px;background:rgba(22,32,22,.84);color:#fff;font-family:'Outfit',sans-serif;font-size:.66rem;font-weight:700;letter-spacing:.04em;box-shadow:0 8px 18px rgba(0,0,0,.18);pointer-events:none;}
+      .pass-map iframe{width:100%;height:100%;border:0;filter:saturate(.9) contrast(.98);pointer-events:none;}
       .pass-section-title{font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#9a7419;margin:18px 0 10px;}
       .mayahuel-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start;}
       .mayahuel-stage{position:relative;min-height:300px;border-radius:22px;padding:60px 18px 18px;background:linear-gradient(180deg,#fdf6df,#efe3bf);border:1px solid rgba(139,104,23,.18);overflow:hidden;}
@@ -1386,20 +1396,38 @@
       .maya-table.available{background:linear-gradient(135deg,#dcfce7,#86efac) !important;border:1px solid rgba(22,163,74,.35) !important;}
       .maya-table.reserved{background:linear-gradient(135deg,#e5e7eb,#cbd5e1) !important;border:1px solid rgba(100,116,139,.35) !important;color:#475569 !important;}
       .maya-table.occupied{background:linear-gradient(135deg,#fecaca,#ef4444) !important;border:1px solid rgba(185,28,28,.36) !important;color:#fff !important;}
-      .maya-table.available:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 18px 32px rgba(22,163,74,.22);}
-      .maya-table.selected{outline:3px solid rgba(244,212,106,.72);outline-offset:3px;}
+      .maya-table.available:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 18px 34px rgba(22,163,74,.28);}
+      .maya-table.available:active{transform:scale(.97);box-shadow:0 8px 18px rgba(22,163,74,.18);}
+      .maya-table.selected{outline:3px solid rgba(244,212,106,.72);outline-offset:3px;transform:translateY(-3px) scale(1.05);box-shadow:0 18px 34px rgba(22,163,74,.3);}
       .maya-table-num{font-size:1rem;font-weight:900;}
       .maya-table-meta{font-size:.65rem;font-weight:700;opacity:.75;}
       .maya-legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;justify-content:center;color:#5c4b2a;font-size:.7rem;}
       .maya-legend span{display:inline-flex;align-items:center;gap:5px;}.maya-dot{width:10px;height:10px;border-radius:50%;display:inline-block;}.maya-dot.green{background:#22c55e}.maya-dot.gray{background:#94a3b8}.maya-dot.red{background:#ef4444}
-      .maya-reserve-box{position:sticky;top:18px;}
+      .maya-reserve-box{position:sticky;top:72px;padding:0;overflow:hidden;transition:box-shadow .3s ease,transform .3s ease;}
+      .maya-reserve-toggle{position:relative;width:100%;min-height:62px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 18px;border:0 !important;background:transparent !important;color:#21180b !important;cursor:pointer;overflow:hidden;}
+      .maya-reserve-toggle::after{content:'';position:absolute;inset:0;transform:translateX(-110%);background:linear-gradient(100deg,transparent,rgba(244,212,106,.34),transparent);}
+      .maya-reserve-box.is-closed{animation:mayaClosedPulse 2.2s ease-in-out infinite;}
+      .maya-reserve-box.is-closed .maya-reserve-toggle::after{animation:mayaClosedShine 2.2s ease-in-out infinite;}
+      @keyframes mayaClosedPulse{0%,100%{transform:translateY(0);box-shadow:0 18px 48px rgba(0,0,0,.22)}50%{transform:translateY(-3px);box-shadow:0 24px 58px rgba(244,212,106,.25)}}
+      @keyframes mayaClosedShine{0%,30%{transform:translateX(-110%)}70%,100%{transform:translateX(110%)}}
+      .maya-reserve-toggle-title{font-family:'Outfit',sans-serif;font-size:.76rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#7d5b0d;}
+      .maya-reserve-chevron{font-size:1rem;transition:transform .25s ease;}
+      .maya-reserve-box:not(.is-closed) .maya-reserve-chevron{transform:rotate(180deg);}
+      .maya-reserve-content{display:grid;grid-template-rows:1fr;transition:grid-template-rows .32s ease,opacity .25s ease;opacity:1;}
+      .maya-reserve-content-inner{min-height:0;overflow:hidden;padding:0 18px 18px;}
+      .maya-reserve-box.is-closed .maya-reserve-content{grid-template-rows:0fr;opacity:0;}
       .maya-form{display:grid;gap:9px;}
       .maya-form input{width:100%;padding:12px 13px !important;border:1px solid rgba(139,104,23,.18) !important;border-radius:13px;background:#fffaf0 !important;color:#20170c !important;font-size:.86rem !important;}
       .maya-form button{width:100%;padding:12px 14px !important;border:0 !important;border-radius:14px;background:linear-gradient(135deg,#16a34a,#15803d) !important;color:#fff !important;font-weight:900;cursor:pointer;box-shadow:0 16px 28px rgba(22,163,74,.22);}
+      .maya-form button:not(:disabled):hover,.pass-back-btn:hover,.maya-reserve-toggle:hover{transform:scale(1.03);box-shadow:0 16px 30px rgba(22,163,74,.24);}
+      .maya-form button:not(:disabled):active,.pass-back-btn:active,.maya-reserve-toggle:active{transform:scale(.97);}
       .maya-form button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;}
       .maya-selected{font-size:.82rem;color:#5f4e2b;background:#fff7df;border:1px dashed rgba(139,104,23,.22);padding:10px 12px;border-radius:13px;line-height:1.45;}
+      .maya-selected.is-confirmed{display:flex;align-items:center;gap:8px;margin-bottom:2px;background:#dcfce7;border:1px solid rgba(22,163,74,.4);color:#166534;font-weight:900;box-shadow:0 9px 22px rgba(22,163,74,.14);animation:mayaBadgeIn .3s cubic-bezier(.2,.8,.2,1) both;}
+      .maya-selected.is-confirmed::before{content:'✓';display:grid;place-items:center;width:22px;height:22px;flex:0 0 22px;border-radius:50%;background:#16a34a;color:#fff;font-size:.72rem;}
+      @keyframes mayaBadgeIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
       @media(max-width:900px){.pass-grid,.mayahuel-layout{grid-template-columns:1fr;}.pass-topline{align-items:flex-start;flex-direction:column;}.maya-reserve-box{position:static;}.pass-map{height:220px;}}
-      @media(max-width:520px){.pass-content{padding:24px 14px calc(108px + env(safe-area-inset-bottom,0px));}.pass-card{border-radius:18px;padding:14px;}.pass-restaurant{align-items:flex-start;}.pass-rest-logo{width:54px;height:54px;border-radius:17px;font-size:1.7rem;}.mayahuel-stage{padding:56px 10px 14px;}.mayahuel-tables{gap:10px;grid-template-columns:repeat(3,minmax(0,1fr));}.maya-table{min-height:76px;border-radius:15px;padding:9px 4px !important;}}
+      @media(max-width:520px){.pass-content{padding:24px 14px calc(108px + env(safe-area-inset-bottom,0px));}.pass-card{border-radius:18px;padding:14px;}.pass-restaurant{align-items:flex-start;}.pass-rest-logo{width:54px;height:54px;border-radius:17px;font-size:1.7rem;}.pass-backbar{top:-24px;margin:-4px 0 14px;}.mayahuel-stage{padding:56px 10px 14px;}.mayahuel-tables{gap:10px;grid-template-columns:repeat(3,minmax(0,1fr));}.maya-table{min-height:76px;border-radius:15px;padding:9px 4px !important;}.maya-reserve-box{padding:0;}}
       .vf-header{
         display:flex;align-items:center;gap:10px;
         padding:15px 18px 12px;
@@ -3780,8 +3808,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const esSUV = pasajeros > 3;
         if (tipoTraslado === 'P') return esSUV ? 2900 : 1900;
         if (servicioActual === 'I') {
-          const base     = esSUV ? 300 : 200;
-          const tarifaKm = esSUV ?  45 :  35;
+          const base     = esSUV ? 320 : 240;
+          const tarifaKm = esSUV ?  45 :  30;
           return Math.round(base + Math.max(0, distanciaKm - 4) * tarifaKm + casetasTotal);
         } else {
           if (hSel >= 10) return esSUV ? 7000 : 4800;
@@ -6311,26 +6339,27 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         </div>
         <div class="pass-orbit"><span>🍽️</span><span>🎟️</span><span>🛒</span></div>
         <div class="pass-content">
-          <div class="pass-topline">
-            <div class="pass-title"><small>Experiencias asociadas</small>LuxRides Pass</div>
-            <div class="pass-ticket">🎟️ MAYAHUELVIP · 10% reservado desde LuxRides</div>
+          <div class="pass-overview" id="pass-overview">
+            <div class="pass-topline">
+              <div class="pass-title"><small>Experiencias asociadas</small>LuxRides Pass</div>
+              <div class="pass-ticket">🎟️ MAYAHUELVIP · 10% reservado desde LuxRides</div>
+            </div>
+            <div class="pass-grid pass-grid-single">
+              <section class="pass-card pass-restaurant" onclick="mostrarMayahuelCatalogo()">
+                <div class="pass-rest-logo">🍽️</div>
+                <div>
+                  <div class="pass-rest-name">Mayahuel</div>
+                  <div class="pass-rest-sub">Restaurante en San Francisco Mazapa, Teotihuacán. Reserva mesa antes o después de tu tour.</div>
+                </div>
+              </section>
+            </div>
           </div>
-          <div class="pass-grid">
-            <section class="pass-card pass-restaurant" onclick="mostrarMayahuelCatalogo()">
-              <div class="pass-rest-logo">🍽️</div>
-              <div>
-                <div class="pass-rest-name">Mayahuel</div>
-                <div class="pass-rest-sub">Restaurante en San Francisco Mazapa, Teotihuacán. Reserva mesa antes o después de tu tour.</div>
-              </div>
-            </section>
-            <section class="pass-card">
-              <div class="pass-section-title" style="margin-top:0;">Ubicación</div>
-              <div class="pass-map">
-                <iframe title="Mapa Restaurante Mayahuel" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=San%20Francisco%20Mazapa%20Teotihuacan%20Restaurante%20Mayahuel&output=embed"></iframe>
-              </div>
-            </section>
-          </div>
-          <section class="pass-card" id="mayahuel-catalog" style="margin-top:18px;display:none;">
+          <div class="pass-detail" id="mayahuel-detail" style="display:none;">
+            <div class="pass-backbar">
+              <button class="pass-back-btn" type="button" onclick="volverPassCatalogo()" aria-label="Volver a LuxRides Pass">←</button>
+              <div class="pass-back-title">Mayahuel</div>
+            </div>
+          <section class="pass-card" id="mayahuel-catalog">
             <div class="pass-section-title" style="margin-top:0;">Catálogo de mesas</div>
             <div class="mayahuel-layout">
               <div>
@@ -6345,20 +6374,28 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
                   <span><i class="maya-dot red"></i>Llena</span>
                 </div>
               </div>
-              <aside class="maya-reserve-box pass-card">
-                <div class="pass-section-title" style="margin-top:0;">Reservar mesa</div>
-                <div class="maya-selected" id="maya-selected">Elige una mesa verde disponible.</div>
-                <form class="maya-form" onsubmit="reservarMayahuelMesa(event)">
-                  <input id="maya-name" type="text" placeholder="Nombre completo" required />
-                  <input id="maya-phone" type="tel" placeholder="WhatsApp o teléfono" />
-                  <input id="maya-email" type="email" placeholder="Gmail para confirmación" />
-                  <input id="maya-time" type="datetime-local" required />
-                  <input id="maya-guests" type="number" min="1" max="20" value="2" placeholder="Personas" required />
-                  <button id="maya-reserve-btn" type="submit" disabled>Reservar Mayahuel</button>
-                </form>
+              <aside class="maya-reserve-box pass-card is-closed" id="maya-reserve-box">
+                <button class="maya-reserve-toggle" type="button" onclick="toggleMayahuelReserva()" aria-expanded="false">
+                  <span class="maya-reserve-toggle-title">Reservar mesa</span>
+                  <span class="maya-reserve-chevron">⌄</span>
+                </button>
+                <div class="maya-reserve-content">
+                  <div class="maya-reserve-content-inner">
+                    <div class="maya-selected" id="maya-selected">Elige una mesa verde disponible.</div>
+                    <form class="maya-form" onsubmit="reservarMayahuelMesa(event)">
+                      <input id="maya-name" type="text" placeholder="Nombre completo" required />
+                      <input id="maya-phone" type="tel" placeholder="WhatsApp o teléfono" />
+                      <input id="maya-email" type="email" placeholder="Gmail para confirmación" />
+                      <input id="maya-time" type="datetime-local" required />
+                      <input id="maya-guests" type="number" min="1" max="20" value="2" placeholder="Personas" required />
+                      <button id="maya-reserve-btn" type="submit" disabled>Reservar Mayahuel</button>
+                    </form>
+                  </div>
+                </div>
               </aside>
             </div>
           </section>
+          </div>
         </div>
       </div>
     </div>
@@ -6466,13 +6503,54 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         void wrap.offsetWidth;
         wrap.classList.add('pass-anim-run');
       }
-      setTimeout(mostrarMayahuelCatalogo, _mayahuelLoaded ? 250 : 2100);
+      volverPassCatalogo();
     }
 
     function mostrarMayahuelCatalogo() {
-      const catalog = document.getElementById('mayahuel-catalog');
-      if (catalog) catalog.style.display = 'block';
+      const overview = document.getElementById('pass-overview');
+      const detail = document.getElementById('mayahuel-detail');
+      if (overview) {
+        overview.classList.add('is-hidden');
+        overview.style.display = 'none';
+      }
+      if (detail) {
+        detail.classList.add('is-active');
+        detail.style.display = 'block';
+      }
+      const content = document.querySelector('#pass-panel .pass-content');
+      if (content) content.scrollTop = 0;
       cargarMayahuelMesas();
+    }
+
+    function volverPassCatalogo() {
+      const overview = document.getElementById('pass-overview');
+      const detail = document.getElementById('mayahuel-detail');
+      if (overview) {
+        overview.classList.remove('is-hidden');
+        overview.style.display = 'block';
+      }
+      if (detail) {
+        detail.classList.remove('is-active');
+        detail.style.display = 'none';
+      }
+      cerrarMayahuelReserva();
+    }
+
+    function toggleMayahuelReserva(forceOpen) {
+      const box = document.getElementById('maya-reserve-box');
+      if (!box) return;
+      const shouldOpen = forceOpen === true || box.classList.contains('is-closed');
+      box.classList.toggle('is-closed', !shouldOpen);
+      const toggle = box.querySelector('.maya-reserve-toggle');
+      if (toggle) toggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    }
+
+    function cerrarMayahuelReserva() {
+      const box = document.getElementById('maya-reserve-box');
+      if (!box) return;
+      box.classList.add('is-closed');
+      const toggle = box.querySelector('.maya-reserve-toggle');
+      if (toggle) toggle.setAttribute('aria-expanded', 'false');
     }
 
     function normalizarEstadoMesa(status) {
@@ -6524,8 +6602,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       _mayahuelSelectedTable = table;
       const box = document.getElementById('maya-selected');
       const btn = document.getElementById('maya-reserve-btn');
-      if (box) box.textContent = table.table_number + ' · ' + table.zone_name + ' · hasta ' + table.capacity + ' personas';
+      if (box) {
+        box.textContent = 'Mesa ' + table.table_number + ' seleccionada';
+        box.classList.add('is-confirmed');
+      }
       if (btn) btn.disabled = false;
+      toggleMayahuelReserva(true);
       renderMayahuelMesas();
     }
 
@@ -6562,6 +6644,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         mostrarToast('✅ Mesa Mayahuel reservada y correo enviado');
         _mayahuelSelectedTable = null;
         event.target.reset();
+        const selectedBox = document.getElementById('maya-selected');
+        if (selectedBox) {
+          selectedBox.textContent = 'Elige una mesa verde disponible.';
+          selectedBox.classList.remove('is-confirmed');
+        }
         if (btn) btn.textContent = 'Reservar Mayahuel';
         await cargarMayahuelMesas();
       } catch (error) {
@@ -8011,16 +8098,25 @@ LuxRides es un tour operador DMC especializado en experiencias auténticas y per
 Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe certificado, entradas. / All tours include: round-trip transportation, travel insurance, certified bilingual guide, entrance fees.
 `;
 
+        catalogo = '## CATALOGO OFICIAL DE LA SECCION TOURS\n' + LUX_GUIAS_TOURS.map(function(tour, index){
+          var tarifas = (tour.tarifas || []).map(function(tarifa){
+            return tarifa.label + ': ' + tarifa.price + (tarifa.note ? ' (' + tarifa.note + ')' : '');
+          }).join('; ');
+          var rutas = Array.isArray(tour.routeOptions) ? tour.routeOptions.join(', ') : tour.rutas;
+          return (index + 1) + ') ' + tour.title + '\nDescripcion: ' + tour.desc + '\nRuta: ' + rutas + '\nDuracion: ' + tour.duration + '\nIncluye: ' + tour.includes + '\nTarifas: ' + tarifas;
+        }).join('\n\n');
+
         return 'Eres Iovox, el asistente inteligente de LuxRides. Eres elegante, cercano, profesional y muy util. '+
           'Responde SIEMPRE en este idioma: '+idiomaTexto+'. '+
           'LuxRides es un tour operador DMC en Mexico que ofrece: transporte ejecutivo de lujo (sedan VIP y SUV, hasta 6 pax), tours guiados bilingues, traslados aeropuerto, eventos y tours personalizados. '+
           'Pagos: WhatsApp, Stripe o Clip. '+
           'Fecha hoy: '+fechaHoy+'. Hora: '+horaAhora+'. '+
           (nombre ? 'Cliente: '+nombre+'. ' : '')+
-          'Maximo 3 parrafos por respuesta. Si preguntan por un tour especifico, da todos los detalles del catalogo.\n\n'+
+          'Maximo 3 parrafos por respuesta. Si preguntan por un tour especifico, da todos los detalles del catalogo. Para traslados por kilometraje, sedan cuesta $240 MXN por los primeros 4 km y $30 MXN por cada km adicional; camioneta cuesta $320 MXN por los primeros 4 km y $45 MXN por cada km adicional.\n\n'+
           catalogo+
           '\n\n## FLUJO DE RESERVA (OBLIGATORIO)\n'+
           'Cuando el usuario quiera reservar un servicio o tour, recopila UNO POR UNO: nombre completo, correo electronico, telefono, origen/lugar de recogida, destino o tour elegido, fecha, hora.\n'+
+          'Si es un traslado por kilometraje, tambien pregunta si requiere sedan o camioneta y la distancia de la ruta en kilometros. Calcula y muestra el total con la formula oficial antes de confirmar.\n'+
           'Al tener todos esos datos, muestra un resumen claro y pregunta: "¿Confirmas tu reserva con estos datos?"\n'+
           'Si el usuario confirma con "si", "confirmo", "adelante" o similar, responde EXACTAMENTE con este bloque (sin cambiar nada):\n'+
           'RESERVA_CONFIRMADA\n'+
@@ -8031,6 +8127,8 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
           'Fecha: [fecha]\n'+
           'Hora: [hora]\n'+
           'Telefono: [numero]\n'+
+          'Vehiculo: [sedan, camioneta o tour]\n'+
+          'Distancia: [kilometros o no aplica]\n'+
           'ID: LUX-'+Date.now()+'\n'+
           'Luego agrega un mensaje amable de confirmacion.\n'+
           'IMPORTANTE: NO confirmes la reserva si falta el correo electronico del cliente.\n\n'+
@@ -8109,7 +8207,12 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
         var hora    = buscar([/hora[:\s]+([^\n,\.]+)/,/a las[:\s]+([^\n,\.]+)/,/time[:\s]+([^\n,\.]+)/]);
         var tel     = buscar([/tel[eé]fono[:\s]+([\d\s\+\-]{7,15})/,/cel[ular]*[:\s]+([\d\s\+\-]{7,15})/,/whatsapp[:\s]+([\d\s\+\-]{7,15})/,/número[:\s]+([\d\s\+\-]{7,15})/]);
         var email   = buscar([/correo[:\s]+([\w\.\+\-]+@[\w\.]+)/,/email[:\s]+([\w\.\+\-]+@[\w\.]+)/,/e-mail[:\s]+([\w\.\+\-]+@[\w\.]+)/]);
-        return { nombre: nombre||'Cliente Lovox', origen: origen, destino: destino, fecha: fecha, hora_recogida: hora, telefono: tel, email: email };
+        var vehiculo = buscar([/veh[ií]culo[:\s]+(sed[aá]n|camioneta|suv|tour)/,/tipo de veh[ií]culo[:\s]+(sed[aá]n|camioneta|suv|tour)/]);
+        var distanciaTexto = buscar([/distancia[:\s]+([\d]+(?:[\.,][\d]+)?)\s*km/,/([\d]+(?:[\.,][\d]+)?)\s*kil[oó]metros/]);
+        var distanciaKm = Number(String(distanciaTexto || '').replace(',', '.')) || 0;
+        var esCamioneta = /camioneta|suv/.test(vehiculo);
+        var total = distanciaKm > 0 ? Math.round((esCamioneta ? 320 : 240) + Math.max(0, distanciaKm - 4) * (esCamioneta ? 45 : 30)) : 0;
+        return { nombre: nombre||'Cliente Lovox', origen: origen, destino: destino, fecha: fecha, hora_recogida: hora, telefono: tel, email: email, vehiculo: vehiculo, distancia_km: distanciaKm, total: total };
       }
 
       function _procesarReservaConfirmadaLovox(reply, history) {
@@ -8127,10 +8230,11 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
           destino: datos.destino,
           fecha: datos.fecha,
           hora_recogida: datos.hora_recogida,
-          total: 0,
+          distancia_km: datos.distancia_km || null,
+          total: datos.total,
           estado: 'pendiente',
           servicio: 'Lovox',
-          vehiculo: 'Por confirmar',
+          vehiculo: datos.vehiculo || 'Por confirmar',
           timestamp: ts,
           email_cliente: datos.email || '',
           email: datos.email || '',
@@ -8147,6 +8251,9 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
           datos.hora_recogida ? '⏰ *Hora:* ' + datos.hora_recogida : '',
           datos.telefono ? '📱 *Tel:* '    + datos.telefono : '',
           datos.email   ? '✉️ *Email:* '   + datos.email   : '',
+          datos.vehiculo ? '🚘 *Vehículo:* ' + datos.vehiculo : '',
+          datos.distancia_km ? '📏 *Distancia:* ' + datos.distancia_km + ' km' : '',
+          datos.total ? '💳 *Total:* $' + datos.total + ' MXN' : '',
           '🆔 *ID:* ' + reservaId
         ].filter(Boolean).join('\n');
         var waUrl = 'https://api.whatsapp.com/send?phone=' + numeroCentral + '&text=' + encodeURIComponent(resumen);

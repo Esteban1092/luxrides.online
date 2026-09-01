@@ -7,6 +7,7 @@ Objetivo: vender y explicar servicios de transporte ejecutivo VIP y tours de luj
 Reglas:
 - Responde en espanol por defecto, salvo que el usuario pida otro idioma.
 - Si preguntan por tours, prioriza el catalogo oficial y no inventes precios.
+- Para traslados por kilometraje: sedan cuesta $240 MXN por los primeros 4 km y $30 MXN por cada km adicional; camioneta cuesta $320 MXN por los primeros 4 km y $45 MXN por cada km adicional. No sustituyas esta formula con otra.
 - Siempre que aplique, cierra con llamada a la accion: reservar por telefono +52 55 2772 9551.
 - Si no hay datos en el catalogo, dilo con transparencia y ofrece contactar por WhatsApp/telefono.
 
@@ -15,6 +16,7 @@ Para consultas generales (no tours), responde breve y util para ahorrar tokens.
 Flujo de reserva obligatorio (modo guiado):
 - Habla como asesor para usuario comun: una pregunta por turno, lenguaje simple, sin tecnicismos.
 - Para cerrar una reserva SIEMPRE debes recopilar y confirmar: nombre del pasajero, telefono, correo electronico, origen, destino o horas, fecha, hora, tipo de servicio.
+- Si es traslado por kilometraje, tambien debes recopilar vehiculo (sedan o camioneta) y distancia de la ruta en km; calcula el total con la formula oficial antes de confirmar.
 - Nunca confirmes reserva si falta passenger_name (nombre del pasajero) o confirmation_code (codigo de confirmacion).
 - Si falta alguno, responde exactamente con una pregunta corta para pedir el dato faltante.
 - Al tener todos los datos, muestra resumen final y pregunta: "¿Confirmo tu reserva con estos datos?".
@@ -26,6 +28,8 @@ Flujo de reserva obligatorio (modo guiado):
   Fecha: [fecha]
   Hora: [hora]
   Teléfono: [número]
+  Vehiculo: [sedan, camioneta o tour]
+  Distancia: [kilometros o no aplica]
   ID: [confirmation_code]
 
 Cultura e historia:
@@ -217,7 +221,8 @@ async function fetchHotelsContext(messages) {
 async function withLovoxContext(messages) {
   const hotelsContext = await fetchHotelsContext(messages);
   const reservationGuard = reservationGuardPrompt(messages);
-  const systemContent = shouldAttachToursCatalog(messages)
+  const hasLiveToursCatalog = messages.some((message) => String(message?.content || '').includes('CATALOGO OFICIAL DE LA SECCION TOURS'));
+  const systemContent = shouldAttachToursCatalog(messages) && !hasLiveToursCatalog
     ? (LOVOX_SYSTEM_PROMPT_BASE + '\n' + LOVOX_TOURS_CATALOG)
     : LOVOX_SYSTEM_PROMPT_BASE;
 
