@@ -202,17 +202,22 @@ async function sendTicketRedemptionEmail(email, redemption) {
     to: email,
     subject: 'LuxRides Pass - Tu ticket esta listo',
     html: `
-      <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1f2937;">
-        <div style="padding:24px;background:#102018;color:#f8e7b1;text-align:center;">
-          <div style="font-size:13px;letter-spacing:2px;font-weight:800;">LUXRIDES PASS</div>
-          <h2 style="margin:10px 0 0;font-size:26px;">Ticket canjeado</h2>
-        </div>
-        <div style="padding:26px;border:1px solid #eadfbf;background:#fffaf0;text-align:center;">
-          <p style="margin:0;color:#6b5b35;">${title}</p>
-          <h3 style="margin:8px 0;color:#166534;font-size:24px;">${discount}</h3>
-          <p style="margin:18px 0 12px;font-size:14px;">Muestra este codigo de barras en Mayahuel para aplicar tu beneficio.</p>
-          <img src="cid:ticket-barcode" alt="Codigo de barras del ticket" style="max-width:100%;height:auto;background:#fff;padding:10px;" />
-          <p style="margin:14px 0 0;font-size:12px;color:#6b7280;">Codigo: ${redemption?.promo_code || ''} · Un solo uso</p>
+      <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;padding:24px;background:#f2ead7;color:#1f2937;">
+        <div style="overflow:hidden;border:1px solid #d5b65c;border-radius:18px;background:#fffaf0;box-shadow:0 18px 38px rgba(51,36,13,.18);">
+          <div style="padding:26px;background:linear-gradient(135deg,#132218,#27402b);color:#f8e7b1;text-align:center;">
+            <div style="font-size:11px;letter-spacing:3px;font-weight:800;">LUXRIDES PASS</div>
+            <h2 style="margin:10px 0 0;font-size:28px;font-family:Georgia,serif;">Tu ticket está listo</h2>
+          </div>
+          <div style="padding:28px 26px 26px;text-align:center;">
+            <div style="display:inline-block;padding:6px 12px;border-radius:999px;background:#e4f8e9;color:#166534;font-size:12px;font-weight:bold;letter-spacing:1px;">CANJE CONFIRMADO · UN SOLO USO</div>
+            <p style="margin:19px 0 2px;color:#6b5b35;font-size:14px;">${title}</p>
+            <h3 style="margin:7px 0 20px;color:#166534;font-size:25px;">${discount}</h3>
+            <div style="padding:18px 14px 14px;border:1px dashed #c9a74d;border-radius:12px;background:#ffffff;">
+              <div style="margin:0 0 10px;color:#6b5b35;font-size:11px;font-weight:bold;letter-spacing:1.5px;">PRESENTA ESTE CÓDIGO EN MAYAHUEL</div>
+              <img src="cid:ticket-barcode" alt="Codigo de barras del ticket" style="display:block;max-width:100%;height:auto;margin:0 auto;" />
+            </div>
+            <p style="margin:16px 0 0;font-size:12px;color:#6b7280;">Código promocional: <b>${redemption?.promo_code || ''}</b></p>
+          </div>
         </div>
       </div>
     `,

@@ -63,7 +63,7 @@
     <aside class="sidebar">
       <div class="side-brand"><div class="side-logo">🎟️</div><div><strong>Tickets</strong><small>Mayahuel</small></div></div>
       <div class="side-label">Operación</div>
-      <div class="side-item active">🎫 Tickets y promos</div>
+      <div class="side-item active">🎫 Tickets</div>
       <button class="logout" type="button" onclick="cerrarSesion()">Cerrar sesión</button>
     </aside>
 
@@ -227,7 +227,7 @@
               '<div class="ticket-code">' + escapeHtml(ticket.code) + '</div>' +
             '</div>' +
             '<div class="ticket-meta"><div class="ticket-uses">' + Number(ticket.uses_count || 0) + '/' + Number(ticket.max_uses || 0) + '<small>Canjes</small></div>' +
-              '<span class="chip ' + status + '">' + (status === 'active' ? 'Activo' : 'Caducado') + '</span><button class="ticket-toggle ' + (ticket.is_active ? '' : 'off') + '" type="button" onclick="toggleTicket(\'' + escapeHtml(ticket.id) + '\',' + (!ticket.is_active) + '">' + (ticket.is_active ? 'Desactivar' : 'Activar') + '</button>' +
+              '<span class="chip ' + status + '">' + (status === 'active' ? 'Activo' : 'Caducado') + '</span><button class="ticket-toggle ' + (ticket.is_active ? '' : 'off') + '" type="button" data-ticket-id="' + escapeHtml(ticket.id) + '" data-next-state="' + (!ticket.is_active) + '" onclick="toggleTicket(this)">' + (ticket.is_active ? 'Desactivar' : 'Activar') + '</button>' +
             '</div>' +
           '</div>';
         }).join('');
@@ -248,13 +248,21 @@
       }
     }
 
-    async function toggleTicket(ticketId, nextState) {
+    async function toggleTicket(button) {
+      var ticketId = button.getAttribute('data-ticket-id');
+      var nextState = button.getAttribute('data-next-state') === 'true';
+      if (!ticketId || !window.confirm(nextState ? '¿Activar este ticket?' : '¿Desactivar este ticket?')) return;
+      var originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Guardando...';
       try {
         await api('/mayahuel/tickets-admin/tickets/' + encodeURIComponent(ticketId), { method: 'PATCH', body: JSON.stringify({ is_active: nextState }) });
         showToast(nextState ? 'Ticket activado' : 'Ticket desactivado');
         await cargarTickets();
       } catch (err) {
         showToast(err.message, true);
+        button.disabled = false;
+        button.textContent = originalText;
       }
     }
 
