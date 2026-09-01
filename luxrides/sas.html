@@ -1418,6 +1418,8 @@
       .maya-reserve-box.is-closed .maya-reserve-content{grid-template-rows:0fr;opacity:0;}
       .maya-form{display:grid;gap:9px;}
       .maya-form input{width:100%;padding:12px 13px !important;border:1px solid rgba(139,104,23,.18) !important;border-radius:13px;background:#fffaf0 !important;color:#20170c !important;font-size:.86rem !important;}
+      .maya-form input::placeholder{color:#777 !important;-webkit-text-fill-color:#777 !important;opacity:1 !important;}
+      .maya-form input[type="datetime-local"]:invalid,.maya-form input[type="number"]:placeholder-shown{color:#777 !important;-webkit-text-fill-color:#777 !important;}
       .maya-form button{width:100%;padding:12px 14px !important;border:0 !important;border-radius:14px;background:linear-gradient(135deg,#16a34a,#15803d) !important;color:#fff !important;font-weight:900;cursor:pointer;box-shadow:0 16px 28px rgba(22,163,74,.22);}
       .maya-form button:not(:disabled):hover,.pass-back-btn:hover,.maya-reserve-toggle:hover{transform:scale(1.03);box-shadow:0 16px 30px rgba(22,163,74,.24);}
       .maya-form button:not(:disabled):active,.pass-back-btn:active,.maya-reserve-toggle:active{transform:scale(.97);}
@@ -6383,11 +6385,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
                   <div class="maya-reserve-content-inner">
                     <div class="maya-selected" id="maya-selected">Elige una mesa verde disponible.</div>
                     <form class="maya-form" onsubmit="reservarMayahuelMesa(event)">
-                      <input id="maya-name" type="text" placeholder="Nombre completo" required />
-                      <input id="maya-phone" type="tel" placeholder="WhatsApp o teléfono" />
-                      <input id="maya-email" type="email" placeholder="Gmail para confirmación" />
-                      <input id="maya-time" type="datetime-local" required />
-                      <input id="maya-guests" type="number" min="1" max="20" value="2" placeholder="Personas" required />
+                      <input id="maya-name" type="text" placeholder="Nombre completo del titular" aria-label="Nombre completo del titular" autocomplete="name" required />
+                      <input id="maya-phone" type="tel" placeholder="WhatsApp o teléfono de contacto" aria-label="WhatsApp o teléfono de contacto" autocomplete="tel" />
+                      <input id="maya-email" type="email" placeholder="Correo para recibir la confirmación" aria-label="Correo para recibir la confirmación" autocomplete="email" />
+                      <input id="maya-time" type="datetime-local" aria-label="Fecha y hora de la reserva" title="Fecha y hora de la reserva" required />
+                      <input id="maya-guests" type="number" min="1" max="20" placeholder="Número de personas" aria-label="Número de personas" required />
                       <button id="maya-reserve-btn" type="submit" disabled>Reservar Mayahuel</button>
                     </form>
                   </div>
