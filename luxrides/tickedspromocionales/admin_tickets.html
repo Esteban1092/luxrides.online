@@ -29,7 +29,7 @@
     .ticket-icon{width:46px;height:46px;flex:0 0 46px;display:grid;place-items:center;border-radius:12px;background:#171c18;font-size:1.4rem;border:1px solid var(--line)}
     .ticket-main{flex:1;min-width:0}.ticket-main strong{display:block;font-size:.94rem}.ticket-main small{color:var(--muted);font-size:.72rem}
     .ticket-code{display:inline-flex;margin-top:5px;padding:3px 8px;border-radius:4px;background:rgba(215,174,66,.14);color:var(--gold-soft);font-size:.62rem;font-weight:800;letter-spacing:.08em}
-    .ticket-meta{text-align:right;flex:0 0 auto}.ticket-uses{font-size:.82rem;font-weight:800}.ticket-uses small{display:block;color:var(--muted);font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+    .ticket-meta{text-align:right;flex:0 0 auto}.ticket-uses{font-size:.82rem;font-weight:800}.ticket-uses small{display:block;color:var(--muted);font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}.ticket-toggle{margin-top:8px;padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:#1b211c;color:#d7ddd8;font-size:.66rem;font-weight:800;cursor:pointer}.ticket-toggle.off{border-color:rgba(239,75,75,.4);color:#ff9090}
     .chip{display:inline-flex;margin-top:6px;padding:4px 9px;border-radius:999px;font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.chip.active{background:rgba(52,201,107,.16);color:var(--green)}.chip.expired{background:rgba(239,75,75,.16);color:var(--red)}
     .create-panel{position:sticky;top:20px}.create-body{padding:20px}form{display:grid;gap:10px}
     label{font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:-4px}
@@ -92,6 +92,8 @@
               <input id="f-venue" type="text" placeholder="Mayahuel" value="Mayahuel" required>
               <label>¿De qué se trata?</label>
               <input id="f-desc" type="text" placeholder="Ej: 10% en comida" required>
+              <label>Categoría</label>
+              <input id="f-category" type="text" placeholder="Ej: Comida, bebidas, recuerdos" required>
               <label>Ícono</label>
               <div class="icon-presets">
                 <button type="button" class="icon-preset" data-icon="🍽️">🍽️</button>
@@ -221,11 +223,11 @@
           return '<div class="ticket-row">' +
             '<div class="ticket-icon">' + escapeHtml(ticket.icon || '🎟️') + '</div>' +
             '<div class="ticket-main"><strong>' + escapeHtml(ticket.venue_name) + ' · ' + escapeHtml(ticket.description) + '</strong>' +
-              '<small>' + formatDiscount(ticket) + ' de descuento · Vence ' + expiry + '</small>' +
+              '<small>' + escapeHtml(ticket.category || 'General') + ' · ' + formatDiscount(ticket) + ' de descuento · Vence ' + expiry + '</small>' +
               '<div class="ticket-code">' + escapeHtml(ticket.code) + '</div>' +
             '</div>' +
             '<div class="ticket-meta"><div class="ticket-uses">' + Number(ticket.uses_count || 0) + '/' + Number(ticket.max_uses || 0) + '<small>Canjes</small></div>' +
-              '<span class="chip ' + status + '">' + (status === 'active' ? 'Activo' : 'Caducado') + '</span>' +
+              '<span class="chip ' + status + '">' + (status === 'active' ? 'Activo' : 'Caducado') + '</span><button class="ticket-toggle ' + (ticket.is_active ? '' : 'off') + '" type="button" onclick="toggleTicket(\'' + escapeHtml(ticket.id) + '\',' + (!ticket.is_active) + '">' + (ticket.is_active ? 'Desactivar' : 'Activar') + '</button>' +
             '</div>' +
           '</div>';
         }).join('');
@@ -241,6 +243,16 @@
         tickets = result.data || [];
         renderTickets();
         document.getElementById('sync-label').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function toggleTicket(ticketId, nextState) {
+      try {
+        await api('/mayahuel/tickets-admin/tickets/' + encodeURIComponent(ticketId), { method: 'PATCH', body: JSON.stringify({ is_active: nextState }) });
+        showToast(nextState ? 'Ticket activado' : 'Ticket desactivado');
+        await cargarTickets();
       } catch (err) {
         showToast(err.message, true);
       }
@@ -263,6 +275,7 @@
           code: document.getElementById('f-code').value.trim(),
           venue_name: document.getElementById('f-venue').value.trim(),
           description: document.getElementById('f-desc').value.trim(),
+          category: document.getElementById('f-category').value.trim(),
           icon: document.getElementById('f-icon').value.trim() || '🎟️',
           discount_type: document.getElementById('f-discount-type').value,
           discount_value: Number(document.getElementById('f-discount-value').value),

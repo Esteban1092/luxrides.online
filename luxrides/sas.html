@@ -1450,6 +1450,11 @@
       .ticket-result.show{display:block;animation:mayaBadgeIn .3s cubic-bezier(.2,.8,.2,1) both;}
       .ticket-result.ok{background:#dcfce7;border:1px solid rgba(22,163,74,.4);color:#166534;font-weight:700;}
       .ticket-result.err{background:#fee2e2;border:1px solid rgba(239,68,68,.4);color:#991b1b;font-weight:700;}
+      .ticket-history{margin-top:16px;padding-top:14px;border-top:1px solid rgba(139,104,23,.18);}
+      .ticket-history-title{font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:#8a7133;margin-bottom:8px;}
+      .ticket-history-empty{font-size:.76rem;color:#8a7a5e;}
+      .ticket-history-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;margin-top:6px;border:1px solid rgba(220,38,38,.3);border-radius:10px;background:#fff0f0;color:#991b1b;font-size:.76rem;font-weight:800;}
+      .ticket-history-item small{font-weight:600;color:#b45353;}
       @media(max-width:520px){.ticket-modal-card{padding:22px 16px;}}
       @media(max-width:900px){.pass-grid,.mayahuel-layout{grid-template-columns:1fr;}.pass-topline{align-items:flex-start;flex-direction:column;}.maya-reserve-box{position:static;}.pass-map{height:220px;}}
       @media(max-width:520px){.pass-content{padding:24px 14px calc(108px + env(safe-area-inset-bottom,0px));}.pass-card{border-radius:18px;padding:14px;}.pass-restaurant{align-items:flex-start;}.pass-rest-logo{width:54px;height:54px;border-radius:17px;font-size:1.7rem;}.pass-backbar{top:-24px;margin:-4px 0 14px;}.mayahuel-stage{padding:56px 10px 14px;}.mayahuel-tables{gap:10px;grid-template-columns:repeat(3,minmax(0,1fr));}.maya-table{min-height:76px;border-radius:15px;padding:9px 4px !important;}.maya-reserve-box{padding:0;}}
@@ -6444,6 +6449,10 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           <button id="ticket-submit-btn" type="submit">Validar y canjear</button>
         </form>
         <div class="ticket-result" id="ticket-result"></div>
+        <div class="ticket-history">
+          <div class="ticket-history-title">Mis tickets canjeados</div>
+          <div id="ticket-history-list"></div>
+        </div>
       </div>
     </div>
 
@@ -6718,6 +6727,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       if (codeInp && codePrefill) codeInp.value = codePrefill;
       if (nameInp && !nameInp.value) nameInp.value = (perfil && perfil.nombre_completo) || '';
       if (contactInp && !contactInp.value) contactInp.value = (user && user.email) || (document.getElementById('inp-email') ? document.getElementById('inp-email').value.trim() : '');
+      renderHistorialTickets();
       modal.classList.add('show');
     }
 
@@ -6735,6 +6745,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         customer_name: document.getElementById('ticket-name').value.trim(),
         customer_contact: document.getElementById('ticket-contact').value.trim()
       };
+      if (ticketYaCanjeado(payload.code)) {
+        if (result) {
+          result.textContent = '⚠️ Este código ya fue usado en este dispositivo y sólo se puede canjear una vez.';
+          result.className = 'ticket-result show err';
+        }
+        return;
+      }
       if (btn) { btn.disabled = true; btn.textContent = 'Validando…'; }
       if (result) { result.className = 'ticket-result'; result.textContent = ''; }
       try {
@@ -6750,6 +6767,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           result.textContent = '✓ ' + promoTitle + ' aplicada. ¡Muestra esta pantalla en el restaurante!';
           result.className = 'ticket-result show ok';
         }
+        guardarTicketCanjeado(payload.code, promoTitle);
+        renderHistorialTickets();
         mostrarToast('🎟️ Ticket canjeado con éxito');
         event.target.reset();
       } catch (error) {
@@ -6760,6 +6779,35 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Validar y canjear'; }
       }
+    }
+
+    function historialTickets() {
+      try { return JSON.parse(localStorage.getItem('lux_ticket_redemptions') || '[]'); } catch (error) { return []; }
+    }
+
+    function ticketYaCanjeado(code) {
+      const normalized = String(code || '').trim().toUpperCase();
+      return historialTickets().some(function(ticket) { return ticket.code === normalized; });
+    }
+
+    function guardarTicketCanjeado(code, title) {
+      const tickets = historialTickets();
+      tickets.unshift({ code: String(code || '').trim().toUpperCase(), title: String(title || 'Ticket Mayahuel'), redeemedAt: new Date().toISOString() });
+      localStorage.setItem('lux_ticket_redemptions', JSON.stringify(tickets.slice(0, 12)));
+    }
+
+    function renderHistorialTickets() {
+      const list = document.getElementById('ticket-history-list');
+      if (!list) return;
+      const tickets = historialTickets();
+      if (!tickets.length) {
+        list.innerHTML = '<div class="ticket-history-empty">Aún no has canjeado tickets.</div>';
+        return;
+      }
+      list.innerHTML = tickets.map(function(ticket) {
+        const date = new Date(ticket.redeemedAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+        return '<div class="ticket-history-item"><span>✕ ' + ticket.code + '</span><small>Usado · ' + date + '</small></div>';
+      }).join('');
     }
 
     document.addEventListener('lux:langchange', function() {

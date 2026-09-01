@@ -283,7 +283,7 @@ router.get('/mayahuel/promos/public', async (req, res, next) => {
     if (!env.supabaseUrl || !env.supabaseServiceKey) {
       return res.json({ ok: true, data: [], source: 'fallback' });
     }
-    const rows = await supabaseRequest('mayahuel_promotions?select=code,venue_name,description,icon,discount_type,discount_value,expiration_date,max_uses,uses_count,is_active&order=is_active.desc,expiration_date.asc', { headers: supabaseHeaders() });
+    const rows = await supabaseRequest('mayahuel_promotions?select=code,venue_name,description,category,icon,discount_type,discount_value,expiration_date,max_uses,uses_count,is_active&order=is_active.desc,expiration_date.asc', { headers: supabaseHeaders() });
     const now = Date.now();
     const data = (rows || []).map((promo) => {
       const expired = now > new Date(promo.expiration_date).getTime();
@@ -293,6 +293,7 @@ router.get('/mayahuel/promos/public', async (req, res, next) => {
         code: promo.code,
         venue_name: promo.venue_name,
         description: promo.description,
+        category: promo.category,
         icon: promo.icon,
         discount_type: promo.discount_type,
         discount_value: promo.discount_value,
@@ -335,6 +336,7 @@ router.post('/mayahuel/tickets-admin/tickets', requireTicketsAdminSession,
   body('code').isString().trim().isLength({ min: 2, max: 50 }),
   body('venue_name').isString().trim().isLength({ min: 2, max: 100 }),
   body('description').isString().trim().isLength({ min: 2, max: 200 }),
+  body('category').isString().trim().isLength({ min: 2, max: 50 }),
   body('icon').isString().trim().isLength({ min: 1, max: 10 }),
   body('discount_type').isIn(['PERCENTAGE', 'FIXED_AMOUNT']),
   body('discount_value').isFloat({ min: 0 }),
@@ -353,6 +355,7 @@ router.post('/mayahuel/tickets-admin/tickets', requireTicketsAdminSession,
         title: clean(req.body.description),
         venue_name: clean(req.body.venue_name),
         description: clean(req.body.description),
+        category: clean(req.body.category),
         icon: clean(req.body.icon),
         discount_type: clean(req.body.discount_type),
         discount_value: Number(req.body.discount_value),
@@ -374,6 +377,28 @@ router.post('/mayahuel/tickets-admin/tickets', requireTicketsAdminSession,
       }
       console.error('[mayahuel-tickets-create]', error.message);
       return res.status(503).json({ ok: false, error: 'No se pudo crear el ticket. Verifica que la migracion de tickets este aplicada.' });
+    }
+  }
+);
+
+router.patch('/mayahuel/tickets-admin/tickets/:id', requireTicketsAdminSession,
+  body('is_active').isBoolean(),
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    try {
+      if (!env.supabaseUrl || !env.supabaseServiceKey) {
+        return res.status(503).json({ ok: false, error: 'La actualizacion de tickets no esta disponible en este momento.' });
+      }
+      const rows = await supabaseRequest('mayahuel_promotions?id=eq.' + encodeURIComponent(req.params.id), {
+        method: 'PATCH',
+        headers: supabaseHeaders(true),
+        body: JSON.stringify({ is_active: req.body.is_active })
+      });
+      if (!rows?.length) return res.status(404).json({ ok: false, error: 'Ticket no encontrado.' });
+      return res.json({ ok: true, data: rows[0] });
+    } catch (error) {
+      next(error);
     }
   }
 );
