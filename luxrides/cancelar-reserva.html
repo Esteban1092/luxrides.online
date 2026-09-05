@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f6f3ed">
+  <title>Cancelar reserva | LuxRides</title>
+  <style>
+    :root{--ink:#17212d;--muted:#596675;--gold:#b8860b;--red:#a71919;--line:#e7ded0}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 10%,#fffdf8,#f1f0eb 58%,#e7e6e0);color:var(--ink);font-family:Arial,sans-serif}
+    main{width:min(620px,100%);margin:0 auto;padding:38px 18px 56px}.brand{text-align:center;color:var(--gold);font-size:13px;font-weight:800;letter-spacing:3px}.brand-line{width:48px;height:3px;margin:14px auto 32px;background:var(--gold)}
+    .card{padding:34px;border:1px solid var(--line);background:#fff;box-shadow:0 18px 48px rgba(31,41,55,.1);text-align:center}.icon{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 18px;border-radius:50%;background:#fff0f0;color:var(--red);font-size:28px;font-weight:800}.eyebrow{margin:0 0 10px;color:#8a6a12;font-size:12px;font-weight:800;letter-spacing:1.6px}.title{margin:0;font-size:32px;line-height:1.1}.copy{max-width:430px;margin:16px auto;color:var(--muted);font-size:16px;line-height:1.55}.reservation{margin:26px 0 18px;padding:17px;text-align:left;border-left:4px solid var(--gold);background:#faf8f3}.reservation small{display:block;color:#697382;font-size:11px;font-weight:800;letter-spacing:1px}.reservation strong{display:block;margin-top:6px;overflow-wrap:anywhere;font-size:17px}.warning{margin:0 0 24px;padding:13px 14px;background:#fff4f4;border:1px solid #efcccc;color:#852323;font-size:13px;line-height:1.5;text-align:left}.actions{display:grid;gap:11px}.confirm,.keep{width:100%;padding:14px 18px;border:0;font-size:16px;font-weight:800;cursor:pointer;text-decoration:none}.confirm{background:var(--red);color:#fff;box-shadow:0 12px 22px rgba(167,25,25,.2)}.confirm:hover{background:#871212}.confirm:disabled{opacity:.65;cursor:wait}.keep{background:transparent;color:#4b5b6d}.keep:hover{text-decoration:underline}.footer{text-align:center;margin-top:22px;color:#78818a;font-size:12px}@media(max-width:480px){main{padding:24px 14px 40px}.card{padding:28px 20px}.title{font-size:27px}}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand">LUXRIDES</div><div class="brand-line"></div>
+    <section class="card" id="card">
+      <div class="icon">!</div>
+      <p class="eyebrow">GESTIÓN DE RESERVA</p>
+      <h1 class="title">Cancelar reserva</h1>
+      <p class="copy">Estás a punto de cancelar este servicio. Revisa el código de reserva antes de confirmar.</p>
+      <div class="reservation"><small>CÓDIGO DE RESERVA</small><strong id="reservation-id">Cargando...</strong></div>
+      <p class="warning">Esta acción es definitiva. La reserva se eliminará y no podrá recuperarse.</p>
+      <div class="actions">
+        <button class="confirm" id="confirm" type="button">Confirmar cancelación</button>
+        <a class="keep" href="/sas.html">Conservar mi reserva</a>
+      </div>
+    </section>
+    <p class="footer">LuxRides | Transporte ejecutivo</p>
+  </main>
+  <script src="config.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const reservaId = params.get('reservaId') || '';
+    const token = params.get('token') || '';
+    const reservationId = document.getElementById('reservation-id');
+    const confirmButton = document.getElementById('confirm');
+    const apiBase = ((window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || '').replace(/\/+$/, '');
+
+    reservationId.textContent = reservaId || 'Enlace inválido';
+    if (!reservaId || !token || !apiBase) {
+      confirmButton.disabled = true;
+      document.querySelector('.copy').textContent = 'Este enlace de cancelación no es válido o ha vencido.';
+    }
+
+    confirmButton.addEventListener('click', async function() {
+      if (!reservaId || !token) return;
+      confirmButton.disabled = true;
+      confirmButton.textContent = 'Cancelando...';
+      try {
+        const response = await fetch(apiBase + '/api/reservas/cancelar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reservaId, token })
+        });
+        if (!response.ok) throw new Error('El enlace de cancelación no es válido o ha vencido.');
+        document.getElementById('card').innerHTML = '<div class="icon" style="background:#e9f8ef;color:#16803c;">✓</div><p class="eyebrow" style="color:#16803c;">GESTIÓN DE RESERVA</p><h1 class="title">Reserva cancelada</h1><p class="copy">Tu solicitud fue procesada correctamente. La reserva ya no aparece como activa.</p><div class="reservation"><small>CÓDIGO CANCELADO</small><strong>' + reservaId.replace(/[&<>"']/g, '') + '</strong></div><div class="actions"><a class="confirm" style="background:#b8860b;" href="/sas.html">Volver a LuxRides</a></div>';
+      } catch (error) {
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Confirmar cancelación';
+        document.querySelector('.warning').textContent = error.message;
+      }
+    });
+  </script>
+</body>
+</html>

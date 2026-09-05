@@ -54,7 +54,7 @@ function normalizePaymentMethod(value) {
 function cancellationUrl(reservaId) {
   const token = createCancellationToken(reservaId);
   const query = new URLSearchParams({ reservaId, token });
-  return `${env.publicApiUrl.replace(/\/+$/, '')}/api/reservas/cancelar?${query.toString()}`;
+  return `${env.frontendOrigin.replace(/\/+$/, '')}/cancelar-reserva.html?${query.toString()}`;
 }
 
 async function deleteReservation(reservaId) {
