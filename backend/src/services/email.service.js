@@ -29,6 +29,10 @@ function buildReservaHtml(payload) {
   const fecha = payload.fecha || 'N/A';
   const hora = payload.hora_recogida || payload.hora || 'N/A';
   const total = payload.total ? '$' + Number(payload.total).toLocaleString('es-MX') + ' MXN' : 'N/A';
+  const cancelUrl = payload.cancel_url || '';
+  const cancelButton = cancelUrl
+    ? `<p style="margin:24px 0 0;text-align:center;"><a href="${cancelUrl}" style="display:inline-block;background:#a71919;color:#ffffff;padding:13px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">Cancelar reserva</a></p>`
+    : '';
   return `
     <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1f2937;">
       <h2 style="color:#B8860B;">LuxRides - Confirmacion de reserva</h2>
@@ -41,6 +45,7 @@ function buildReservaHtml(payload) {
         <tr><td style="padding:8px;border-bottom:1px solid #eee;"><b>Hora</b></td><td style="padding:8px;border-bottom:1px solid #eee;">${hora}</td></tr>
         <tr><td style="padding:8px;border-bottom:1px solid #eee;"><b>Total</b></td><td style="padding:8px;border-bottom:1px solid #eee;">${total}</td></tr>
       </table>
+      ${cancelButton}
       <p style="margin-top:16px;">Gracias por elegir LuxRides.</p>
     </div>
   `;

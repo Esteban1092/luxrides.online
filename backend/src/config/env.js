@@ -35,6 +35,7 @@ export const env = {
   port: Number(optional('PORT', '8787')),
   nodeEnv: optional('NODE_ENV', 'development'),
   frontendOrigin: optional('FRONTEND_ORIGIN', 'https://luxrides.online'),
+  publicApiUrl: optional('PUBLIC_API_URL', 'https://luxrides-online.onrender.com'),
 
   groqApiKey: optional('GROQ_API_KEY', ''),
   openRouterApiKeys: Array.from(new Set([

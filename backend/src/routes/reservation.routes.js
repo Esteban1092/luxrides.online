@@ -54,7 +54,7 @@ function normalizePaymentMethod(value) {
 function cancellationUrl(reservaId) {
   const token = createCancellationToken(reservaId);
   const query = new URLSearchParams({ reservaId, token });
-  return `${env.frontendOrigin}/api/reservas/cancelar?${query.toString()}`;
+  return `${env.publicApiUrl.replace(/\/+$/, '')}/api/reservas/cancelar?${query.toString()}`;
 }
 
 async function deleteReservation(reservaId) {
@@ -191,7 +191,8 @@ router.post('/reservas',
           ...created,
           cliente: created.cliente || created.passenger_name,
           passenger_name: created.passenger_name,
-          confirmation_code: created.confirmation_code
+          confirmation_code: created.confirmation_code,
+          cancel_url: cancellationUrl(created.reserva_id)
         });
         emailStatus = emailResult?.skipped ? 'skipped' : 'sent';
       } catch (emailErr) {
