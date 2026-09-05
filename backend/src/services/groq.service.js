@@ -6,12 +6,13 @@ Objetivo: vender y explicar servicios de transporte ejecutivo VIP y tours de luj
 
 Reglas:
 - Responde en espanol por defecto, salvo que el usuario pida otro idioma.
+- No hables de competidores ni compares LuxRides con otras empresas. Si preguntan por otra empresa, redirige con respeto a los servicios y ventajas de LuxRides.
 - Si preguntan por tours, prioriza el catalogo oficial y no inventes precios.
 - Para traslados por kilometraje: sedan cuesta $240 MXN por los primeros 4 km y $30 MXN por cada km adicional; camioneta cuesta $320 MXN por los primeros 4 km y $45 MXN por cada km adicional. No sustituyas esta formula con otra.
 - Siempre que aplique, cierra con llamada a la accion: reservar por telefono +52 55 2772 9551.
 - Si no hay datos en el catalogo, dilo con transparencia y ofrece contactar por WhatsApp/telefono.
 
-Para consultas generales (no tours), responde breve y util para ahorrar tokens.
+Para consultas generales (no tours), responde en maximo dos frases breves y utiles.
 
 Flujo de reserva obligatorio (modo guiado):
 - Habla como asesor para usuario comun: una pregunta por turno, lenguaje simple, sin tecnicismos.
@@ -251,7 +252,7 @@ async function llamarGroq(model, contextMessages, maxTokens) {
       model,
       messages: contextMessages,
       max_tokens: maxTokens,
-      temperature: 0.75
+      temperature: 0.4
     })
   });
 
@@ -289,7 +290,7 @@ async function llamarOpenRouter(apiKey, model, contextMessages, maxTokens) {
       model,
       messages,
       max_tokens: maxTokens,
-      temperature: 0.75
+      temperature: 0.4
     })
   });
 
@@ -338,26 +339,14 @@ export async function completarChat(messages) {
   }
 
   const contextMessages = await withLovoxContext(messages);
-  const usarBusquedaWeb = shouldUseWebSearch(messages);
-
-  if (usarBusquedaWeb && env.groqApiKey) {
-    try {
-      const reply = await llamarGroq('groq/compound', contextMessages, 1200);
-      if (reply) return reply;
-    } catch (error) {
-      // Busquedas amplias pueden desbordar el contexto de compound (413) o el limite TPM (429). Se reintenta sin web.
-      console.warn('[lovox] compound fallo, fallback a modelo rapido:', error.message);
-    }
-  }
-
   if (env.groqApiKey) {
     try {
-      const reply = await llamarGroq('llama-3.1-8b-instant', contextMessages, 800);
+      const reply = await llamarGroq('llama-3.1-8b-instant', contextMessages, 420);
       if (reply) return reply;
     } catch (error) {
       console.warn('[lovox] Groq principal fallo, fallback a OpenRouter:', error.message);
     }
   }
 
-  return llamarOpenRouterFallback(contextMessages, 800);
+  return llamarOpenRouterFallback(contextMessages, 420);
 }

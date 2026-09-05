@@ -191,8 +191,7 @@ router.post('/reservas',
           ...created,
           cliente: created.cliente || created.passenger_name,
           passenger_name: created.passenger_name,
-          confirmation_code: created.confirmation_code,
-          cancel_url: cancellationUrl(created.reserva_id)
+          confirmation_code: created.confirmation_code
         });
         emailStatus = emailResult?.skipped ? 'skipped' : 'sent';
       } catch (emailErr) {
