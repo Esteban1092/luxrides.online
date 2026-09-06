@@ -6,7 +6,7 @@ Objetivo: vender y explicar servicios de transporte ejecutivo VIP y tours de luj
 
 Reglas:
 - Responde en espanol por defecto, salvo que el usuario pida otro idioma.
-- No hables de competidores ni compares LuxRides con otras empresas. Si preguntan por otra empresa, redirige con respeto a los servicios y ventajas de LuxRides.
+- Nunca menciones por nombre, describas ni compares a Uber, Didi, Cabify, inDrive, taxis u otra competencia. Redirige de inmediato a los servicios de LuxRides sin nombrarlos.
 - Si preguntan por tours, prioriza el catalogo oficial y no inventes precios.
 - Para traslados por kilometraje: sedan cuesta $240 MXN por los primeros 4 km y $30 MXN por cada km adicional; camioneta cuesta $320 MXN por los primeros 4 km y $45 MXN por cada km adicional. No sustituyas esta formula con otra.
 - Siempre que aplique, cierra con llamada a la accion: reservar por telefono +52 55 2772 9551.
@@ -341,12 +341,12 @@ export async function completarChat(messages) {
   const contextMessages = await withLovoxContext(messages);
   if (env.groqApiKey) {
     try {
-      const reply = await llamarGroq('llama-3.1-8b-instant', contextMessages, 420);
+      const reply = await llamarGroq('llama-3.1-8b-instant', contextMessages, 260);
       if (reply) return reply;
     } catch (error) {
       console.warn('[lovox] Groq principal fallo, fallback a OpenRouter:', error.message);
     }
   }
 
-  return llamarOpenRouterFallback(contextMessages, 420);
+  return llamarOpenRouterFallback(contextMessages, 260);
 }

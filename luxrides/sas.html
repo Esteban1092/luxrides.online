@@ -8217,99 +8217,8 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
       }
 
       async function _buildPrompt(){
-        var user = window._getUser && window._getUser();
-        var nombre = (user && user.user_metadata && (user.user_metadata.nombre||user.user_metadata.full_name)) || (user && user.email) || '';
         var idioma = (typeof _idiomaActual !== 'undefined' && _idiomaActual) || localStorage.getItem('lux_idioma') || 'es';
-        var locale = idioma === 'es' ? 'es-MX' : idioma;
-        var fechaHoy = new Date().toLocaleDateString(locale,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-        var horaAhora = new Date().toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});
-        var IDIOMA_NOMBRES = {es:'español',en:'English',fr:'français',pt:'português',de:'Deutsch',it:'italiano',zh:'中文',ja:'日本語',ko:'한국어',ar:'العربية',ru:'русский'};
-        var idiomaTexto = IDIOMA_NOMBRES[idioma] || idioma;
-
-        var catalogo = `
-## LUXRIDES — TU GUÍA, TU AMIGO / YOUR GUIDING FRIEND
-México · Tours de alta calidad · High-quality guided tours
-
-### QUIÉNES SOMOS
-LuxRides es un tour operador DMC especializado en experiencias auténticas y personalizadas en México. Con LuxRides, no solo visitas México: lo vives, lo sientes y te conviertes en parte de su eterna narrativa. / LuxRides is a DMC tour operator specializing in authentic and personalized experiences in Mexico.
-
-### TOURS DISPONIBLES
-02 | Pirámides de Teotihuacán y Basílica de Guadalupe — 7-8h, diario, 8AM, mín 2 personas. Incluye: transporte, seguro, guía bilingüe, entradas.
-03 | Teotihuacan Pyramids & Basilica of Guadalupe — 7-8h, daily, 8AM, min 2 people.
-04 | Vuelo en globo sobre Teotihuacán — 4-5h, diario, 4:40AM, mín 2. Incluye vuelo, bebida, brindis, desayuno. ¡Vuelos privados disponibles!
-05 | Hot Air Balloon Flight over Teotihuacan — 4-5h, daily, 4:40AM, min 2. Private flights available!
-06 | Vuelo en globo + Tour Teotihuacán y Basílica — 10h, diario, 4:40AM, mín 2. Todo incluido.
-07 | Hot Air Balloon Flight + Teotihuacan & Basilica Tour — 10h, daily, 4:40AM, min 2.
-08 | Xochimilco, Coyoacán y Museo Frida Kahlo — 7h, mar-dom, 9AM, mín 2. Incluye trajinera y museo Frida Kahlo.
-09 | Xochimilco, Coyoacan & Frida Kahlo Museum — 7h, Tue-Sun, 9AM, min 2.
-10 | Xochimilco y Coyoacán (sin museo Frida) — 6-7h, diario, 9AM, mín 2.
-11 | Xochimilco & Coyoacan (without Frida museum) — 6-7h, daily, 9AM, min 2.
-12 | Taxco y Cuernavaca — 11h, diario, 8:30AM, mín 5. Ciudad de la eterna primavera + pueblo minero plata.
-13 | Taxco & Cuernavaca — 11h, daily, 8:30AM, min 5.
-14 | Taxco y Grutas de Cacahuamilpa — 11-12h, diario, 7AM, mín 5.
-15 | Taxco & Cacahuamilpa Caves — 11-12h, daily, 7AM, min 5.
-16 | Puebla y Cholula — 11h, mar/jue/sáb, 8:30AM, mín 5. Pirámide más grande del mundo por volumen.
-17 | Puebla & Cholula — 11h, Tue/Thu/Sat, 8:30AM, min 5.
-18 | City Tour Azteca (CDMX) — 4-5h, diario (lun museo cerrado), 9AM, mín 5. Antropología, Reforma, Centro Histórico.
-19 | Aztec City Tour (CDMX) — 4-5h, daily (Mon museum closed), 9AM, min 5.
-20 | San Miguel de Allende — 11h, sábados, 7AM, mín 5. Patrimonio UNESCO.
-21 | San Miguel de Allende — 11h, Saturdays, 7AM, min 5. UNESCO World Heritage.
-22 | Cena en Bellini y Mariachis en Garibaldi — 4-5h, jue-sáb, 8:30PM, mín 2. Restaurante giratorio piso 45 WTC.
-23 | Dinner at Bellini & Mariachis in Garibaldi — 4-5h, Thu-Sat, 8:30PM, min 2.
-24 | Lucha Libre — 3h, mar 7:30PM / vie 8:30PM / dom 5PM, mín 5.
-25 | Mexican Wrestling (Lucha Libre) — 3h, Fri 8PM / Sun 5PM, min 5.
-26 | Pirámide de Cacaxtla y Tlaxcala — 10h, diario, 8AM, mín 5.
-27 | Cacaxtla Pyramid & Tlaxcala — 10h, daily, 8AM, min 5.
-28 | Real del Monte y Prismas Basálticos — 10h, domingos, 8AM, mín 5.
-29 | Real del Monte & Basaltic Prisms — 10h, Sundays, 8AM, min 5.
-30 | Pirámides de Xochicalco y Tepoztlán — 10h, diario, 8AM, mín 5.
-31 | Xochicalco Pyramids & Tepoztlan — 10h, daily, 8AM, min 5.
-32 | Mariposa Monarca — 11-12h, diario 20 nov–15 mar, 7AM, mín 5.
-33 | Monarch Butterfly — 11-12h, daily Nov 20–Mar 15, 7AM, min 5.
-34 | Tours Personalizados / Customized Tours — A la medida / Tailored to your needs.
-35 | Servicios de Transporte / Transportation — Renta de autos, camionetas, autobuses, traslados aeropuerto, eventos.
-
-Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe certificado, entradas. / All tours include: round-trip transportation, travel insurance, certified bilingual guide, entrance fees.
-`;
-
-        catalogo = '## CATALOGO OFICIAL DE LA SECCION TOURS\n' + LUX_GUIAS_TOURS.map(function(tour, index){
-          var tarifas = (tour.tarifas || []).map(function(tarifa){
-            return tarifa.label + ': ' + tarifa.price + (tarifa.note ? ' (' + tarifa.note + ')' : '');
-          }).join('; ');
-          var rutas = Array.isArray(tour.routeOptions) ? tour.routeOptions.join(', ') : tour.rutas;
-          return (index + 1) + ') ' + tour.title + '\nDescripcion: ' + tour.desc + '\nRuta: ' + rutas + '\nDuracion: ' + tour.duration + '\nIncluye: ' + tour.includes + '\nTarifas: ' + tarifas;
-        }).join('\n\n');
-
-        return 'Eres Iovox, el asistente inteligente de LuxRides. Eres elegante, cercano, profesional y muy util. '+
-          'Responde SIEMPRE en este idioma: '+idiomaTexto+'. '+
-          'LuxRides es un tour operador DMC en Mexico que ofrece: transporte ejecutivo de lujo (sedan VIP y SUV, hasta 6 pax), tours guiados bilingues, traslados aeropuerto, eventos y tours personalizados. '+
-          'Pagos: WhatsApp, Stripe o Clip. '+
-          'Fecha hoy: '+fechaHoy+'. Hora: '+horaAhora+'. '+
-          (nombre ? 'Cliente: '+nombre+'. ' : '')+
-          'Maximo 3 parrafos por respuesta. Si preguntan por un tour especifico, da todos los detalles del catalogo. Para traslados por kilometraje, sedan cuesta $240 MXN por los primeros 4 km y $30 MXN por cada km adicional; camioneta cuesta $320 MXN por los primeros 4 km y $45 MXN por cada km adicional.\n\n'+
-          catalogo+
-          '\n\n## FLUJO DE RESERVA (OBLIGATORIO)\n'+
-          'Cuando el usuario quiera reservar un servicio o tour, recopila UNO POR UNO: nombre completo, correo electronico, telefono, origen/lugar de recogida, destino o tour elegido, fecha, hora.\n'+
-          'Si es un traslado por kilometraje, tambien pregunta si requiere sedan o camioneta y la distancia de la ruta en kilometros. Calcula y muestra el total con la formula oficial antes de confirmar.\n'+
-          'Al tener todos esos datos, muestra un resumen claro y pregunta: "¿Confirmas tu reserva con estos datos?"\n'+
-          'Si el usuario confirma con "si", "confirmo", "adelante" o similar, responde EXACTAMENTE con este bloque (sin cambiar nada):\n'+
-          'RESERVA_CONFIRMADA\n'+
-          'Nombre: [nombre del pasajero]\n'+
-          'Correo: [correo electronico]\n'+
-          'Origen: [lugar de recogida]\n'+
-          'Destino: [destino o tour]\n'+
-          'Fecha: [fecha]\n'+
-          'Hora: [hora]\n'+
-          'Telefono: [numero]\n'+
-          'Vehiculo: [sedan, camioneta o tour]\n'+
-          'Distancia: [kilometros o no aplica]\n'+
-          'ID: LUX-'+Date.now()+'\n'+
-          'Luego agrega un mensaje amable de confirmacion.\n'+
-          'IMPORTANTE: NO confirmes la reserva si falta el correo electronico del cliente.\n\n'+
-          '## NOTAS OPERATIVAS FIJAS\n'+
-          '1) IMPORTANTE: Instrucciones para realizar la reserva: para confirmar su servicio, el cliente debe realizar el pago correspondiente e indicar su nombre completo en el concepto o referencia. Una vez recibido y verificado el pago, la reserva quedará confirmada y LuxRides asignará automáticamente el conductor. Todo el proceso se realiza dentro de esta plataforma, sin salir de ella.\n'+
-          '2) DIFERENCIA DE TRASLADO: Pick Up significa que el chofer da seguimiento al vuelo y, en cuanto aterriza, ya está esperando al cliente, sin cobros adicionales aunque el vuelo se retrase o demore la salida del equipaje. Servicio por km significa que el usuario debe esperar a que se asigne el chofer y a su llegada.\n'+
-          '3) Si el usuario pregunta por reservas, pick up, servicio por km, pagos o asignación de chofer, aplica estas notas como reglas obligatorias y no las contradigas.';
+        return 'Responde en ' + idioma + '. El backend contiene las reglas, precios y catalogo oficiales de LuxRides.';
       }
 
       window.abrirAsistente = async function(){
@@ -8443,13 +8352,19 @@ Todos los tours incluyen: transporte redondo, seguro de viajero, guía bilingüe
         document.getElementById('iovox-chips').innerHTML = '';
         _msg('user', texto);
         _iovoxHistory.push({role:'user', content:texto});
+        if (/(uber|didi|cabify|indrive|beat|lyft|taxi|competencia|competidor)/i.test(texto)) {
+          var respuestaCompetencia = 'Puedo ayudarte con los servicios, tarifas y reservas de LuxRides. ¿Qué traslado o tour necesitas?';
+          _msg('bot', respuestaCompetencia);
+          _iovoxHistory.push({role:'assistant', content:respuestaCompetencia});
+          return;
+        }
         _iovoxBusy = true;
         document.getElementById('iovox-send').disabled = true;
         _typing();
 
         try {
           var sys = await _buildPrompt();
-          var messages = [{role:'system',content:sys}].concat(_iovoxHistory.slice(-20));
+          var messages = [{role:'system',content:sys}].concat(_iovoxHistory.slice(-6));
           var ia = await _callIA(messages);
           var reply = ia && ia.reply ? ia.reply : ia;
           _setIovoxConnStatus(ia && ia.source ? ia.source : 'esperando');
