@@ -337,6 +337,12 @@
       .status-pill{font-size:0.72rem;letter-spacing:0.04em;padding:6px 10px;border:1px solid var(--border);background:rgba(255,255,255,0.55);color:var(--muted);border-radius:999px;}
       .status-pill.ok{border-color:rgba(34,197,94,0.5);color:#166534;background:rgba(34,197,94,0.12);}
       .status-pill.warn{border-color:rgba(239,68,68,0.45);color:#991b1b;background:rgba(239,68,68,0.10);}
+      .lux-chat-status-bar{display:flex;align-items:center;gap:9px;min-height:42px;padding:6px 10px;border:1px solid rgba(212,175,55,.34);border-radius:999px;background:rgba(14,14,18,.94);box-shadow:0 10px 28px rgba(0,0,0,.28);color:#f8e7a6;cursor:pointer;}
+      .lux-chat-status-logo{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,#f3d36b,#b8942e);color:#17120a;font-family:'Playfair Display',serif;font-size:1rem;font-weight:800;line-height:1;box-shadow:0 0 0 2px rgba(212,175,55,.18);}
+      .lux-chat-status-copy{display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1.1;}
+      .lux-chat-status-copy strong{font-size:.72rem;letter-spacing:.04em;}
+      .lux-chat-status-copy span{font-size:.62rem;color:rgba(255,255,255,.58);}
+      @media(max-width:480px){.lux-chat-status-copy span{display:none;}.lux-chat-status-bar{padding-right:12px;}}
       .track-box{margin-top:10px;padding:12px 14px;border:2px solid var(--gold);background:rgba(212,175,55,0.10);font-size:0.88rem;color:#5c4508;display:none;border-radius:10px;}
       .track-actions{display:flex;justify-content:flex-end;margin-top:8px;}
       .btn-track-mini{border:1px solid var(--gold);background:rgba(212,175,55,0.14);color:#7a5d10;border-radius:999px;padding:5px 10px;font-size:0.74rem;cursor:pointer;font-weight:600;}
@@ -3621,6 +3627,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       function reservarEnEfectivo(){
+        const user = window._getUser ? window._getUser() : null;
+        if (!user) {
+          mostrarToast('🔐 Inicia sesión para reservar y pagar.', 'err');
+          if (typeof abrirAuth === 'function') abrirAuth();
+          return;
+        }
         if (!resultado) {
           mostrarToast('Primero calcula el precio del servicio.', 'err');
           return;
@@ -4261,6 +4273,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       async function abrirPagoStripe(){
+        const user = window._getUser ? window._getUser() : null;
+        if (!user) {
+          mostrarToast('🔐 Inicia sesión para pagar con tarjeta.', 'err');
+          if (typeof abrirAuth === 'function') abrirAuth();
+          return;
+        }
         var montoBase = _stripeTourContext ? _stripeTourContext.amount : (resultado && resultado.totalPrecio);
         if (!montoBase) {
           alert('Primero calcula el precio del servicio.');
@@ -8701,7 +8719,101 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
           throw (lastErr || new Error('No se pudo contactar al chofer digital.'));
         }
 
+        function getCurrentUserChatIdentity() {
+          const user = window._getUser ? window._getUser() : null;
+          const profile = window._getPerfil ? window._getPerfil() : null;
+          if (user) {
+            const meta = user.user_metadata || {};
+            const name = profile && profile.nombre_completo ? profile.nombre_completo : (meta.nombre_completo || user.email || 'Usuario');
+            return { id: user.id, name: name, email: user.email || '' };
+          }
+          return { id: 'anon', name: 'Usuario', email: '' };
+        }
+
+        function getCurrentDriverForChat() {
+          if (_choferInfoActual && _choferInfoActual.id) return _choferInfoActual;
+          return null;
+        }
+
+        function getDriverChatStorageKey() {
+          const user = getCurrentUserChatIdentity();
+          const driver = getCurrentDriverForChat();
+          const driverId = driver && driver.id ? driver.id : 'sin-chofer';
+          return 'luxrides_chat_driver_' + (user.id || 'anon') + '_' + driverId;
+        }
+
+        function loadDriverChatHistory() {
+          try {
+            const raw = localStorage.getItem(getDriverChatStorageKey());
+            const list = raw ? JSON.parse(raw) : [];
+            return Array.isArray(list) ? list : [];
+          } catch (e) {
+            return [];
+          }
+        }
+
+        function saveDriverChatHistory(list) {
+          try {
+            localStorage.setItem(getDriverChatStorageKey(), JSON.stringify(list.slice(-30)));
+          } catch (e) {}
+        }
+
+        function renderDriverChatHistory() {
+          const panel = document.getElementById('luxrides-driver-chat-panel');
+          if (!panel) return;
+          const driver = getCurrentDriverForChat();
+          const userName = getCurrentUserChatIdentity().name;
+          const history = loadDriverChatHistory();
+          panel.innerHTML = '';
+
+          const header = document.createElement('div');
+          header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;font-weight:700;color:#f8e7a6;';
+          header.innerHTML = '<span>💬 ' + (driver ? ('Chat con ' + (driver.nombre || 'el chofer')) : 'Chat con tu chofer') + '</span><span style="opacity:.8;">' + userName + '</span>';
+          panel.appendChild(header);
+
+          if (!history.length) {
+            const intro = document.createElement('div');
+            intro.style.cssText = 'padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);color:#dfe7ff;font-size:12px;line-height:1.5;';
+            intro.textContent = 'Hola ' + userName + '. Escribe tu pregunta para ' + (driver ? (driver.nombre || 'el chofer asignado') : 'tu chofer asignado') + ' y confirma horario, ubicación o detalles del servicio.';
+            panel.appendChild(intro);
+          } else {
+            history.forEach(function(item) {
+              var row = document.createElement('div');
+              row.style.cssText = 'max-width:82%;padding:10px 12px;border-radius:12px;line-height:1.4;font-size:12px;margin:6px 0;' + (item.from === 'user' ? 'align-self:flex-end;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;border-radius:12px 12px 3px 12px;' : 'align-self:flex-start;background:rgba(255,255,255,0.04);color:#eef2ff;border:1px solid rgba(255,255,255,0.08);border-radius:12px 12px 12px 3px;');
+              row.textContent = item.text;
+              panel.appendChild(row);
+            });
+          }
+
+          const inputWrap = document.createElement('div');
+          inputWrap.style.cssText = 'display:flex;gap:8px;margin-top:10px;position:sticky;bottom:0;background:rgba(14,14,18,.96);padding-top:8px;';
+          const input = document.createElement('input');
+          input.id = 'luxrides-driver-chat-input';
+          input.placeholder = 'Escribe un mensaje al chofer';
+          input.style.cssText = 'flex:1;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:13px;outline:none;';
+          input.addEventListener('keydown', function(e) { if (e.key === 'Enter') enviarChatConductor(); });
+          const send = document.createElement('button');
+          send.textContent = 'Enviar';
+          send.style.cssText = 'border:none;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;border-radius:10px;padding:0 14px;font-weight:700;cursor:pointer;';
+          send.onclick = function() { enviarChatConductor(); };
+          inputWrap.appendChild(input);
+          inputWrap.appendChild(send);
+          panel.appendChild(inputWrap);
+          panel.scrollTop = panel.scrollHeight;
+        }
+
         function enviarChatConductor(message) {
+          const user = window._getUser ? window._getUser() : null;
+          if (!user) {
+            mostrarToast('🔐 Inicia sesión para chatear con el chofer.', 'err');
+            if (typeof abrirAuth === 'function') abrirAuth();
+            return;
+          }
+          const driver = getCurrentDriverForChat();
+          if (!driver) {
+            mostrarToast('🚘 Aún no tienes un chofer asignado para chatear.', 'err');
+            return;
+          }
           var root = document.getElementById('luxrides-driver-chat-root');
           if (!root) return;
           var panel = document.getElementById('luxrides-driver-chat-panel');
@@ -8710,25 +8822,32 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
           if (!text) return;
           if (input) input.value = '';
 
-          var msg = document.createElement('div');
-          msg.style.cssText = 'align-self:flex-end;max-width:82%;padding:10px 12px;border-radius:12px 12px 3px 12px;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;font-size:12px;line-height:1.4;margin:8px 0;';
-          msg.textContent = text;
-          panel.appendChild(msg);
+          const history = loadDriverChatHistory();
+          history.push({ from: 'user', text: text, ts: Date.now() });
+          saveDriverChatHistory(history);
 
-          var bot = document.createElement('div');
+          renderDriverChatHistory();
+          const bot = document.createElement('div');
           bot.style.cssText = 'align-self:flex-start;max-width:82%;padding:10px 12px;border-radius:12px 12px 12px 3px;background:rgba(255,255,255,0.04);color:#eef2ff;border:1px solid rgba(255,255,255,0.08);font-size:12px;line-height:1.4;margin:4px 0;';
-          bot.textContent = 'Escribiendo…';
+          bot.textContent = '📲 Mensaje enviado a ' + (driver.nombre || 'el chofer') + '. Revisa la conversación y responde cuando esté disponible.';
           panel.appendChild(bot);
           panel.scrollTop = panel.scrollHeight;
 
-          _callDriverChat([{ role: 'user', content: text + ' (mensaje para el chofer asignado del cliente de LuxRides)' }])
-            .then(function(reply) {
-              if (bot) bot.textContent = reply || 'El chofer te responderá en breve.';
-            })
-            .catch(function(err) {
-              if (bot) bot.textContent = 'El chofer no está disponible en este momento. Intenta más tarde o usa WhatsApp.';
-              console.warn('[Chat chofer]', err);
-            });
+          const driverPhone = (driver.telefono || driver.phone || driver.whatsapp || driver.celular || '').replace(/\D/g, '');
+          if (driverPhone) {
+            const whatsappText = encodeURIComponent('Hola ' + (driver.nombre || 'chofer') + ', soy ' + getCurrentUserChatIdentity().name + '.\n\n' + text);
+            setTimeout(function() {
+              window.open('https://wa.me/' + driverPhone + '?text=' + whatsappText, '_blank');
+            }, 180);
+          }
+
+          const replyText = 'Recibido. Revisaré tu mensaje y te respondo en breve.';
+          setTimeout(function() {
+            const hist = loadDriverChatHistory();
+            hist.push({ from: 'driver', text: replyText, ts: Date.now() });
+            saveDriverChatHistory(hist);
+            renderDriverChatHistory();
+          }, 500);
         }
 
         function toggleChatConductor() {
@@ -8751,48 +8870,23 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
 
           var root = document.createElement('div');
           root.id = 'luxrides-driver-chat-root';
-          root.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:99999;width:min(340px,calc(100vw - 24px));display:flex;flex-direction:column;align-items:flex-end;';
+          root.style.cssText = 'position:fixed;right:14px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99999;width:min(360px,calc(100vw - 24px));display:flex;flex-direction:column;align-items:flex-end;';
 
           var panel = document.createElement('div');
           panel.id = 'luxrides-driver-chat-panel';
-          panel.style.cssText = 'display:none;width:100%;height:360px;background:rgba(14,14,18,.96);border:1px solid rgba(212,175,55,.25);border-radius:18px 18px 10px 18px;box-shadow:0 18px 52px rgba(0,0,0,.45);padding:12px;overflow-y:auto;color:#fff;';
-
-          var header = document.createElement('div');
-          header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;font-weight:700;color:#f8e7a6;';
-          header.innerHTML = '<span>💬 Chat con tu chofer</span><span style="opacity:.8;">En línea</span>';
-          panel.appendChild(header);
-
-          var intro = document.createElement('div');
-          intro.style.cssText = 'padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);color:#dfe7ff;font-size:12px;line-height:1.5;';
-          intro.textContent = 'Aquí puedes comunicarte con el chofer asignado para confirmar horario, ubicación o detalles del servicio.';
-          panel.appendChild(intro);
-
-          var inputWrap = document.createElement('div');
-          inputWrap.style.cssText = 'display:flex;gap:8px;margin-top:10px;';
-
-          var input = document.createElement('input');
-          input.id = 'luxrides-driver-chat-input';
-          input.placeholder = 'Escribe un mensaje al chofer';
-          input.style.cssText = 'flex:1;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:13px;outline:none;';
-          input.addEventListener('keydown', function(e) { if (e.key === 'Enter') enviarChatConductor(); });
-
-          var send = document.createElement('button');
-          send.textContent = 'Enviar';
-          send.style.cssText = 'border:none;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;border-radius:10px;padding:0 14px;font-weight:700;cursor:pointer;';
-          send.onclick = function() { enviarChatConductor(); };
-
-          inputWrap.appendChild(input);
-          inputWrap.appendChild(send);
-          panel.appendChild(inputWrap);
+          panel.style.cssText = 'display:none;width:100%;height:360px;margin-bottom:8px;background:rgba(14,14,18,.97);border:1px solid rgba(212,175,55,.25);border-radius:18px 18px 10px 18px;box-shadow:0 18px 52px rgba(0,0,0,.45);padding:12px;overflow-y:auto;color:#fff;';
 
           var fab = document.createElement('button');
-          fab.textContent = '💬';
-          fab.style.cssText = 'margin-top:10px;border:none;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;border-radius:50%;width:58px;height:58px;font-size:24px;cursor:pointer;box-shadow:0 16px 36px rgba(212,175,55,.28);';
+          fab.className = 'lux-chat-status-bar';
+          fab.type = 'button';
+          fab.setAttribute('aria-label', 'Abrir chat con el chofer');
+          fab.innerHTML = '<span class="lux-chat-status-logo">L</span><span class="lux-chat-status-copy"><strong>Chat con chofer</strong><span>Historial del viaje</span></span><span aria-hidden="true" style="font-size:15px;opacity:.7;">⌃</span>';
           fab.onclick = function() { toggleChatConductor(); };
 
           root.appendChild(panel);
           root.appendChild(fab);
           document.body.appendChild(root);
+          renderDriverChatHistory();
         }
 
         if (document.readyState === 'loading') {
