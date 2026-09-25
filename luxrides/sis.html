@@ -823,7 +823,7 @@ function initMapaChoferes() {
     setInterval(function() {
       if (!mapChoferes) return;
       if (document.visibilityState && document.visibilityState !== 'visible') return;
-      if (Date.now() - choferesUltimoRefreshMs < 15000) return;
+      if (Date.now() - choferesUltimoRefreshMs < 5000) return;
       refrescarUbicacionesChoferes();
     }, 15000);
   } catch(e) { console.error('Error initMapa:', e); }
@@ -858,7 +858,7 @@ function actualizarMapaChoferes() {
   var lineasActivas = {};
 
   choferesLista.forEach(function(ch) {
-    var ubi = ch.ubicacion; 
+    var ubi = _parseUbicacion(ch.ubicacion);
     var lat = ubi ? Number(ubi.lat) : NaN;
     var lng = ubi ? Number(ubi.lng) : NaN;
     var online = LuxCfg.choferActivoEnMapa(ch.estado);
@@ -1347,7 +1347,7 @@ function suscribirChoferes() {
 
 function moverMarcadorChofer(ch) {
   if (!mapChoferes) return;
-  var ubi = ch.ubicacion;
+  var ubi = _parseUbicacion(ch.ubicacion);
   var lat = ubi ? Number(ubi.lat) : NaN;
   var lng = ubi ? Number(ubi.lng) : NaN;
   var online = LuxCfg.choferActivoEnMapa(ch.estado);
