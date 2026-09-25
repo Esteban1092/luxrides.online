@@ -1034,6 +1034,7 @@
       .nav-tab.active{background:linear-gradient(135deg,rgba(212,175,55,.22),rgba(255,255,255,.08));box-shadow:inset 0 0 0 1px rgba(212,175,55,.24),0 8px 22px rgba(0,0,0,.18);}
       .nav-tab.active .nav-tab-label{color:#D4AF37;}
       .nav-tab.active .nav-tab-icon{transform:scale(1.18) translateY(-1px);filter:drop-shadow(0 0 7px rgba(212,175,55,.6));}
+      .nav-chat-logo{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,#f3d36b,#b8942e);color:#17120a;font-family:'Playfair Display',serif;font-size:.9rem;font-weight:800;line-height:1;box-shadow:0 0 0 2px rgba(212,175,55,.15);}
       .nav-tab-dot{
         position:absolute;bottom:4px;
         width:20px;height:2px;border-radius:2px;
@@ -6172,6 +6173,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         <div class="nav-tab-label">Iovox</div>
         <div class="nav-tab-dot"></div>
       </div>
+      <div class="nav-tab" id="nav-chat" onclick="toggleChatConductor()" aria-label="Chat con chofer">
+        <div class="nav-tab-icon"><span class="nav-chat-logo">L</span></div>
+        <div class="nav-tab-label">Chat</div>
+        <div class="nav-tab-dot"></div>
+      </div>
     </nav>
 
     <div id="viajes-panel">
@@ -8906,21 +8912,13 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
 
           var root = document.createElement('div');
           root.id = 'luxrides-driver-chat-root';
-          root.style.cssText = 'position:fixed;right:14px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99999;width:min(360px,calc(100vw - 24px));display:flex;flex-direction:column;align-items:flex-end;';
+          root.style.cssText = 'position:fixed;inset:0;z-index:1040;pointer-events:none;';
 
           var panel = document.createElement('div');
           panel.id = 'luxrides-driver-chat-panel';
-          panel.style.cssText = 'display:none;width:100%;height:360px;margin-bottom:8px;background:rgba(14,14,18,.97);border:1px solid rgba(212,175,55,.25);border-radius:18px 18px 10px 18px;box-shadow:0 18px 52px rgba(0,0,0,.45);padding:12px;overflow-y:auto;color:#fff;';
-
-          var fab = document.createElement('button');
-          fab.className = 'lux-chat-status-bar';
-          fab.type = 'button';
-          fab.setAttribute('aria-label', 'Abrir chat con el chofer');
-          fab.innerHTML = '<span class="lux-chat-status-logo">L</span><span class="lux-chat-status-copy"><strong>Chat con chofer</strong><span>Historial del viaje</span></span><span aria-hidden="true" style="font-size:15px;opacity:.7;">⌃</span>';
-          fab.onclick = function() { toggleChatConductor(); };
+          panel.style.cssText = 'display:none;pointer-events:auto;position:fixed;right:14px;bottom:calc(88px + env(safe-area-inset-bottom,0px));width:min(360px,calc(100vw - 24px));height:360px;background:rgba(14,14,18,.97);border:1px solid rgba(212,175,55,.25);border-radius:18px 18px 10px 18px;box-shadow:0 18px 52px rgba(0,0,0,.45);padding:12px;overflow-y:auto;color:#fff;';
 
           root.appendChild(panel);
-          root.appendChild(fab);
           document.body.appendChild(root);
           renderDriverChatHistory();
           setInterval(syncDriverChatHistory, 5000);
