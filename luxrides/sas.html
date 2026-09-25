@@ -1035,6 +1035,7 @@
       .nav-tab.active .nav-tab-label{color:#D4AF37;}
       .nav-tab.active .nav-tab-icon{transform:scale(1.18) translateY(-1px);filter:drop-shadow(0 0 7px rgba(212,175,55,.6));}
       .nav-chat-logo{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,#f3d36b,#b8942e);color:#17120a;font-family:'Playfair Display',serif;font-size:.9rem;font-weight:800;line-height:1;box-shadow:0 0 0 2px rgba(212,175,55,.15);}
+      @media(max-width:390px){.nav-tab{padding-left:2px;padding-right:2px;}.nav-tab-label{font-size:.45rem;letter-spacing:.03em;}.nav-chat-logo{width:22px;height:22px;font-size:.82rem;}}
       .nav-tab-dot{
         position:absolute;bottom:4px;
         width:20px;height:2px;border-radius:2px;
@@ -8916,10 +8917,11 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
 
           var panel = document.createElement('div');
           panel.id = 'luxrides-driver-chat-panel';
-          panel.style.cssText = 'display:none;pointer-events:auto;position:fixed;right:14px;bottom:calc(88px + env(safe-area-inset-bottom,0px));width:min(360px,calc(100vw - 24px));height:360px;background:rgba(14,14,18,.97);border:1px solid rgba(212,175,55,.25);border-radius:18px 18px 10px 18px;box-shadow:0 18px 52px rgba(0,0,0,.45);padding:12px;overflow-y:auto;color:#fff;';
+          panel.style.cssText = 'display:none;pointer-events:auto;position:fixed;right:14px;bottom:calc(88px + env(safe-area-inset-bottom,0px));width:min(360px,calc(100vw - 28px));height:min(360px,calc(100vh - 160px));max-height:calc(100vh - 160px);background:rgba(14,14,18,.97);border:1px solid rgba(212,175,55,.25);border-radius:18px 18px 10px 18px;box-shadow:0 18px 52px rgba(0,0,0,.45);padding:12px;overflow-y:auto;color:#fff;-webkit-overflow-scrolling:touch;';
 
           root.appendChild(panel);
           document.body.appendChild(root);
+          window.toggleChatConductor = toggleChatConductor;
           renderDriverChatHistory();
           setInterval(syncDriverChatHistory, 5000);
         }
