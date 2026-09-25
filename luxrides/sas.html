@@ -8735,6 +8735,40 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
           return null;
         }
 
+        async function getCustomerChatToken() {
+          if (!window._luxAuth || !window._luxAuth.auth) return '';
+          try {
+            const result = await window._luxAuth.auth.getSession();
+            return result && result.data && result.data.session ? result.data.session.access_token : '';
+          } catch (e) {
+            return '';
+          }
+        }
+
+        async function syncDriverChatHistory() {
+          const user = window._getUser ? window._getUser() : null;
+          const driver = getCurrentDriverForChat();
+          if (!user || !driver) return;
+          const token = await getCustomerChatToken();
+          if (!token) return;
+          try {
+            const base = (window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || '';
+            const response = await fetch(base + '/api/driver-chat/messages?customerId=' + encodeURIComponent(user.id) + '&driverId=' + encodeURIComponent(driver.id), {
+              headers: { Authorization: 'Bearer ' + token }
+            });
+            const data = await response.json().catch(function() { return {}; });
+            if (response.ok && data.ok && Array.isArray(data.messages)) {
+              const history = data.messages.map(function(item) {
+                return { from: item.sender_role === 'customer' ? 'user' : item.sender_role, text: item.message, ts: item.created_at };
+              });
+              saveDriverChatHistory(history);
+              renderDriverChatHistory();
+            }
+          } catch (e) {
+            console.warn('[Driver chat sync]', e);
+          }
+        }
+
         function getDriverChatStorageKey() {
           const user = getCurrentUserChatIdentity();
           const driver = getCurrentDriverForChat();
@@ -8833,21 +8867,23 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
           panel.appendChild(bot);
           panel.scrollTop = panel.scrollHeight;
 
-          const driverPhone = (driver.telefono || driver.phone || driver.whatsapp || driver.celular || '').replace(/\D/g, '');
-          if (driverPhone) {
-            const whatsappText = encodeURIComponent('Hola ' + (driver.nombre || 'chofer') + ', soy ' + getCurrentUserChatIdentity().name + '.\n\n' + text);
-            setTimeout(function() {
-              window.open('https://wa.me/' + driverPhone + '?text=' + whatsappText, '_blank');
-            }, 180);
-          }
-
-          const replyText = 'Recibido. Revisaré tu mensaje y te respondo en breve.';
-          setTimeout(function() {
+          getCustomerChatToken().then(function(token) {
+            const base = (window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || '';
+            return fetch(base + '/api/driver-chat/messages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+              body: JSON.stringify({ customerId: user.id, driverId: driver.id, message: text })
+            });
+          }).then(function(response) {
+            if (!response.ok) throw new Error('No se pudo enviar el mensaje');
+            return syncDriverChatHistory();
+          }).catch(function(error) {
             const hist = loadDriverChatHistory();
-            hist.push({ from: 'driver', text: replyText, ts: Date.now() });
+            hist.push({ from: 'system', text: 'No se pudo conectar con el chofer. Intenta nuevamente.', ts: Date.now() });
             saveDriverChatHistory(hist);
             renderDriverChatHistory();
-          }, 500);
+            console.warn('[Driver chat send]', error);
+          });
         }
 
         function toggleChatConductor() {
@@ -8887,6 +8923,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
           root.appendChild(fab);
           document.body.appendChild(root);
           renderDriverChatHistory();
+          setInterval(syncDriverChatHistory, 5000);
         }
 
         if (document.readyState === 'loading') {

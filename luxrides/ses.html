@@ -1440,6 +1440,7 @@ async function loginChofer() {
 async function iniciarApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+  buildDriverChatWidget();
   var badge = document.getElementById('state-badge');
   badge.className = 'state-badge online';
   badge.textContent = 'En línea';
@@ -2535,6 +2536,95 @@ cerrarStripeModal = function() {
   origCerrarStripeModal.call(this);
   if (stripeCardElement) stripeCardElement.mount('#stripe-card-element');
 };
+
+var driverChatWidget = null;
+var driverChatMessages = [];
+
+function buildDriverChatWidget() {
+  if (driverChatWidget || !document.body) return;
+  var root = document.createElement('div');
+  root.id = 'luxrides-driver-inbox';
+  root.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:9999;width:min(360px,calc(100vw - 32px));display:flex;flex-direction:column;align-items:flex-start;';
+
+  var panel = document.createElement('div');
+  panel.style.cssText = 'display:none;width:100%;height:360px;margin-bottom:8px;background:rgba(14,14,18,.98);border:1px solid rgba(212,175,55,.3);border-radius:18px 18px 18px 8px;box-shadow:0 18px 52px rgba(0,0,0,.48);padding:12px;overflow-y:auto;color:#fff;';
+
+  var button = document.createElement('button');
+  button.type = 'button';
+  button.innerHTML = '<span style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#f3d36b,#b8942e);color:#17120a;font-family:Georgia,serif;font-weight:800;">L</span><span style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;"><strong style="font-size:.72rem;">Mensajes de clientes</strong><span style="font-size:.62rem;opacity:.65;">Chat directo con tus viajes</span></span>';
+  button.style.cssText = 'display:flex;align-items:center;gap:9px;border:1px solid rgba(212,175,55,.34);border-radius:999px;padding:6px 12px 6px 7px;background:rgba(14,14,18,.95);color:#f8e7a6;box-shadow:0 10px 28px rgba(0,0,0,.3);cursor:pointer;';
+  button.onclick = function() {
+    var open = panel.style.display === 'block';
+    panel.style.display = open ? 'none' : 'block';
+    if (!open) { refreshDriverChat(); setTimeout(function() { var input = document.getElementById('lux-driver-chat-input'); if (input) input.focus(); }, 80); }
+  };
+  root.appendChild(panel);
+  root.appendChild(button);
+  document.body.appendChild(root);
+  driverChatWidget = { root: root, panel: panel };
+  refreshDriverChat();
+  setInterval(refreshDriverChat, 5000);
+}
+
+async function refreshDriverChat() {
+  if (!driverChatWidget || !choferId || !getDriverSessionToken()) return;
+  try {
+    var data = await driverApi('/api/driver-chat/messages?driverId=' + encodeURIComponent(choferId));
+    driverChatMessages = Array.isArray(data.messages) ? data.messages : [];
+    renderDriverChatWidget();
+  } catch (e) { console.warn('[Driver chat]', e); }
+}
+
+function renderDriverChatWidget() {
+  if (!driverChatWidget) return;
+  var panel = driverChatWidget.panel;
+  panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:8px;margin-bottom:8px;"><strong style="font-size:12px;color:#f8e7a6;">💬 Chat con clientes</strong><span style="font-size:11px;color:#9aa0b5;">' + (choferData && choferData.nombre ? choferData.nombre : 'Chofer') + '</span></div>';
+  if (!driverChatMessages.length) {
+    panel.innerHTML += '<div style="padding:12px;color:#b8bfd5;font-size:12px;line-height:1.5;">Aún no tienes mensajes de clientes. Cuando un usuario escriba, aparecerá aquí.</div>';
+  }
+  var grouped = {};
+  driverChatMessages.forEach(function(item) {
+    var key = item.conversation_id || item.customer_id;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(item);
+  });
+  Object.keys(grouped).forEach(function(key) {
+    var list = grouped[key];
+    var last = list[list.length - 1];
+    var title = last.sender_role === 'customer' ? (last.sender_name || 'Cliente') : ('Cliente ' + last.customer_id.slice(0, 8));
+    var section = document.createElement('div');
+    section.style.cssText = 'margin:8px 0;padding:8px;border:1px solid rgba(255,255,255,.08);border-radius:12px;';
+    section.innerHTML = '<div style="font-size:11px;color:#f8e7a6;font-weight:700;margin-bottom:5px;">👤 ' + title + '</div>';
+    list.slice(-8).forEach(function(item) {
+      var row = document.createElement('div');
+      row.style.cssText = 'max-width:86%;padding:8px 10px;margin:4px 0;font-size:12px;line-height:1.35;border-radius:10px;' + (item.sender_role === 'driver' ? 'margin-left:auto;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;' : 'background:rgba(255,255,255,.05);color:#eef2ff;');
+      row.textContent = item.message;
+      section.appendChild(row);
+    });
+    panel.appendChild(section);
+  });
+  var inputWrap = document.createElement('div');
+  inputWrap.style.cssText = 'display:flex;gap:7px;position:sticky;bottom:0;padding-top:8px;background:rgba(14,14,18,.98);';
+  inputWrap.innerHTML = '<input id="lux-driver-chat-input" placeholder="Responde al cliente" style="flex:1;padding:10px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:rgba(255,255,255,.05);color:#fff;outline:none;"><button type="button" style="border:0;border-radius:9px;padding:0 12px;background:#d4af37;color:#111;font-weight:700;cursor:pointer;">Enviar</button>';
+  inputWrap.querySelector('button').onclick = sendDriverChatMessage;
+  inputWrap.querySelector('input').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendDriverChatMessage(); });
+  panel.appendChild(inputWrap);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+async function sendDriverChatMessage() {
+  var input = document.getElementById('lux-driver-chat-input');
+  var text = (input && input.value || '').trim();
+  var lastCustomer = driverChatMessages.slice().reverse().find(function(item) { return item.sender_role === 'customer'; });
+  if (!text || !lastCustomer) return;
+  input.value = '';
+  try {
+    await driverApi('/api/driver-chat/messages', { method: 'POST', body: { customerId: lastCustomer.customer_id, driverId: choferId, message: text } });
+    await refreshDriverChat();
+  } catch (e) {
+    notify('No se pudo enviar el mensaje al cliente', 'err');
+  }
+}
 
 async function setOnline(state) {
   if (!choferId) return;

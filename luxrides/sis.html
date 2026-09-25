@@ -220,6 +220,27 @@
 </head>
 <body>
 
+<div id="admin-profile-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.56);display:none;align-items:center;justify-content:center;z-index:20000;">
+  <div style="width:min(420px,calc(100vw - 28px));background:#121212;border:1px solid rgba(212,175,55,.32);border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.45);padding:22px 20px;color:#fff;position:relative;">
+    <button onclick="cerrarPerfilAdmin()" style="position:absolute;top:12px;right:12px;border:none;background:transparent;color:#fff;font-size:20px;cursor:pointer;">✕</button>
+    <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#f4d67a;font-weight:700;margin-bottom:8px;">Perfil admin</div>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 0 14px;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;font-size:22px;font-weight:800;">A</div>
+      <div>
+        <div id="admin-profile-name" style="font-size:1.08rem;font-weight:700;">Admin</div>
+        <div id="admin-profile-id" style="font-size:.8rem;color:#c7cce0;">ID: —</div>
+      </div>
+    </div>
+    <div style="padding-top:12px;display:flex;flex-direction:column;gap:10px;">
+      <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:12px;">
+        <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#9aa0b5;">Rol</div>
+        <div style="margin-top:5px;font-weight:600;">Despachador / Operación</div>
+      </div>
+      <button onclick="cerrarSesionAdmin()" style="padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;font-weight:800;cursor:pointer;">🚪 Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
 <div id="login-screen">
   <div class="login-card">
     <h2>🛰️ DESPACHO</h2>
@@ -237,6 +258,7 @@
 <header>
   <h1>🛰️ DESPACHO LUXRIDES</h1>
   <p>Solo el despachador puede asignar viajes</p>
+  <button id="btn-admin-profile" onclick="abrirPerfilAdmin()" title="Perfil del admin" style="position:absolute;right:26px;top:18px;border:none;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;border-radius:999px;padding:9px 14px;font-weight:800;cursor:pointer;">👤 Perfil</button>
   <button id="btn-groq-admin" onclick="abrirIovoxAdmin()" title="Asistente IA (Groq)">💬</button>
 </header>
 
@@ -491,6 +513,7 @@ async function intentarLogin(){
     var data = await res.json().catch(function(){ return {}; });
     if (res.ok && data.ok) {
       errorEl.style.display = 'none';
+      sessionStorage.setItem('luxrides_admin_id', id);
       sessionStorage.setItem(ADMIN_SESSION_KEY, 'ok');
       if (data.sessionToken) sessionStorage.setItem(ADMIN_TOKEN_KEY, data.sessionToken);
       mostrarApp();
@@ -507,7 +530,39 @@ async function intentarLogin(){
 function mostrarApp(){
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-content').style.display = 'block';
+  actualizarPerfilAdmin();
   setTimeout(function() { initMapaChoferes(); }, 800);
+}
+
+function actualizarPerfilAdmin(){
+  var nameEl = document.getElementById('admin-profile-name');
+  var idEl = document.getElementById('admin-profile-id');
+  var id = sessionStorage.getItem('luxrides_admin_id') || 'Admin';
+  if (nameEl) nameEl.textContent = 'Admin ' + id;
+  if (idEl) idEl.textContent = 'ID: ' + id;
+}
+
+function abrirPerfilAdmin(){
+  actualizarPerfilAdmin();
+  var overlay = document.getElementById('admin-profile-overlay');
+  if (overlay) overlay.style.display = 'flex';
+}
+
+function cerrarPerfilAdmin(){
+  var overlay = document.getElementById('admin-profile-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function cerrarSesionAdmin(){
+  sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  sessionStorage.removeItem('luxrides_admin_id');
+  document.getElementById('login-id').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app-content').style.display = 'none';
+  cerrarPerfilAdmin();
+  mostrarToast('✅ Sesión de admin cerrada');
 }
 
 async function verificarSesionAdmin(){
@@ -2437,30 +2492,20 @@ function enviarChatAdmin(message) {
   if (!text) return;
   if (input) input.value = '';
 
-  var a = document.createElement('div');
-  a.style.cssText = 'align-self:flex-end;max-width:82%;padding:10px 12px;border-radius:12px 12px 3px 12px;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;font-size:12px;line-height:1.4;margin:8px 0;';
-  a.textContent = text;
-  panel.appendChild(a);
+  if (window.__luxridesAdminChoferActivo) {
+    abrirChatChoferAdmin(window.__luxridesAdminChoferActivo);
+    enviarChatChoferAdmin(text);
+    panel.style.display = 'none';
+    return;
+  }
 
-  var bot = document.createElement('div');
-  bot.style.cssText = 'align-self:flex-start;max-width:82%;padding:10px 12px;border-radius:12px 12px 12px 3px;background:rgba(255,255,255,0.04);color:#eef2ff;border:1px solid rgba(255,255,255,0.08);font-size:12px;line-height:1.4;margin:4px 0;';
-  bot.textContent = 'Pensando…';
-  panel.appendChild(bot);
-
-  var apiBase = (window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
-  fetch(apiBase + '/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: [{ role: 'user', content: text }] })
-  }).then(function(res) { return res.json(); }).then(function(data) {
-    if (bot) {
-      bot.textContent = data && data.reply ? data.reply : 'No pude responder ahora.';
-    }
-  }).catch(function() {
-    if (bot) bot.textContent = 'No pude contactar al asistente. Reintenta en unos segundos.';
-  });
-
+  var notice = document.createElement('div');
+  notice.style.cssText = 'align-self:flex-start;max-width:90%;padding:10px 12px;border-radius:12px;background:rgba(212,175,55,.12);color:#f8e7a6;border:1px solid rgba(212,175,55,.25);font-size:12px;line-height:1.4;margin:4px 0;';
+  notice.textContent = 'Selecciona un chofer desde su panel en vivo para enviarle mensajes directos.';
+  panel.appendChild(notice);
   panel.scrollTop = panel.scrollHeight;
+  return;
+
 }
 
 function toggleAdminChat() {
@@ -2483,7 +2528,7 @@ function buildAdminChatWidget() {
   inputWrap.style.cssText = 'display:flex;gap:8px;margin-top:8px;width:100%;';
   var input = document.createElement('input');
   input.id = 'luxrides-chat-input';
-  input.placeholder = 'Escribe para comunicarte con LuxRides AI';
+  input.placeholder = 'Selecciona un chofer y escribe un mensaje';
   input.style.cssText = 'flex:1;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,55,.12);border-radius:10px;color:#fff;font-size:13px;outline:none;';
   input.addEventListener('keydown', function(e) { if (e.key === 'Enter') enviarChatAdmin(); });
   var send = document.createElement('button');
@@ -2644,27 +2689,19 @@ function enviarChatChoferAdmin() {
 
   var bot = document.createElement('div');
   bot.style.cssText = 'align-self:flex-start;max-width:82%;padding:10px 12px;border-radius:12px 12px 12px 3px;background:rgba(255,255,255,0.04);color:#eef2ff;border:1px solid rgba(255,255,255,0.08);font-size:12px;line-height:1.4;';
-  bot.textContent = 'Revisando disponibilidad del chofer…';
+  bot.textContent = 'Enviando al chofer…';
   body.appendChild(bot);
   body.scrollTop = body.scrollHeight;
 
-  var phone = obtenerTelefonoChofer(ch);
-  if (phone) {
-    var msgW = encodeURIComponent('📍 Mensaje de operación LuxRides\n\n' + text + '\n\nChofer: ' + (ch.nombre || 'Chofer'));
-    setTimeout(function() { window.open('https://wa.me/' + phone + '?text=' + msgW, '_blank'); }, 150);
-  }
-
-  _callIA([{ role: 'user', content: 'Eres el asistente de coordinación LuxRides. El operador le escribe al chofer ' + (ch.nombre || 'el chofer') + ': "' + text + '". Responde como una respuesta breve y útil para el chofer.' }])
-    .then(function(reply) {
-      bot.textContent = reply || 'Confirmado, estoy revisando la ruta.';
-      history.push({ from: 'driver', text: bot.textContent, ts: Date.now() });
-      guardarHistorialChatChoferAdmin(ch, history);
-    })
-    .catch(function() {
-      bot.textContent = 'Confirmado. Estoy revisando la ruta y te respondo pronto.';
-      history.push({ from: 'driver', text: bot.textContent, ts: Date.now() });
-      guardarHistorialChatChoferAdmin(ch, history);
-    });
+  adminApi('/driver-chat/messages', {
+    method: 'POST',
+    body: JSON.stringify({ customerId: 'admin', driverId: ch.id, message: text })
+  }).then(function() {
+    bot.textContent = '✅ Mensaje entregado a ' + (ch.nombre || 'el chofer') + '. Lo verá en su bandeja de mensajes.';
+  }).catch(function(error) {
+    bot.textContent = 'No se pudo entregar el mensaje al chofer.';
+    console.warn('[Admin driver chat]', error);
+  });
 }
 
 function abrirChatChoferAdminDesdePanel() {
