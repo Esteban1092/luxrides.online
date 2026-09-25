@@ -8707,6 +8707,9 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
 
     <script>
       (function() {
+        var driverChatRenderedKey = '';
+        var driverChatRenderedSnapshot = null;
+
         function _fetchJsonWithTimeout(url, options, timeoutMs) {
           var ctrl = new AbortController();
           var timer = setTimeout(function() { ctrl.abort(); }, timeoutMs || 12000);
@@ -8787,9 +8790,14 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
             });
             const data = await response.json().catch(function() { return {}; });
             if (response.ok && data.ok && Array.isArray(data.messages)) {
+              const storageKey = getDriverChatStorageKey();
+              const snapshot = JSON.stringify(data.messages);
+              if (storageKey === driverChatRenderedKey && snapshot === driverChatRenderedSnapshot) return;
               const history = data.messages.map(function(item) {
                 return { from: item.sender_role === 'customer' ? 'user' : item.sender_role, text: item.message, ts: item.created_at };
               });
+              driverChatRenderedKey = storageKey;
+              driverChatRenderedSnapshot = snapshot;
               saveDriverChatHistory(history);
               renderDriverChatHistory();
             }
@@ -8824,6 +8832,12 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
         function renderDriverChatHistory() {
           const panel = document.getElementById('luxrides-driver-chat-panel');
           if (!panel) return;
+          const previousInput = document.getElementById('luxrides-driver-chat-input');
+          const draft = previousInput ? previousInput.value : '';
+          const hadFocus = previousInput && document.activeElement === previousInput;
+          const selectionStart = hadFocus ? previousInput.selectionStart : null;
+          const selectionEnd = hadFocus ? previousInput.selectionEnd : null;
+          const wasAtBottom = panel.scrollHeight - panel.scrollTop - panel.clientHeight < 48;
           const driver = getCurrentDriverForChat();
           const userName = getCurrentUserChatIdentity().name;
           const history = loadDriverChatHistory();
@@ -8854,6 +8868,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
           input.id = 'luxrides-driver-chat-input';
           input.placeholder = 'Escribe un mensaje al chofer';
           input.style.cssText = 'flex:1;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:13px;outline:none;';
+          input.value = draft;
           input.addEventListener('keydown', function(e) { if (e.key === 'Enter') enviarChatConductor(); });
           const send = document.createElement('button');
           send.textContent = 'Enviar';
@@ -8862,7 +8877,11 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
           inputWrap.appendChild(input);
           inputWrap.appendChild(send);
           panel.appendChild(inputWrap);
-          panel.scrollTop = panel.scrollHeight;
+          if (wasAtBottom) panel.scrollTop = panel.scrollHeight;
+          if (hadFocus) {
+            input.focus({ preventScroll: true });
+            if (selectionStart !== null && selectionEnd !== null) input.setSelectionRange(selectionStart, selectionEnd);
+          }
         }
 
         function enviarChatConductor(message) {

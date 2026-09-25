@@ -2587,6 +2587,43 @@ function obtenerTelefonoChofer(ch) {
   return '';
 }
 
+var chatChoferAdminRefreshTimer = null;
+
+function renderizarMensajesChatChoferAdmin(ch, messages) {
+  var body = document.getElementById('luxrides-chofer-chat-body');
+  if (!body || !ch || !window.__luxridesAdminChoferActivo || window.__luxridesAdminChoferActivo.id !== ch.id) return;
+  body.innerHTML = '';
+  var history = (messages || []).map(function(item) {
+    return { from: item.sender_role, text: item.message, ts: item.created_at };
+  });
+  guardarHistorialChatChoferAdmin(ch, history);
+  history.forEach(function(item) {
+    var row = document.createElement('div');
+    row.style.cssText = 'max-width:82%;padding:10px 12px;border-radius:12px;line-height:1.4;font-size:12px;' + (item.from === 'admin' ? 'align-self:flex-end;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;border-radius:12px 12px 3px 12px;' : 'align-self:flex-start;background:rgba(255,255,255,0.04);color:#eef2ff;border:1px solid rgba(255,255,255,0.08);border-radius:12px 12px 12px 3px;');
+    row.textContent = item.text;
+    body.appendChild(row);
+  });
+  if (!history.length) {
+    var intro = document.createElement('div');
+    intro.style.cssText = 'align-self:flex-start;max-width:92%;padding:10px 12px;border-radius:12px 12px 12px 3px;background:rgba(255,255,255,0.04);color:#eef2ff;border:1px solid rgba(255,255,255,0.08);font-size:12px;line-height:1.4;';
+    intro.textContent = 'Puedes dejar un mensaje para ' + (ch.nombre || 'el chofer') + ' y confirmar ubicación o tiempo estimado.';
+    body.appendChild(intro);
+  }
+  body.scrollTop = body.scrollHeight;
+}
+
+async function actualizarChatChoferAdmin() {
+  var ch = window.__luxridesAdminChoferActivo;
+  var root = document.getElementById('luxrides-chofer-chat-root');
+  if (!ch || !root || root.style.display === 'none') return;
+  try {
+    var result = await adminApi('/driver-chat/messages?customerId=admin&driverId=' + encodeURIComponent(ch.id), { method: 'GET' });
+    renderizarMensajesChatChoferAdmin(ch, result.messages || []);
+  } catch (error) {
+    console.warn('[Admin driver chat refresh]', error);
+  }
+}
+
 function abrirChatChoferAdmin(ch) {
   if (!ch) return;
   var root = document.getElementById('luxrides-chofer-chat-root');
@@ -2666,6 +2703,8 @@ function abrirChatChoferAdmin(ch) {
 
   var rootEl = document.getElementById('luxrides-chofer-chat-root');
   if (rootEl) rootEl.style.display = 'flex';
+  actualizarChatChoferAdmin();
+  if (!chatChoferAdminRefreshTimer) chatChoferAdminRefreshTimer = setInterval(actualizarChatChoferAdmin, 5000);
 }
 
 function cerrarChatChoferAdmin() {
@@ -2725,8 +2764,9 @@ function enviarChatChoferAdmin() {
     body: JSON.stringify({ customerId: 'admin', driverId: ch.id, message: text })
   }).then(function() {
     bot.textContent = '✅ Mensaje entregado a ' + (ch.nombre || 'el chofer') + '. Lo verá en su bandeja de mensajes.';
+    actualizarChatChoferAdmin();
   }).catch(function(error) {
-    bot.textContent = 'No se pudo entregar el mensaje al chofer.';
+    bot.textContent = error.message || 'No se pudo entregar el mensaje al chofer.';
     console.warn('[Admin driver chat]', error);
   });
 }

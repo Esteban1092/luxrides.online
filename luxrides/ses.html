@@ -2540,6 +2540,7 @@ cerrarStripeModal = function() {
 var driverChatWidget = null;
 var driverChatMessages = [];
 var driverChatRenderedSnapshot = null;
+var driverChatSelectedCustomerId = null;
 
 function buildDriverChatWidget() {
   if (driverChatWidget || !document.body) return;
@@ -2575,6 +2576,10 @@ async function refreshDriverChat() {
     var snapshot = JSON.stringify(messages);
     if (snapshot === driverChatRenderedSnapshot) return;
     driverChatMessages = messages;
+    var incoming = messages.filter(function(item) { return item.sender_role === 'customer' || item.sender_role === 'admin'; });
+    if (!incoming.some(function(item) { return String(item.customer_id) === String(driverChatSelectedCustomerId); })) {
+      driverChatSelectedCustomerId = incoming.length ? incoming[incoming.length - 1].customer_id : null;
+    }
     driverChatRenderedSnapshot = snapshot;
     renderDriverChatWidget();
   } catch (e) { console.warn('[Driver chat]', e); }
@@ -2601,12 +2606,18 @@ function renderDriverChatWidget() {
   });
   Object.keys(grouped).forEach(function(key) {
     var list = grouped[key];
-    var last = list[list.length - 1];
-    var title = last.customer_id === 'admin'
+    var incoming = list.find(function(item) { return item.sender_role === 'customer' || item.sender_role === 'admin'; }) || list[0];
+    var customerId = incoming.customer_id;
+    var selected = String(customerId) === String(driverChatSelectedCustomerId);
+    var title = customerId === 'admin'
       ? 'Admin LuxRides'
-      : (last.sender_name || ('Cliente ' + String(last.customer_id || '').slice(0, 8)));
+      : (incoming.sender_name || ('Cliente ' + String(customerId || '').slice(0, 8)));
     var section = document.createElement('div');
-    section.style.cssText = 'margin:8px 0;padding:8px;border:1px solid rgba(255,255,255,.08);border-radius:12px;';
+    section.style.cssText = 'margin:8px 0;padding:8px;border:1px solid ' + (selected ? 'rgba(212,175,55,.65)' : 'rgba(255,255,255,.08)') + ';border-radius:12px;cursor:pointer;';
+    section.onclick = function() {
+      driverChatSelectedCustomerId = customerId;
+      renderDriverChatWidget();
+    };
     section.innerHTML = '<div style="font-size:11px;color:#f8e7a6;font-weight:700;margin-bottom:5px;">👤 ' + title + '</div>';
     list.slice(-8).forEach(function(item) {
       var row = document.createElement('div');
@@ -2634,8 +2645,13 @@ function renderDriverChatWidget() {
 async function sendDriverChatMessage() {
   var input = document.getElementById('lux-driver-chat-input');
   var text = (input && input.value || '').trim();
-  var lastIncoming = driverChatMessages.slice().reverse().find(function(item) { return item.sender_role === 'customer' || item.sender_role === 'admin'; });
-  if (!text || !lastIncoming) return;
+  var lastIncoming = driverChatMessages.slice().reverse().find(function(item) {
+    return String(item.customer_id) === String(driverChatSelectedCustomerId) && (item.sender_role === 'customer' || item.sender_role === 'admin');
+  });
+  if (!text || !lastIncoming) {
+    if (text) notify('Selecciona primero la conversación que quieres responder.', 'err');
+    return;
+  }
   input.value = '';
   try {
     await driverApi('/api/driver-chat/messages', { method: 'POST', body: { customerId: lastIncoming.customer_id, driverId: choferId, message: text } });
