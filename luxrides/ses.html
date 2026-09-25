@@ -2539,6 +2539,7 @@ cerrarStripeModal = function() {
 
 var driverChatWidget = null;
 var driverChatMessages = [];
+var driverChatRenderedSnapshot = null;
 
 function buildDriverChatWidget() {
   if (driverChatWidget || !document.body) return;
@@ -2570,7 +2571,11 @@ async function refreshDriverChat() {
   if (!driverChatWidget || !choferId || !getDriverSessionToken()) return;
   try {
     var data = await driverApi('/api/driver-chat/messages?driverId=' + encodeURIComponent(choferId));
-    driverChatMessages = Array.isArray(data.messages) ? data.messages : [];
+    var messages = Array.isArray(data.messages) ? data.messages : [];
+    var snapshot = JSON.stringify(messages);
+    if (snapshot === driverChatRenderedSnapshot) return;
+    driverChatMessages = messages;
+    driverChatRenderedSnapshot = snapshot;
     renderDriverChatWidget();
   } catch (e) { console.warn('[Driver chat]', e); }
 }
@@ -2578,6 +2583,12 @@ async function refreshDriverChat() {
 function renderDriverChatWidget() {
   if (!driverChatWidget) return;
   var panel = driverChatWidget.panel;
+  var previousInput = document.getElementById('lux-driver-chat-input');
+  var draft = previousInput ? previousInput.value : '';
+  var hadFocus = previousInput && document.activeElement === previousInput;
+  var selectionStart = hadFocus ? previousInput.selectionStart : null;
+  var selectionEnd = hadFocus ? previousInput.selectionEnd : null;
+  var wasAtBottom = panel.scrollHeight - panel.scrollTop - panel.clientHeight < 48;
   panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:8px;margin-bottom:8px;"><strong style="font-size:12px;color:#f8e7a6;">💬 Chat con clientes</strong><span style="font-size:11px;color:#9aa0b5;">' + (choferData && choferData.nombre ? choferData.nombre : 'Chofer') + '</span></div>';
   if (!driverChatMessages.length) {
     panel.innerHTML += '<div style="padding:12px;color:#b8bfd5;font-size:12px;line-height:1.5;">Aún no tienes mensajes de clientes. Cuando un usuario escriba, aparecerá aquí.</div>';
@@ -2608,10 +2619,16 @@ function renderDriverChatWidget() {
   var inputWrap = document.createElement('div');
   inputWrap.style.cssText = 'display:flex;gap:7px;position:sticky;bottom:0;padding-top:8px;background:rgba(14,14,18,.98);';
   inputWrap.innerHTML = '<input id="lux-driver-chat-input" placeholder="Responde a esta conversación" style="flex:1;padding:10px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:rgba(255,255,255,.05);color:#fff;outline:none;"><button type="button" style="border:0;border-radius:9px;padding:0 12px;background:#d4af37;color:#111;font-weight:700;cursor:pointer;">Enviar</button>';
+  var nextInput = inputWrap.querySelector('input');
+  nextInput.value = draft;
   inputWrap.querySelector('button').onclick = sendDriverChatMessage;
   inputWrap.querySelector('input').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendDriverChatMessage(); });
   panel.appendChild(inputWrap);
-  panel.scrollTop = panel.scrollHeight;
+  if (wasAtBottom) panel.scrollTop = panel.scrollHeight;
+  if (hadFocus) {
+    nextInput.focus({ preventScroll: true });
+    if (selectionStart !== null && selectionEnd !== null) nextInput.setSelectionRange(selectionStart, selectionEnd);
+  }
 }
 
 async function sendDriverChatMessage() {
