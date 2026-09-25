@@ -4537,6 +4537,21 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         _choferRutaUltimoDestino = null;
       }
 
+      function limpiarSeguimientoViajeFinalizado() {
+        if (_reservaChannel) { try { sbClient.removeChannel(_reservaChannel); } catch(e) {} _reservaChannel = null; }
+        if (_choferChannel) { try { sbClient.removeChannel(_choferChannel); } catch(e) {} _choferChannel = null; }
+        if (_choferPollInterval) { clearInterval(_choferPollInterval); _choferPollInterval = null; }
+        limpiarTrackingChofer();
+        _choferInfoActual = null;
+        _choferUltimaUbicacion = null;
+        var card = document.getElementById('driver-card');
+        if (card) card.style.display = 'none';
+        var chatRoot = document.getElementById('luxrides-driver-chat-root');
+        if (chatRoot) chatRoot.classList.remove('open');
+        var chatPanel = document.getElementById('luxrides-driver-chat-panel');
+        if (chatPanel) chatPanel.style.display = 'none';
+      }
+
       function actualizarMarcadorChofer(lat, lng, nombre) {
         if (!_mapaInstance) return;
         const pos = _gmapsLatLng(lat, lng);
@@ -4688,6 +4703,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         try {
           const { data: reserva } = await sbClient.from('reservas').select('*').eq('reserva_id', reservaId).maybeSingle();
           if (reserva) {
+            const estadoReserva = String(reserva.estado || '').toLowerCase();
+            if (estadoReserva === 'completado' || estadoReserva === 'finalizado') {
+              limpiarSeguimientoViajeFinalizado();
+              return;
+            }
             // Restaurar coordenadas del origen desde la BD si no están en memoria
             if (!coordOrigen && reserva.origen_lat && reserva.origen_lng) {
               coordOrigen = { lat: Number(reserva.origen_lat), lon: Number(reserva.origen_lng), display: reserva.origen || '' };
@@ -4717,6 +4737,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               });
             }
             if (v.reserva_id === reservaId && (v.estado === 'completado' || v.estado === 'finalizado')) {
+              limpiarSeguimientoViajeFinalizado();
               setTimeout(function() { abrirRating(); }, 1200);
             }
           })
@@ -4737,6 +4758,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               });
             }
             if (r.reserva_id === reservaId && (r.estado === 'completado' || r.estado === 'finalizado')) {
+              limpiarSeguimientoViajeFinalizado();
               setTimeout(function() { abrirRating(); }, 1200);
             }
           })

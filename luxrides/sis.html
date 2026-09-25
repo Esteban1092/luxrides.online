@@ -1231,12 +1231,21 @@ async function refrescarReservasSilencioso() {
     var data = await dbGetAll('reservas');
     if (!data || !data.length) return;
     var huboNueva = false;
+    var idsActivos = {};
     data.forEach(function(r) {
       var estado = String(r.estado || '').toLowerCase();
       if (!['pendiente', 'asignado', 'en curso', 'en_curso'].includes(estado)) return;
+      idsActivos[r.reserva_id] = true;
       if (!reservasActivas[r.reserva_id]) huboNueva = true;
       reservasActivas[r.reserva_id] = r;
       reservaEstadosPrevios[r.reserva_id] = estado;
+    });
+    Object.keys(reservasActivas).forEach(function(reservaId) {
+      if (!idsActivos[reservaId]) {
+        delete reservasActivas[reservaId];
+        delete reservaEstadosPrevios[reservaId];
+        huboNueva = true;
+      }
     });
     if (huboNueva) { renderizarClientes(); scheduleActualizarMapa(); }
   } catch (e) { /* silencioso */ }
@@ -1267,6 +1276,15 @@ function manejarCambioReserva(payload) {
     if ((estadoNormalizado === 'en curso' || estadoNormalizado === 'en_curso') && estadoPrevio === 'asignado') {
       notify('🚘 ' + (r.chofer_nombre || 'Chofer') + ' recogió a ' + (r.cliente || 'cliente'), 'ok');
     }
+  }
+
+  if (['completado', 'finalizado'].includes(estadoNormalizado)) {
+    delete reservasActivas[r.reserva_id];
+    delete reservaEstadosPrevios[r.reserva_id];
+    renderizarClientes();
+    scheduleActualizarMapa();
+    notify('✅ Viaje finalizado: cliente retirado del mapa.', 'ok');
+    return;
   }
 
   reservasActivas[r.reserva_id] = r;
