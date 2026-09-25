@@ -23,8 +23,11 @@ async function supabaseRequest(path, options = {}) {
   const response = await fetch(env.supabaseUrl + '/rest/v1/' + path, options);
   const data = await response.json().catch(() => null);
   if (!response.ok) {
-    const error = new Error(data?.message || data?.error || 'Error de Supabase');
-    error.status = response.status;
+    const missingChatTable = response.status === 404 && (data?.code === 'PGRST205' || String(data?.message || '').includes('driver_chat_messages'));
+    const error = new Error(missingChatTable
+      ? 'El chat aún no está configurado en Supabase. Ejecuta backend/src/migrations/20260925_driver_chat.sql en el SQL Editor de Supabase.'
+      : (data?.message || data?.error || 'Error de Supabase'));
+    error.status = missingChatTable ? 503 : response.status;
     throw error;
   }
   return data;

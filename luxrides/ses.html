@@ -2591,7 +2591,9 @@ function renderDriverChatWidget() {
   Object.keys(grouped).forEach(function(key) {
     var list = grouped[key];
     var last = list[list.length - 1];
-    var title = last.sender_role === 'customer' ? (last.sender_name || 'Cliente') : ('Cliente ' + last.customer_id.slice(0, 8));
+    var title = last.customer_id === 'admin'
+      ? 'Admin LuxRides'
+      : (last.sender_name || ('Cliente ' + String(last.customer_id || '').slice(0, 8)));
     var section = document.createElement('div');
     section.style.cssText = 'margin:8px 0;padding:8px;border:1px solid rgba(255,255,255,.08);border-radius:12px;';
     section.innerHTML = '<div style="font-size:11px;color:#f8e7a6;font-weight:700;margin-bottom:5px;">👤 ' + title + '</div>';
@@ -2605,7 +2607,7 @@ function renderDriverChatWidget() {
   });
   var inputWrap = document.createElement('div');
   inputWrap.style.cssText = 'display:flex;gap:7px;position:sticky;bottom:0;padding-top:8px;background:rgba(14,14,18,.98);';
-  inputWrap.innerHTML = '<input id="lux-driver-chat-input" placeholder="Responde al cliente" style="flex:1;padding:10px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:rgba(255,255,255,.05);color:#fff;outline:none;"><button type="button" style="border:0;border-radius:9px;padding:0 12px;background:#d4af37;color:#111;font-weight:700;cursor:pointer;">Enviar</button>';
+  inputWrap.innerHTML = '<input id="lux-driver-chat-input" placeholder="Responde a esta conversación" style="flex:1;padding:10px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:rgba(255,255,255,.05);color:#fff;outline:none;"><button type="button" style="border:0;border-radius:9px;padding:0 12px;background:#d4af37;color:#111;font-weight:700;cursor:pointer;">Enviar</button>';
   inputWrap.querySelector('button').onclick = sendDriverChatMessage;
   inputWrap.querySelector('input').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendDriverChatMessage(); });
   panel.appendChild(inputWrap);
@@ -2615,14 +2617,14 @@ function renderDriverChatWidget() {
 async function sendDriverChatMessage() {
   var input = document.getElementById('lux-driver-chat-input');
   var text = (input && input.value || '').trim();
-  var lastCustomer = driverChatMessages.slice().reverse().find(function(item) { return item.sender_role === 'customer'; });
-  if (!text || !lastCustomer) return;
+  var lastIncoming = driverChatMessages.slice().reverse().find(function(item) { return item.sender_role === 'customer' || item.sender_role === 'admin'; });
+  if (!text || !lastIncoming) return;
   input.value = '';
   try {
-    await driverApi('/api/driver-chat/messages', { method: 'POST', body: { customerId: lastCustomer.customer_id, driverId: choferId, message: text } });
+    await driverApi('/api/driver-chat/messages', { method: 'POST', body: { customerId: lastIncoming.customer_id, driverId: choferId, message: text } });
     await refreshDriverChat();
   } catch (e) {
-    notify('No se pudo enviar el mensaje al cliente', 'err');
+    notify(e.message || 'No se pudo enviar el mensaje', 'err');
   }
 }
 

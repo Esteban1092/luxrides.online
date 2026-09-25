@@ -8903,12 +8903,15 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
               headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
               body: JSON.stringify({ customerId: user.id, driverId: driver.id, message: text })
             });
-          }).then(function(response) {
-            if (!response.ok) throw new Error('No se pudo enviar el mensaje');
+          }).then(async function(response) {
+            if (!response.ok) {
+              const data = await response.json().catch(function() { return {}; });
+              throw new Error(data.error || 'No se pudo enviar el mensaje');
+            }
             return syncDriverChatHistory();
           }).catch(function(error) {
             const hist = loadDriverChatHistory();
-            hist.push({ from: 'system', text: 'No se pudo conectar con el chofer. Intenta nuevamente.', ts: Date.now() });
+            hist.push({ from: 'system', text: error.message || 'No se pudo conectar con el chofer. Intenta nuevamente.', ts: Date.now() });
             saveDriverChatHistory(hist);
             renderDriverChatHistory();
             console.warn('[Driver chat send]', error);
