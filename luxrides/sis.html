@@ -1998,7 +1998,7 @@ function renderizarChoferes() {
       + (ch.ubicacion ? '<div class="viaje-actual" style="color:#86efac;">📍 GPS activo</div>' : '')
       + '<div class="chofer-actions"><button class="btn-small" onclick="editarNombreChofer(\'' + ch.id + '\')">✏️ Nombre</button><button class="btn-small" onclick="asignarHotel(\'' + ch.id + '\')">' + (isGuia ? '📍 Base' : '🏨 Hotel') + '</button>'
       + (isGuia ? '' : '<button class="btn-small" onclick="abrirModalVehiculo(\'' + ch.id + '\')">🚗 Vehículo</button>')
-      + '<button class="btn-small" onclick="abrirPanelChofer(\'' + ch.id + '\')">📍 Ubicación</button><button class="btn-small" onclick="borrarChoferIndividual(\'' + ch.id + '\')">🗑️ Borrar</button></div></div></div>';
+      + '<button class="btn-small" onclick="abrirPanelChofer(\'' + ch.id + '\')">📍 Ubicación</button><button class="btn-small" onclick="abrirChatChoferAdminPorId(\'' + ch.id + '\')">💬 Chatear</button><button class="btn-small" onclick="borrarChoferIndividual(\'' + ch.id + '\')">🗑️ Borrar</button></div></div></div>';
   });
 
   document.getElementById('cnt-choferes').textContent = filtrados.length;
@@ -2653,6 +2653,15 @@ function abrirChatChoferAdmin(ch) {
 function cerrarChatChoferAdmin() {
   var root = document.getElementById('luxrides-chofer-chat-root');
   if (root) root.style.display = 'none';
+}
+
+function abrirChatChoferAdminPorId(choferId) {
+  var chofer = choferesDisponibles[choferId] || choferesLista.find(function(item) { return String(item.id) === String(choferId); });
+  if (!chofer) {
+    showToast('No se encontró el chofer seleccionado.', true);
+    return;
+  }
+  abrirChatChoferAdmin(chofer);
 }
 
 function guardarHistorialChatChoferAdmin(ch, list) {
