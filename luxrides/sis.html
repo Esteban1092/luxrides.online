@@ -867,7 +867,7 @@ function actualizarMapaChoferes() {
     bounds.extend({ lat: lat, lng: lng });
     visibles++;
 
-    if (r.chofer_id) {
+      if (r.chofer_id) {
       var ch = choferesLista.find(function(c) { return c.id === r.chofer_id; });
       var chUbi = ch ? ch.ubicacion : null;
       var chLat = chUbi ? Number(chUbi.lat) : NaN;
@@ -875,14 +875,41 @@ function actualizarMapaChoferes() {
       var chCoordsOk = isFinite(chLat) && isFinite(chLng) && !(chLat === 0 && chLng === 0);
       if (chUbi && chCoordsOk) {
         var lid = 'linea-' + reservaId;
-        var path = [{ lat: lat, lng: lng }, { lat: chLat, lng: chLng }];
+        var originPoint = { lat: lat, lng: lng };
+        var driverPoint = { lat: chLat, lng: chLng };
+        var routePath = [originPoint, driverPoint];
 
-        if (mapPolylines[lid]) {
-          mapPolylines[lid].setPath(path);
+        if (typeof google !== 'undefined' && google.maps && google.maps.DirectionsService) {
+          var dsvc = new google.maps.DirectionsService();
+          dsvc.route({
+            origin: originPoint,
+            destination: driverPoint,
+            travelMode: google.maps.TravelMode.DRIVING,
+            provideRouteAlternatives: false
+          }, function(result, status) {
+            if (status === 'OK' && result && result.routes && result.routes[0] && result.routes[0].overview_path) {
+              routePath = result.routes[0].overview_path.map(function(p) { return { lat: p.lat(), lng: p.lng() }; });
+            }
+            if (mapPolylines[lid]) {
+              mapPolylines[lid].setPath(routePath);
+              mapPolylines[lid].setVisible(!!rutasVisibles);
+            } else {
+              mapPolylines[lid] = new google.maps.Polyline({
+                path: routePath,
+                strokeColor: '#60A5FA',
+                strokeWeight: 2.5,
+                strokeOpacity: 0.7,
+                map: mapChoferes,
+                visible: !!rutasVisibles
+              });
+            }
+          });
+        } else if (mapPolylines[lid]) {
+          mapPolylines[lid].setPath(routePath);
           mapPolylines[lid].setVisible(!!rutasVisibles);
         } else {
           mapPolylines[lid] = new google.maps.Polyline({
-            path: path,
+            path: routePath,
             strokeColor: '#60A5FA',
             strokeWeight: 2.5,
             strokeOpacity: 0.7,
@@ -908,7 +935,17 @@ function actualizarMapaChoferes() {
     }
   });
 
-  if (visibles > 0) { try { mapChoferes.fitBounds(bounds, 50); } catch(e){} }
+  if (visibles > 0) {
+    try {
+      if (visibles === 1) {
+        var center = bounds.getCenter();
+        mapChoferes.setCenter(center);
+        mapChoferes.setZoom(14);
+      } else {
+        mapChoferes.fitBounds(bounds, 60);
+      }
+    } catch(e){}
+  }
   var _ts = document.getElementById('mapa-timestamp');
   if (_ts) {
     var _ahora = new Date();
@@ -2391,7 +2428,84 @@ async function _callIA(messages) {
   throw (lastErr || new Error('No se pudo contactar al asistente IA.'));
 }
 
+function enviarChatAdmin(message) {
+  var panel = document.getElementById('luxrides-admin-chat');
+  if (!panel) return;
+  var input = document.getElementById('luxrides-chat-input');
+  var text = (message || (input && input.value) || '').trim();
+  if (!text) return;
+  if (input) input.value = '';
+
+  var a = document.createElement('div');
+  a.style.cssText = 'align-self:flex-end;max-width:82%;padding:10px 12px;border-radius:12px 12px 3px 12px;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;font-size:12px;line-height:1.4;margin:8px 0;';
+  a.textContent = text;
+  panel.appendChild(a);
+
+  var bot = document.createElement('div');
+  bot.style.cssText = 'align-self:flex-start;max-width:82%;padding:10px 12px;border-radius:12px 12px 12px 3px;background:rgba(255,255,255,0.04);color:#eef2ff;border:1px solid rgba(255,255,255,0.08);font-size:12px;line-height:1.4;margin:4px 0;';
+  bot.textContent = 'Pensando…';
+  panel.appendChild(bot);
+
+  var apiBase = (window.LuxCfg && LuxCfg.apiBaseUrl && LuxCfg.apiBaseUrl()) || 'https://luxrides.online';
+  fetch(apiBase + '/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: [{ role: 'user', content: text }] })
+  }).then(function(res) { return res.json(); }).then(function(data) {
+    if (bot) {
+      bot.textContent = data && data.reply ? data.reply : 'No pude responder ahora.';
+    }
+  }).catch(function() {
+    if (bot) bot.textContent = 'No pude contactar al asistente. Reintenta en unos segundos.';
+  });
+
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function toggleAdminChat() {
+  var root = document.getElementById('luxrides-admin-chat-root');
+  if (!root) return;
+  root.classList.toggle('open');
+  var input = document.getElementById('luxrides-chat-input');
+  if (root.classList.contains('open') && input) setTimeout(function() { input.focus(); }, 120);
+}
+
+function buildAdminChatWidget() {
+  if (document.getElementById('luxrides-admin-chat-root')) return;
+  var root = document.createElement('div');
+  root.id = 'luxrides-admin-chat-root';
+  root.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:99999;width:min(340px,calc(100vw - 24px));display:flex;flex-direction:column;align-items:flex-end;';
+  var chat = document.createElement('div');
+  chat.id = 'luxrides-admin-chat';
+  chat.style.cssText = 'display:none;width:100%;height:360px;background:rgba(14,14,18,.96);border:1px solid rgba(212,175,55,.25);border-radius:18px 18px 10px 18px;box-shadow:0 18px 52px rgba(0,0,0,.45);padding:12px;overflow-y:auto;color:#fff;';
+  var inputWrap = document.createElement('div');
+  inputWrap.style.cssText = 'display:flex;gap:8px;margin-top:8px;width:100%;';
+  var input = document.createElement('input');
+  input.id = 'luxrides-chat-input';
+  input.placeholder = 'Escribe para comunicarte con LuxRides AI';
+  input.style.cssText = 'flex:1;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,55,.12);border-radius:10px;color:#fff;font-size:13px;outline:none;';
+  input.addEventListener('keydown', function(e) { if (e.key === 'Enter') enviarChatAdmin(); });
+  var send = document.createElement('button');
+  send.textContent = 'Enviar';
+  send.style.cssText = 'border:none;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;border-radius:10px;padding:0 14px;font-weight:700;cursor:pointer;';
+  send.onclick = function() { enviarChatAdmin(); };
+  inputWrap.appendChild(input); inputWrap.appendChild(send);
+  chat.appendChild(document.createElement('div'));
+  root.appendChild(chat); root.appendChild(inputWrap);
+  var fab = document.createElement('button');
+  fab.textContent = '💬';
+  fab.style.cssText = 'margin-top:10px;border:none;background:linear-gradient(135deg,#d4af37,#b8942e);color:#111;border-radius:50%;width:58px;height:58px;font-size:24px;cursor:pointer;box-shadow:0 16px 36px rgba(212,175,55,.28);';
+  fab.onclick = function() {
+    var isOpen = chat.style.display === 'block';
+    chat.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) { setTimeout(function() { input.focus(); }, 80); }
+  };
+  root.appendChild(fab);
+  document.body.appendChild(root);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+  buildAdminChatWidget();
   refrescarEtiquetasAltaRapida();
   if (SUPABASE) {
     setBadge('badge-supabase', 'ok', 'Supabase: activo ✓');

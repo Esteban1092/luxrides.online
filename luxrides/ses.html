@@ -2255,27 +2255,56 @@ function actualizarEstadoUI() {
   cargarPerfil();
 }
 
+function mountStripeCardElement(containerId) {
+  if (!stripeInstance || !stripeCardElement) return;
+  var host = document.getElementById(containerId);
+  if (!host) return;
+  try {
+    if (stripeCardElement.unmount) {
+      try { stripeCardElement.unmount(); } catch (e) {}
+    }
+    stripeCardElement.mount(host);
+  } catch (e) {
+    console.warn('Stripe mount failed for ' + containerId + ':', e);
+  }
+}
+
 function initStripeRetiro() {
-  if (stripeInstance) return;
+  if (stripeInstance && stripeCardElement) {
+    mountStripeCardElement('stripe-card-element');
+    return;
+  }
   var pk = (window.LuxCfg && LuxCfg.stripePk()) || '';
-  if (!pk) return;
+  if (!pk) {
+    notify('⚠️ Stripe no está configurado para las tarjetas.', 'err');
+    return;
+  }
   stripeInstance = Stripe(pk);
   var elements = stripeInstance.elements();
-  stripeCardElement = elements.create('card', { style: { base: { fontSize: '16px', color: '#fff', '::placeholder': { color: 'rgba(255,255,255,.3)' } } } });
-  stripeCardElement.mount('#stripe-card-element');
-  stripeCardElement.addEventListener('change', function(e) {
-    document.getElementById('stripe-card-error').textContent = e.error ? e.error.message : '';
+  stripeCardElement = elements.create('card', {
+    hidePostalCode: true,
+    style: { base: { fontSize: '16px', color: '#fff', '::placeholder': { color: 'rgba(255,255,255,.3)' } } }
   });
+  stripeCardElement.addEventListener('change', function(e) {
+    var errEl = document.getElementById('stripe-card-error');
+    if (errEl) errEl.textContent = e.error ? e.error.message : '';
+  });
+  setTimeout(function() { mountStripeCardElement('stripe-card-element'); }, 40);
 }
 
 function cambiarMetodoRetiro(metodo) {
+  var pill = document.querySelector('.retiro-pill[data-metodo="' + metodo + '"]');
+  if (!pill) return;
   document.querySelectorAll('.retiro-pill').forEach(function(p) { p.classList.remove('active'); });
-  document.querySelector('.retiro-pill[data-metodo="' + metodo + '"]').classList.add('active');
+  pill.classList.add('active');
   document.getElementById('stripe-fields').style.display = metodo === 'stripe' ? 'block' : 'none';
   document.getElementById('transfer-fields').style.display = metodo === 'transferencia' ? 'block' : 'none';
   document.getElementById('retiro-info-stripe').style.display = metodo === 'stripe' ? 'block' : 'none';
   document.getElementById('retiro-info-transfer').style.display = metodo === 'transferencia' ? 'block' : 'none';
-  if (metodo === 'stripe' && !stripeInstance) initStripeRetiro();
+  if (metodo === 'stripe') {
+    initStripeRetiro();
+    setTimeout(function() { mountStripeCardElement('stripe-card-element'); }, 80);
+  }
 }
 
 async function solicitarRetiro() {
@@ -2305,8 +2334,8 @@ async function solicitarRetiro() {
 function openStripeRetiro(monto) {
   document.getElementById('stripe-monto-display').textContent = '$' + formatNum(monto);
   document.getElementById('stripe-modal').style.display = 'flex';
-  if (!stripeCardElement) initStripeRetiro();
-  setTimeout(function() { stripeCardElement && stripeCardElement.mount('#stripe-card-element-modal'); }, 100);
+  initStripeRetiro();
+  setTimeout(function() { mountStripeCardElement('stripe-card-element-modal'); }, 100);
   document.getElementById('btn-pagar-stripe').onclick = function() { procesarPagoStripe(monto); };
 }
 
