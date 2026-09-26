@@ -3866,7 +3866,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       function getRouteMetrics(response){
         const legs = response?.routes?.[0]?.legs || [];
         const distanceMeters = legs.reduce((acc, leg) => acc + (leg.distance?.value || 0), 0);
-        const durationSeconds = legs.reduce((acc, leg) => acc + ((leg.duration_in_traffic?.value) || (leg.duration?.value) || 0), 0);
+        const durationSeconds = legs.reduce((acc, leg) => acc + (leg.duration?.value || 0), 0);
         return {
           distanciaKm: parseFloat((distanceMeters / 1000).toFixed(1)),
           duracionMin: Math.max(1, Math.round(durationSeconds / 60))
@@ -3945,10 +3945,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         document.getElementById('results').style.display='none';
         try {
         let distanciaKm=0,duracionMin=0;
-        let duracionConTrafico=0;
         const esFijoCalc = tipoTraslado==='P';
         if(servicio==='I' && !esFijoCalc){
-          if (_directionsService) {
+          if (_directionsService && waypoints.length) {
             try {
               const gm = await new Promise(function(resolve, reject){
                 _directionsService.route({
@@ -3956,8 +3955,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
                   destination: _gmapsLatLng(coordDestino.lat, coordDestino.lon),
                   waypoints: waypoints,
                   optimizeWaypoints: false,
-                  travelMode: google.maps.TravelMode.DRIVING,
-                  drivingOptions: { departureTime: new Date(), trafficModel: 'bestguess' }
+                  travelMode: google.maps.TravelMode.DRIVING
                 }, function(resp, status){
                   if (status !== 'OK' || !resp) return reject(new Error('Google route status: ' + status));
                   resolve(getRouteMetrics(resp));
@@ -3965,7 +3963,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               });
               distanciaKm = gm.distanciaKm;
               duracionMin = gm.duracionMin;
-              duracionConTrafico = gm.duracionMin;
             } catch (_) {}
           }
 
@@ -4031,7 +4028,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           });
           stripeQuoteToken = quoteOut.token;
           distanciaKm = quoteOut.quote.distanceKm || distanciaKm;
-          duracionMin = duracionConTrafico || quoteOut.quote.durationMin || duracionMin;
+          duracionMin = quoteOut.quote.durationMin || duracionMin;
           casetasTotal = quoteOut.quote.tolls || casetasTotal;
           totalPrecio = quoteOut.quote.amountMx || totalPrecio;
         } catch (quoteErr) {
@@ -4051,7 +4048,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       let _mapaIniciado = false;
       let _mapaInstance = null;
-      let _trafficLayer = null;
       let _rutaId = null;
       let _rutaLayerIds = [];
       let _routeCounter = 0;
@@ -4086,8 +4082,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           fullscreenControl: false,
           gestureHandling: 'greedy'
         });
-        _trafficLayer = new google.maps.TrafficLayer();
-        _trafficLayer.setMap(_mapaInstance);
         _directionsService = new google.maps.DirectionsService();
         _directionsRenderer = new google.maps.DirectionsRenderer({
           map: _mapaInstance,
@@ -4135,8 +4129,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           destination: _gmapsLatLng(latD, lngD),
           waypoints: waypoints,
           optimizeWaypoints: false,
-          travelMode: google.maps.TravelMode.DRIVING,
-          drivingOptions: { departureTime: new Date(), trafficModel: 'bestguess' }
+          travelMode: google.maps.TravelMode.DRIVING
         }, function(response, status) {
           if (reqId !== _routeCounter) return;
           if (status !== 'OK' || !response) {
@@ -4740,8 +4733,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         _directionsService.route({
           origin: _gmapsLatLng(latChofer, lngChofer),
           destination: _gmapsLatLng(latOrigen, lngOrigen),
-          travelMode: google.maps.TravelMode.DRIVING,
-          drivingOptions: { departureTime: new Date(), trafficModel: 'bestguess' }
+          travelMode: google.maps.TravelMode.DRIVING
         }, function(response, status) {
           if (reqId !== _choferRouteCounter) return;
           if (status !== 'OK' || !response || !response.routes || !response.routes[0]) {
@@ -4765,9 +4757,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           }
           const route = response.routes[0];
           const path = google.maps.geometry.encoding.decodePath(route.overview_polyline.points);
-          const mins = Math.max(1, Math.round((route.legs || []).reduce(function(a, l) {
-            return a + ((l.duration_in_traffic && l.duration_in_traffic.value) || (l.duration ? l.duration.value : 0));
-          }, 0) / 60));
+          const mins = Math.max(1, Math.round((route.legs || []).reduce(function(a, l) { return a + (l.duration ? l.duration.value : 0); }, 0) / 60));
           actualizarEtaChofer(mins);
 
           _rutaChoferPolylineSombra = new google.maps.Polyline({ path: path, strokeColor: '#5A3F05', strokeWeight: 10, strokeOpacity: 0.5, map: _mapaInstance, zIndex: 1 });
@@ -8476,40 +8466,6 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
         return 'Responde en ' + idioma + '. El backend contiene las reglas, precios y catalogo oficiales de LuxRides.';
       }
 
-      async function _obtenerContextoTraficoLovox(){
-        if (!coordOrigen || !coordDestino || !window.google || !google.maps || !google.maps.DirectionsService) return '';
-        try {
-          return await new Promise(function(resolve) {
-            var terminado = false;
-            var timer = setTimeout(function() { if (!terminado) { terminado = true; resolve(''); } }, 1800);
-            new google.maps.DirectionsService().route({
-              origin: _gmapsLatLng(coordOrigen.lat, coordOrigen.lon),
-              destination: _gmapsLatLng(coordDestino.lat, coordDestino.lon),
-              waypoints: getWaypointsFromStops(),
-              optimizeWaypoints: false,
-              travelMode: google.maps.TravelMode.DRIVING,
-              drivingOptions: { departureTime: new Date(), trafficModel: 'bestguess' }
-            }, function(response, status) {
-              if (terminado) return;
-              terminado = true;
-              clearTimeout(timer);
-              if (status !== 'OK' || !response || !response.routes || !response.routes[0]) { resolve(''); return; }
-              var legs = response.routes[0].legs || [];
-              var trafficSeconds = legs.reduce(function(total, leg) {
-                return total + ((leg.duration_in_traffic && leg.duration_in_traffic.value) || (leg.duration && leg.duration.value) || 0);
-              }, 0);
-              var normalSeconds = legs.reduce(function(total, leg) { return total + ((leg.duration && leg.duration.value) || 0); }, 0);
-              if (!trafficSeconds) { resolve(''); return; }
-              var minutes = Math.max(1, Math.round(trafficSeconds / 60));
-              var extra = Math.max(0, Math.round((trafficSeconds - normalSeconds) / 60));
-              resolve('Tiempo de manejo con tráfico actual para la ruta seleccionada: aproximadamente ' + minutes + ' minutos' + (extra ? ', unos ' + extra + ' minutos adicionales respecto al flujo libre' : '') + '. Usa este dato como estimación en vivo, no como garantía.');
-            });
-          });
-        } catch (e) {
-          return '';
-        }
-      }
-
       window.abrirAsistente = async function(){
         var ov = document.getElementById('iovox-overlay');
         ov.classList.add('show');
@@ -8654,10 +8610,6 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
         try {
           var sys = await _buildPrompt();
           var messages = [{role:'system',content:sys}].concat(_iovoxHistory.slice(-6));
-          if (/(trafico|tráfico|transito|tránsito|congestion|congestión|atasco|traffic|jam)/i.test(texto)) {
-            var trafficContext = await _obtenerContextoTraficoLovox();
-            if (trafficContext) messages.push({ role: 'system', content: trafficContext });
-          }
           var ia = await _callIA(messages);
           var reply = ia && ia.reply ? ia.reply : ia;
           _setIovoxConnStatus(ia && ia.source ? ia.source : 'esperando');
