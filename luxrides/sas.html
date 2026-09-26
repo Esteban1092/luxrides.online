@@ -5056,8 +5056,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           document.getElementById('rc-dvehicle').textContent = (_choferInfoActual.vehiculo || '') + ' ' + (_choferInfoActual.marca || '') + ' ' + (_choferInfoActual.modelo || '');
           const rcAva = document.getElementById('rc-avatar');
           const rcIco = document.getElementById('rc-avatar-ico');
-          if (_choferInfoActual.foto_url) {
-            rcAva.innerHTML = '<img src="' + _choferInfoActual.foto_url + '" alt=""/>';
+          if (_choferInfoActual.foto_url && /^(https?:|data:image\/)/i.test(String(_choferInfoActual.foto_url))) {
+            rcAva.replaceChildren();
+            const rcImg = document.createElement('img');
+            rcImg.src = _choferInfoActual.foto_url;
+            rcImg.alt = '';
+            rcAva.appendChild(rcImg);
           } else {
             if (rcIco) rcIco.textContent = '🧑';
           }
@@ -7682,6 +7686,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       setTimeout(initHatInteraction, 500);
     })();
 
+    function escapeSasHtml(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function(character) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character];
+      });
+    }
+
     async function cargarViajes() {
       const el = document.getElementById('viajes-content');
       if (!el) return;
@@ -7725,14 +7735,14 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const estado = requierePago
           ? { cls: 'estado-amber', label: ['completado', 'finalizado'].includes(_normalizarEstadoLux(t.estado)) ? 'Viaje finalizado · pago pendiente' : 'Pago pendiente', pending: true }
           : estadoBase;
-        const estadoLabel = estado.label;
+        const estadoLabel = escapeSasHtml(estado.label);
         const estadoClass = estado.cls;
         const dotHtml = `<span class="status-dot ${estadoClass}"><span class="status-dot-ring"></span><span class="status-dot-core"></span></span>`;
-        const fecha  = t.fecha ? _fmtFecha(t.fecha) : (t.timestamp ? _fmtISO(t.timestamp) : '—');
-        const hora   = t.hora_recogida || '';
+        const fecha  = escapeSasHtml(t.fecha ? _fmtFecha(t.fecha) : (t.timestamp ? _fmtISO(t.timestamp) : '—'));
+        const hora   = escapeSasHtml(t.hora_recogida || '');
         const precio = t.total ? '$' + Number(t.total).toLocaleString('es-MX') + ' MXN' : '—';
-        const chofer = t.chofer_nombre || t.driver_name || t.chofer || '';
-        const veh    = t.vehiculo || '';
+        const chofer = escapeSasHtml(t.chofer_nombre || t.driver_name || t.chofer || '');
+        const veh    = escapeSasHtml(t.vehiculo || '');
         return `
           <div class="trip-card">
             <div class="trip-status-row">
@@ -7746,8 +7756,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
                 <div class="trip-dot-d"></div>
               </div>
               <div class="trip-route-text">
-                <div class="trip-route-origen">${t.origen || '—'}</div>
-                <div class="trip-route-destino">${t.destino || '—'}</div>
+                <div class="trip-route-origen">${escapeSasHtml(t.origen || '—')}</div>
+                <div class="trip-route-destino">${escapeSasHtml(t.destino || '—')}</div>
               </div>
             </div>
             <div class="trip-meta">
@@ -7933,18 +7943,18 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         return;
       }
       el.innerHTML = trips.map((t, i) => {
-        const key = t.reserva_id || t.id || ('f' + i);
+        const key = 'f' + i;
         window._factStore[key] = t;
-        const folio  = t.reserva_id || 'LUX-' + (t.id || i);
-        const fecha  = t.fecha ? _fmtFecha(t.fecha) : (t.timestamp ? _fmtISO(t.timestamp) : '—');
+        const folio  = escapeSasHtml(t.reserva_id || 'LUX-' + (t.id || i));
+        const fecha  = escapeSasHtml(t.fecha ? _fmtFecha(t.fecha) : (t.timestamp ? _fmtISO(t.timestamp) : '—'));
         const precio = t.total ? '$' + Number(t.total).toLocaleString('es-MX') : '—';
-        const ruta   = (t.origen || '—') + ' → ' + (t.destino || '—');
-        const chofer = t.chofer_nombre || t.driver_name || t.chofer || 'N/D';
-        const veh    = t.vehiculo || '';
+        const ruta   = escapeSasHtml((t.origen || '—') + ' → ' + (t.destino || '—'));
+        const chofer = escapeSasHtml(t.chofer_nombre || t.driver_name || t.chofer || 'N/D');
+        const veh    = escapeSasHtml(t.vehiculo || '');
 
         const estado = _estadoBadgeLux(t.estado);
         const estadoClase = estado.cls;
-        const estadoLabel = estado.label;
+        const estadoLabel = escapeSasHtml(estado.label);
         const dotHtml = `<span class="status-dot ${estadoClase}"><span class="status-dot-ring"></span><span class="status-dot-core"></span></span>`;
 
         return `
@@ -7966,12 +7976,16 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
     function descargarFactura(key) {
       const t = window._factStore[key];
       if (!t) { mostrarToast(_luxMsg('notFoundFactura'), 'err'); return; }
-      const folio  = t.reserva_id || 'LUX-' + (t.id || Date.now());
-      const fecha  = t.fecha ? _fmtFecha(t.fecha) : (t.timestamp ? _fmtISO(t.timestamp) : '—');
-      const chofer = t.chofer_nombre || t.driver_name || t.chofer || 'N/D';
-      const veh    = t.vehiculo || 'N/D';
+      const folio  = escapeSasHtml(t.reserva_id || 'LUX-' + (t.id || Date.now()));
+      const fecha  = escapeSasHtml(t.fecha ? _fmtFecha(t.fecha) : (t.timestamp ? _fmtISO(t.timestamp) : '—'));
+      const horaRecogida = escapeSasHtml(t.hora_recogida || '—');
+      const cliente = escapeSasHtml(t.cliente || '—');
+      const origen = escapeSasHtml(t.origen || '—');
+      const destino = escapeSasHtml(t.destino || '—');
+      const chofer = escapeSasHtml(t.chofer_nombre || t.driver_name || t.chofer || 'N/D');
+      const veh    = escapeSasHtml(t.vehiculo || 'N/D');
       const precio = t.total ? '$' + Number(t.total).toLocaleString('es-MX') : '—';
-      const svcTipo = t.servicio === 'T' ? _luxMsg('svcTime') : _luxMsg('svcDistance');
+      const svcTipo = escapeSasHtml(t.servicio === 'T' ? _luxMsg('svcTime') : _luxMsg('svcDistance'));
 
       const html = `<!DOCTYPE html>
 <html lang="es">
@@ -8021,16 +8035,16 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
   <div class="body">
     <div class="sec">
       <div class="sec-title">Detalles del Servicio</div>
-      <div class="row"><span class="lbl">Cliente</span><span class="val">${t.cliente || '—'}</span></div>
+      <div class="row"><span class="lbl">Cliente</span><span class="val">${cliente}</span></div>
       <div class="row"><span class="lbl">Fecha de servicio</span><span class="val">${fecha}</span></div>
-      <div class="row"><span class="lbl">Hora de recogida</span><span class="val">${t.hora_recogida || '—'}</span></div>
+      <div class="row"><span class="lbl">Hora de recogida</span><span class="val">${horaRecogida}</span></div>
       <div class="row"><span class="lbl">Tipo de servicio</span><span class="val">${svcTipo}</span></div>
       <div class="row"><span class="lbl">Vehículo</span><span class="val">${veh}</span></div>
     </div>
     <div class="sec">
       <div class="sec-title">Ruta</div>
-      <div class="row"><span class="lbl">Origen</span><span class="val">${t.origen || '—'}</span></div>
-      <div class="row"><span class="lbl">Destino</span><span class="val">${t.destino || '—'}</span></div>
+      <div class="row"><span class="lbl">Origen</span><span class="val">${origen}</span></div>
+      <div class="row"><span class="lbl">Destino</span><span class="val">${destino}</span></div>
     </div>
     <div class="sec">
       <div class="sec-title">Conductor Asignado</div>
@@ -9126,7 +9140,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
 
           const header = document.createElement('div');
           header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;font-weight:700;color:#f8e7a6;';
-          header.innerHTML = '<span>💬 ' + (driver ? ('Chat con ' + (driver.nombre || 'el chofer')) : 'Chat con tu chofer') + '</span><span style="display:flex;align-items:center;gap:8px;"><span style="opacity:.8;">' + userName + '</span><button id="lux-customer-chat-close" type="button" aria-label="Cerrar chat" style="width:30px;height:30px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;font-size:18px;line-height:1;cursor:pointer;">✕</button></span>';
+          header.innerHTML = '<span>💬 ' + escapeSasHtml(driver ? ('Chat con ' + (driver.nombre || 'el chofer')) : 'Chat con tu chofer') + '</span><span style="display:flex;align-items:center;gap:8px;"><span style="opacity:.8;">' + escapeSasHtml(userName) + '</span><button id="lux-customer-chat-close" type="button" aria-label="Cerrar chat" style="width:30px;height:30px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;font-size:18px;line-height:1;cursor:pointer;">✕</button></span>';
           panel.appendChild(header);
           var closeButton = document.getElementById('lux-customer-chat-close');
           if (closeButton) closeButton.onclick = function() { toggleChatConductor(); };
