@@ -57,6 +57,34 @@ router.post('/admin/viajes', async (req, res, next) => {
   }
 });
 
+router.post('/admin/viajes/reasignar', async (req, res, next) => {
+  try {
+    const reservaId = String(req.body?.reserva_id || '').trim();
+    const choferAnteriorId = String(req.body?.chofer_anterior_id || '').trim();
+    const nuevoChoferId = String(req.body?.nuevo_chofer_id || '').trim();
+    if (!reservaId || !choferAnteriorId || !nuevoChoferId) {
+      return res.status(400).json({ ok: false, error: 'Faltan datos de reasignación.' });
+    }
+
+    const oldTrips = await supabaseRequest(
+      'viajes?reserva_id=eq.' + encodeURIComponent(reservaId) + '&chofer_id=eq.' + encodeURIComponent(choferAnteriorId) + '&select=id',
+      { method: 'GET', headers: supabaseHeaders() }
+    );
+    const updated = [];
+    for (const trip of oldTrips || []) {
+      const rows = await supabaseRequest('viajes?id=eq.' + encodeURIComponent(trip.id), {
+        method: 'PATCH',
+        headers: supabaseHeaders(true),
+        body: JSON.stringify({ estado: 'reasignado' })
+      });
+      updated.push(rows?.[0] || { id: trip.id });
+    }
+    return res.json({ ok: true, updated: updated.length });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/admin/push-notifications', async (req, res, next) => {
   try {
     const payload = {

@@ -4019,6 +4019,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       let _reservaChannel = null;
       let _choferChannel = null;
       let _choferInfoActual = null;
+      let _reservaPollInterval = null;
+      let _reservaSeguidaId = null;
+      let _choferAssignmentCounter = 0;
       let _ratingReservaId = null;
       let _choferPollInterval = null;
       let _choferUltimaUbicacion = null;
@@ -4537,13 +4540,21 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         _choferRutaUltimoDestino = null;
       }
 
-      function limpiarSeguimientoViajeFinalizado() {
-        if (_reservaChannel) { try { sbClient.removeChannel(_reservaChannel); } catch(e) {} _reservaChannel = null; }
+      function limpiarSeguimientoChoferActual() {
+        _choferAssignmentCounter++;
         if (_choferChannel) { try { sbClient.removeChannel(_choferChannel); } catch(e) {} _choferChannel = null; }
         if (_choferPollInterval) { clearInterval(_choferPollInterval); _choferPollInterval = null; }
+        if (_markerChofer) { _markerChofer.setMap(null); _markerChofer = null; }
         limpiarTrackingChofer();
         _choferInfoActual = null;
         _choferUltimaUbicacion = null;
+      }
+
+      function limpiarSeguimientoViajeFinalizado() {
+        if (_reservaChannel) { try { sbClient.removeChannel(_reservaChannel); } catch(e) {} _reservaChannel = null; }
+        if (_reservaPollInterval) { clearInterval(_reservaPollInterval); _reservaPollInterval = null; }
+        _reservaSeguidaId = null;
+        limpiarSeguimientoChoferActual();
         var card = document.getElementById('driver-card');
         if (card) card.style.display = 'none';
         var chatRoot = document.getElementById('luxrides-driver-chat-root');
@@ -4700,6 +4711,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       async function iniciarSeguimientoReserva(reservaId) {
         if (_reservaChannel) { try { sbClient.removeChannel(_reservaChannel); } catch(e) {} _reservaChannel = null; }
+        if (_reservaPollInterval) { clearInterval(_reservaPollInterval); _reservaPollInterval = null; }
+        _reservaSeguidaId = reservaId;
         try {
           const { data: reserva } = await sbClient.from('reservas').select('*').eq('reserva_id', reservaId).maybeSingle();
           if (reserva) {
@@ -4715,9 +4728,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             if (!coordDestino && reserva.destino_lat && reserva.destino_lng) {
               coordDestino = { lat: Number(reserva.destino_lat), lon: Number(reserva.destino_lng), display: reserva.destino || '' };
             }
-            if (reserva.chofer_id) { onChoferAsignado(reserva.chofer_id, reserva); return; }
-            var choferInferido = await resolverChoferIdDesdeReserva(reserva);
-            if (choferInferido) { onChoferAsignado(choferInferido, reserva); return; }
+            if (reserva.chofer_id) {
+              onChoferAsignado(reserva.chofer_id, reserva);
+            } else {
+              var choferInferido = await resolverChoferIdDesdeReserva(reserva);
+              if (choferInferido) onChoferAsignado(choferInferido, reserva);
+            }
           }
         } catch(e) {}
 
@@ -4763,6 +4779,23 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             }
           })
           .subscribe();
+
+        _reservaPollInterval = setInterval(async function() {
+          if (_reservaSeguidaId !== reservaId) return;
+          try {
+            const { data: actual } = await sbClient.from('reservas').select('*').eq('reserva_id', reservaId).maybeSingle();
+            if (!actual) return;
+            const estadoActual = String(actual.estado || '').toLowerCase();
+            if (estadoActual === 'completado' || estadoActual === 'finalizado') {
+              limpiarSeguimientoViajeFinalizado();
+              setTimeout(function() { abrirRating(); }, 1200);
+              return;
+            }
+            if (actual.chofer_id && (!_choferInfoActual || String(_choferInfoActual.id) !== String(actual.chofer_id))) {
+              onChoferAsignado(actual.chofer_id, actual);
+            }
+          } catch (e) { console.warn('[Tracking reserva]', e); }
+        }, 5000);
       }
 
       async function resolverChoferIdDesdeReserva(reservaLike) {
@@ -4815,9 +4848,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       async function onChoferAsignado(choferId, reservaData) {
+        if (_choferInfoActual && String(_choferInfoActual.id) === String(choferId)) return;
+        if (_choferInfoActual) limpiarSeguimientoChoferActual();
+        const assignmentRequest = ++_choferAssignmentCounter;
         try {
           const { data: chofer } = await sbClient.from('choferes').select('*').eq('id', choferId).maybeSingle();
-          if (!chofer) return;
+          if (!chofer || assignmentRequest !== _choferAssignmentCounter) return;
           _choferInfoActual = chofer;
           mostrarDriverCard(chofer);
           mostrarToast('🚘 ¡Tu chofer ha sido asignado! Llega en breve.');

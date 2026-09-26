@@ -1872,19 +1872,12 @@ async function reasignarChofer(reservaID) {
   var btn = sel.closest('.tarjeta').querySelector('.btn-despachar');
   btn.disabled = true;
   btn.textContent = 'Reasignando…';
+  var viajeAnteriorLimpio = true;
 
   try {
     var ch = choferesDisponibles[nuevoChoferID];
     var nuevoNombre = ch ? ch.nombre : 'Chofer ' + nuevoChoferID;
     var anteriorNombre = r.chofer_nombre || choferAnteriorID;
-
-    if (choferAnteriorID) {
-      await dbUpdate('choferes', choferAnteriorID, {
-        estado: 'online',
-        viaje_actual: null,
-        ultima_conexion: new Date().toISOString()
-      });
-    }
 
     // Geocodificar origen y destino si no tienen coordenadas
     if (!r.origen_lat && r.origen) {
@@ -1933,6 +1926,7 @@ async function reasignarChofer(reservaID) {
       chofer_modelo: ch ? ch.vehiculo_modelo || ch.modelo || '' : '',
       chofer_color: ch ? ch.vehiculo_color || ch.color || '' : '',
       chofer_placa: ch ? ch.placa || '' : '',
+      chofer_ubicacion_inicial: ch ? _parseUbicacion(ch.ubicacion) : null,
       reasignacion_pendiente: false,
       reasignacion_motivo: '',
       reasignado_de_chofer: choferAnteriorID,
@@ -1940,6 +1934,20 @@ async function reasignarChofer(reservaID) {
       reasignado_en: new Date().toISOString(),
       asignado_en: new Date().toISOString()
     });
+
+    try {
+      await adminApi('/admin/viajes/reasignar', {
+        method: 'POST',
+        body: JSON.stringify({
+          reserva_id: reservaID,
+          chofer_anterior_id: choferAnteriorID,
+          nuevo_chofer_id: nuevoChoferID
+        })
+      });
+    } catch (cleanupError) {
+      viajeAnteriorLimpio = false;
+      console.error('No se pudo cerrar el viaje anterior:', cleanupError);
+    }
 
     await dbInsert('push_notifications', {
       chofer_id: nuevoChoferID,
@@ -1959,11 +1967,14 @@ async function reasignarChofer(reservaID) {
       reservasActivas[reservaID].chofer_modelo = chNuevo.vehiculo_modelo || '';
       reservasActivas[reservaID].chofer_color = chNuevo.vehiculo_color || '';
       reservasActivas[reservaID].chofer_placa = chNuevo.placa || '';
+      reservasActivas[reservaID].chofer_ubicacion_inicial = chNuevo.ubicacion || null;
       reservasActivas[reservaID].reasignacion_pendiente = false;
       reservaEstadosPrevios[reservaID] = 'asignado';
     }
     renderizarClientes();
-    showToast('↻ Reasignado: ' + anteriorNombre + ' → ' + nuevoNombre);
+    showToast(viajeAnteriorLimpio
+      ? '↻ Reasignado: ' + anteriorNombre + ' → ' + nuevoNombre
+      : '⚠️ Nuevo chofer: ' + nuevoNombre + '. No se pudo limpiar el servicio del anterior.', !viajeAnteriorLimpio);
   } catch (err) {
     console.error(err);
     showToast('❌ Error: ' + (err.message || err), true);
