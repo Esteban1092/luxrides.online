@@ -391,6 +391,20 @@ router.patch('/driver/trips/:id/finalize', requireDriverSession, async (req, res
     if (String(trip.chofer_id || '') !== req.driverSession.choferId) {
       return res.status(403).json({ ok: false, error: 'El viaje no pertenece a esta sesion.' });
     }
+    if (['completado', 'finalizado', 'reasignado'].includes(String(trip.estado || '').toLowerCase())) {
+      return res.status(409).json({ ok: false, error: 'Este servicio ya fue cerrado o reasignado.' });
+    }
+
+    if (trip.reserva_id) {
+      const reservationRows = await supabaseRequest('reservas?reserva_id=eq.' + encodeURIComponent(trip.reserva_id) + '&select=chofer_id&limit=1', {
+        method: 'GET',
+        headers: supabaseHeaders()
+      });
+      const activeDriverId = String(reservationRows?.[0]?.chofer_id || '');
+      if (activeDriverId && activeDriverId !== req.driverSession.choferId) {
+        return res.status(409).json({ ok: false, error: 'Este servicio fue reasignado a otro chofer.' });
+      }
+    }
 
     const paymentMethod = await resolveTripPaymentMethod(trip);
     const totalViaje = getTripTotal(trip);
@@ -517,16 +531,22 @@ router.patch('/driver/trips/:id/finalize', requireDriverSession, async (req, res
 
     if (trip.reserva_id) {
       try {
+        const reservationPatch = {
+          estado: 'completado',
+          saldo_acreditado: true,
+          metodo_pago: paymentMethod,
+          payment_method: paymentMethod,
+          comision_plataforma: comisionPlataforma,
+          chofer_id: null,
+          chofer_asignado: null,
+          chofer_nombre: null,
+          chofer_ubicacion_inicial: null
+        };
+        if (paymentMethod === 'efectivo') reservationPatch.payment_status = 'paid';
         await supabaseRequest('reservas?reserva_id=eq.' + encodeURIComponent(trip.reserva_id), {
           method: 'PATCH',
           headers: supabaseHeaders(true),
-          body: JSON.stringify({
-            estado: 'completado',
-            saldo_acreditado: true,
-            metodo_pago: paymentMethod,
-            payment_method: paymentMethod,
-            comision_plataforma: comisionPlataforma
-          })
+          body: JSON.stringify(reservationPatch)
         });
       } catch (error) {
         console.warn('[driver-finalize] no se pudo actualizar reserva', error.message);

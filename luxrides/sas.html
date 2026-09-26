@@ -337,10 +337,16 @@
       .status-pill{font-size:0.72rem;letter-spacing:0.04em;padding:6px 10px;border:1px solid var(--border);background:rgba(255,255,255,0.55);color:var(--muted);border-radius:999px;}
       .status-pill.ok{border-color:rgba(34,197,94,0.5);color:#166534;background:rgba(34,197,94,0.12);}
       .status-pill.warn{border-color:rgba(239,68,68,0.45);color:#991b1b;background:rgba(239,68,68,0.10);}
-      .payment-reminder{display:flex;align-items:flex-start;gap:10px;margin:10px 0;padding:11px 13px;border:1px solid rgba(212,175,55,.38);border-radius:12px;background:linear-gradient(120deg,rgba(255,248,220,.94),rgba(255,255,255,.84));color:#594313;box-shadow:0 6px 18px rgba(88,67,19,.08);font-size:.8rem;line-height:1.45;}
-      .payment-reminder-icon{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:50%;background:rgba(212,175,55,.18);font-size:.92rem;}
-      .payment-reminder strong{display:block;color:#3f2f03;font-size:.82rem;margin-bottom:2px;}
+      .payment-reminder{display:flex;align-items:flex-start;gap:10px;margin:10px 0;padding:11px 13px;border:1px solid rgba(220,88,88,.3);border-radius:12px;background:linear-gradient(120deg,rgba(255,239,237,.96),rgba(255,255,255,.88));color:#754242;box-shadow:0 6px 18px rgba(110,49,49,.07);font-size:.8rem;line-height:1.45;}
+      .payment-reminder-icon{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:50%;background:rgba(220,88,88,.12);font-size:.92rem;}
+      .payment-reminder strong{display:block;color:#743b3b;font-size:.82rem;margin-bottom:2px;}
       .payment-reminder span{display:block;}
+      #payment-reminder-float{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:1035;width:min(440px,calc(100vw - 24px));display:none;align-items:center;gap:9px;padding:8px 10px;border:1px solid rgba(220,88,88,.32);border-radius:14px;background:rgba(255,245,243,.97);color:#743b3b;box-shadow:0 8px 24px rgba(55,22,22,.18);font:500 .74rem/1.3 'Outfit',sans-serif;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
+      #payment-reminder-float .prf-icon{display:grid;place-items:center;width:26px;height:26px;flex:0 0 26px;border-radius:50%;background:rgba(220,88,88,.12);}
+      #payment-reminder-float .prf-copy{flex:1;min-width:0;}
+      #payment-reminder-float strong{display:block;color:#743b3b;font-size:.75rem;}
+      #payment-reminder-float button{width:auto;min-height:34px;padding:0 10px;border:1px solid rgba(180,54,54,.18);border-radius:9px;background:#b94b4b;color:#fff;font:700 .72rem 'Outfit',sans-serif;cursor:pointer;white-space:nowrap;}
+      @media(max-width:390px){#payment-reminder-float{gap:7px;padding:7px 8px;font-size:.68rem;}#payment-reminder-float button{padding:0 8px;font-size:.68rem;}}
       .lux-chat-status-bar{display:flex;align-items:center;gap:9px;min-height:42px;padding:6px 10px;border:1px solid rgba(212,175,55,.34);border-radius:999px;background:rgba(14,14,18,.94);box-shadow:0 10px 28px rgba(0,0,0,.28);color:#f8e7a6;cursor:pointer;}
       .lux-chat-status-logo{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,#f3d36b,#b8942e);color:#17120a;font-family:'Playfair Display',serif;font-size:1rem;font-weight:800;line-height:1;box-shadow:0 0 0 2px rgba(212,175,55,.18);}
       .lux-chat-status-copy{display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1.1;}
@@ -4030,6 +4036,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       let _choferInfoActual = null;
       let _reservaPollInterval = null;
       let _reservaSeguidaId = null;
+      let _reservaSeguidaDatos = null;
       let _choferAssignmentCounter = 0;
       let _ratingReservaId = null;
       let _choferPollInterval = null;
@@ -4446,6 +4453,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             const reservationContext = window._stripeReservationContext;
             cerrarPagoStripe();
             if (reservationContext) {
+              _reservaSeguidaDatos = Object.assign({}, reservationContext, { payment_status: 'paid' });
+              actualizarRecordatorioPagoFlotante(_reservaSeguidaDatos);
               mostrarToast('✅ Pago recibido. Actualizando tu reserva…');
               setTimeout(cargarViajes, 350);
               return;
@@ -4492,6 +4501,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
                 return;
               }
               cerrarPagoStripe();
+              _reservaSeguidaDatos = Object.assign({}, reservationContext, { payment_status: 'paid' });
+              actualizarRecordatorioPagoFlotante(_reservaSeguidaDatos);
               mostrarToast('✅ Pago confirmado. Actualizando tu reserva…');
               setTimeout(cargarViajes, 350);
               return;
@@ -4760,6 +4771,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         try {
           const { data: reserva } = await sbClient.from('reservas').select('*').eq('reserva_id', reservaId).maybeSingle();
           if (reserva) {
+            _reservaSeguidaDatos = reserva;
+            actualizarRecordatorioPagoFlotante(reserva);
             const estadoReserva = String(reserva.estado || '').toLowerCase();
             if (estadoReserva === 'completado' || estadoReserva === 'finalizado') {
               limpiarSeguimientoViajeFinalizado();
@@ -4797,13 +4810,23 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               });
             }
             if (v.reserva_id === reservaId && (v.estado === 'completado' || v.estado === 'finalizado')) {
-              limpiarSeguimientoViajeFinalizado();
+              limpiarSeguimientoChoferActual();
+              var driverCard = document.getElementById('driver-card');
+              if (driverCard) driverCard.style.display = 'none';
+              var chatRoot = document.getElementById('luxrides-driver-chat-root');
+              if (chatRoot) chatRoot.classList.remove('open');
+              var chatPanel = document.getElementById('luxrides-driver-chat-panel');
+              if (chatPanel) chatPanel.style.display = 'none';
               setTimeout(function() { abrirRating(); }, 1200);
             }
           })
           .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reservas' }, (payload) => {
             const r = payload.new;
             if (!r) return;
+            if (r.reserva_id === reservaId) {
+              _reservaSeguidaDatos = r;
+              actualizarRecordatorioPagoFlotante(r);
+            }
             if (!coordOrigen && r.origen_lat && r.origen_lng) {
               coordOrigen = { lat: Number(r.origen_lat), lon: Number(r.origen_lng), display: r.origen || '' };
             }
@@ -4829,6 +4852,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           try {
             const { data: actual } = await sbClient.from('reservas').select('*').eq('reserva_id', reservaId).maybeSingle();
             if (!actual) return;
+            _reservaSeguidaDatos = actual;
+            actualizarRecordatorioPagoFlotante(actual);
             const estadoActual = String(actual.estado || '').toLowerCase();
             if (estadoActual === 'completado' || estadoActual === 'finalizado') {
               limpiarSeguimientoViajeFinalizado();
@@ -7670,8 +7695,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
       el.innerHTML = trips.map((t, index) => {
         window._tripStore[index] = t;
-        const yaPagada = String(t.payment_status || '').toLowerCase() === 'paid';
-        const estado = _estadoBadgeLux(yaPagada ? 'pagado' : (t.estado || 'pendiente'));
+        const requierePago = window.luxridesReservaRequierePago(t);
+        const estadoBase = _estadoBadgeLux(t.estado || 'pendiente');
+        const estado = requierePago
+          ? { cls: 'estado-amber', label: ['completado', 'finalizado'].includes(_normalizarEstadoLux(t.estado)) ? 'Viaje finalizado · pago pendiente' : 'Pago pendiente', pending: true }
+          : estadoBase;
         const estadoLabel = estado.label;
         const estadoClass = estado.cls;
         const dotHtml = `<span class="status-dot ${estadoClass}"><span class="status-dot-ring"></span><span class="status-dot-core"></span></span>`;
@@ -7703,8 +7731,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               ${chofer ? `<div class="trip-meta-item">🧑✈️ <b>${chofer}</b></div>` : ''}
               ${veh    ? `<div class="trip-meta-item">🚘 ${veh}</div>` : ''}
             </div>
-            ${estado.pending ? `<div class="payment-reminder" role="note"><div class="payment-reminder-icon">💛</div><div><strong>Recuerda liquidar tu viaje</strong><span>Paga ahora con tarjeta vía Stripe o, si elegiste efectivo, al finalizar el servicio.</span></div></div>` : ''}
-            ${estado.pending && !yaPagada && t.total ? `
+            ${requierePago ? `<div class="payment-reminder" role="note"><div class="payment-reminder-icon">⚠️</div><div><strong>Recuerda liquidar tu viaje</strong><span>Paga durante el viaje o al finalizar. También puedes pagar ahora con Stripe.</span></div></div>` : ''}
+            ${requierePago && t.total ? `
             <button onclick="abrirStripeDesdeViaje(${index})" style="width:100%;margin-top:2px;padding:12px;background:#635bff;border:none;border-radius:8px;color:#fff;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
               💳 Pagar ahora con Stripe &nbsp;<span style="background:rgba(255,255,255,.2);border-radius:5px;padding:1px 7px;">${precio}</span>
             </button>` : ''}
@@ -7714,6 +7742,10 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
     window.abrirStripeDesdeViaje = async function(index) {
       const trip = window._tripStore && window._tripStore[index];
+      return window.abrirPagoReservaStripe(trip);
+    };
+
+    window.abrirPagoReservaStripe = async function(trip) {
       const user = window._getUser ? window._getUser() : null;
       if (!trip || !trip.reserva_id || !user) {
         mostrarToast('🔐 Inicia sesión para pagar esta reserva.', 'err');
@@ -7789,9 +7821,42 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       return { cls: 'estado-blue', label: readable, pending: false };
     }
 
+    window.luxridesReservaRequierePago = function(reserva) {
+      if (!reserva) return false;
+      const paymentStatus = String(reserva.payment_status || '').toLowerCase();
+      const state = _normalizarEstadoLux(reserva.estado);
+      const method = String(reserva.metodo_pago || reserva.payment_method || '').toLowerCase();
+      if (paymentStatus === 'paid' || ['pagado', 'paid', 'cancelado', 'cancelada', 'pago fallido', 'rechazado'].includes(state)) return false;
+      if ((state === 'completado' || state === 'finalizado') && ['efectivo', 'cash'].includes(method)) return false;
+      return ['pendiente', 'asignado', 'en curso', 'en viaje', 'completado', 'finalizado', 'confirmado'].includes(state);
+    };
+
+    window.actualizarRecordatorioPagoFlotante = function(reserva) {
+      let alert = document.getElementById('payment-reminder-float');
+      if (!alert && document.body) {
+        alert = document.createElement('div');
+        alert.id = 'payment-reminder-float';
+        alert.innerHTML = '<span class="prf-icon">⚠️</span><span class="prf-copy"><strong>Recordatorio de pago</strong><span></span></span><button type="button">Pagar ahora</button>';
+        document.body.appendChild(alert);
+      }
+      if (!alert) return;
+      if (!reserva || !window.luxridesReservaRequierePago(reserva)) {
+        alert.style.display = 'none';
+        return;
+      }
+      alert._reservation = reserva;
+      const copy = alert.querySelector('.prf-copy span');
+      if (copy) copy.textContent = ['completado', 'finalizado'].includes(_normalizarEstadoLux(reserva.estado))
+        ? 'El viaje terminó. Puedes liquidarlo ahora con tarjeta.'
+        : 'Puedes pagar durante el viaje o al finalizar.';
+      const button = alert.querySelector('button');
+      if (button) button.onclick = function() { window.abrirPagoReservaStripe(alert._reservation); };
+      alert.style.display = 'flex';
+    };
+
     function _notificarPagoPendiente(trips) {
       const pendientes = (trips || []).filter(function(t) {
-        return String(t.payment_status || '').toLowerCase() !== 'paid' && _estadoBadgeLux(t.estado).pending;
+        return window.luxridesReservaRequierePago(t);
       });
       if (!pendientes.length) return;
 

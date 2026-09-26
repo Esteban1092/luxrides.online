@@ -60,7 +60,7 @@ router.post('/stripe/quote-reservation', async (req, res, next) => {
     );
     const reservation = reservations?.[0];
     if (!reservation) return res.status(404).json({ ok: false, error: 'No encontramos una reserva tuya con ese folio.' });
-    if (String(reservation.payment_status || '').toLowerCase() === 'paid' || ['pagado', 'completado', 'finalizado'].includes(String(reservation.estado || '').toLowerCase())) {
+    if (String(reservation.payment_status || '').toLowerCase() === 'paid' || ['pagado', 'paid'].includes(String(reservation.estado || '').toLowerCase())) {
       return res.status(409).json({ ok: false, error: 'Esta reserva ya aparece como pagada.' });
     }
 
@@ -126,7 +126,7 @@ router.post('/stripe/pagar',
           'reservas?reserva_id=eq.' + encodeURIComponent(quote.reservationId) + '&email_cliente=eq.' + encodeURIComponent(user.email) + '&select=payment_status,estado&limit=1'
         );
         if (!currentRows?.[0]) return res.status(404).json({ ok: false, error: 'La reserva ya no está disponible para esta cuenta.' });
-        if (String(currentRows[0].payment_status || '').toLowerCase() === 'paid' || ['pagado', 'completado', 'finalizado'].includes(String(currentRows[0].estado || '').toLowerCase())) {
+        if (String(currentRows[0].payment_status || '').toLowerCase() === 'paid' || ['pagado', 'paid'].includes(String(currentRows[0].estado || '').toLowerCase())) {
           return res.status(409).json({ ok: false, error: 'Esta reserva ya está pagada.' });
         }
       }
