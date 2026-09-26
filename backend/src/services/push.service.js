@@ -39,7 +39,7 @@ export async function enviarPushAChofer(choferId) {
 
 export async function enviarPushACliente(userId) {
   const res = await fetch(
-    env.supabaseUrl + '/rest/v1/push_subscriptions?user_id=eq.' + encodeURIComponent(userId) + '&select=subscription',
+    env.supabaseUrl + '/rest/v1/customer_push_subscriptions?user_id=eq.' + encodeURIComponent(userId) + '&select=subscription',
     { headers: { apikey: env.supabaseServiceKey, Authorization: 'Bearer ' + env.supabaseServiceKey } }
   );
 

@@ -152,7 +152,7 @@ router.post('/driver-chat/push-subscription', async (req, res, next) => {
     if (!principal || principal.role !== 'customer' || !subscription) {
       return res.status(401).json({ ok: false, error: 'Se requiere una sesión de cliente y una suscripción push.' });
     }
-    const rows = await supabaseRequest('push_subscriptions?on_conflict=user_id', {
+    const rows = await supabaseRequest('customer_push_subscriptions?on_conflict=user_id', {
       method: 'POST',
       headers: {
         ...supabaseHeaders(true),
@@ -160,7 +160,6 @@ router.post('/driver-chat/push-subscription', async (req, res, next) => {
       },
       body: JSON.stringify({
         user_id: principal.id,
-        chofer_id: null,
         subscription,
         updated_at: new Date().toISOString()
       })
