@@ -201,7 +201,8 @@ async function fetchHotelsContext(messages) {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + env.hotelsApiKey
       },
-      body: JSON.stringify({ query, limit: 8 })
+      body: JSON.stringify({ query, limit: 8 }),
+      signal: AbortSignal.timeout(1200)
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return '';
@@ -253,7 +254,8 @@ async function llamarGroq(model, contextMessages, maxTokens) {
       messages: contextMessages,
       max_tokens: maxTokens,
       temperature: 0.4
-    })
+    }),
+    signal: AbortSignal.timeout(6500)
   });
 
   const data = await res.json().catch(() => ({}));
@@ -291,7 +293,8 @@ async function llamarOpenRouter(apiKey, model, contextMessages, maxTokens) {
       messages,
       max_tokens: maxTokens,
       temperature: 0.4
-    })
+    }),
+    signal: AbortSignal.timeout(4000)
   });
 
   const data = await res.json().catch(() => ({}));
@@ -310,14 +313,16 @@ async function llamarOpenRouterFallback(contextMessages, maxTokens) {
   }
 
   const models = [
-    'meta-llama/llama-3.3-70b-instruct',
     'openai/gpt-4o-mini',
     'mistralai/mistral-small-3.2-24b-instruct:free'
   ];
 
   let lastError = null;
+  let attempts = 0;
   for (const key of apiKeys) {
     for (const model of models) {
+      if (attempts >= 2) break;
+      attempts++;
       try {
         const reply = await llamarOpenRouter(key, model, contextMessages, maxTokens);
         if (reply) return reply;

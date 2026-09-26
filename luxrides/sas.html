@@ -3624,7 +3624,22 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       function refreshRapidoUI(){
         document.getElementById('error-msg').style.display='none';
-        document.getElementById('results').style.display='none';
+        if (!_calculandoPrecio) document.getElementById('results').style.display='none';
+      }
+
+      let _calculandoPrecio = false;
+
+      function bloquearCamposCotizacion(bloquear) {
+        const selector = '#inp-nombre,#inp-email,#inp-origen,#inp-destino,#inp-fecha,#inp-hora,#inp-min,#inp-aerolinea,#inp-vuelo,#inp-vuelo-salida,#inp-cliente-num,#stops input,#tyc-mini-check,.btn-toggle,.btn-pax,.btn-hour';
+        document.querySelectorAll(selector).forEach(function(el) {
+          if (bloquear) {
+            el.dataset.wasDisabledBeforeQuote = el.disabled ? '1' : '0';
+            el.disabled = true;
+          } else if (Object.prototype.hasOwnProperty.call(el.dataset, 'wasDisabledBeforeQuote')) {
+            el.disabled = el.dataset.wasDisabledBeforeQuote === '1';
+            delete el.dataset.wasDisabledBeforeQuote;
+          }
+        });
       }
 
       function setPaymentMethod(metodo){
@@ -3798,6 +3813,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       function resetBtn(){
+        _calculandoPrecio = false;
+        bloquearCamposCotizacion(false);
         document.getElementById('btn-calc').disabled=false;
         document.getElementById('spin').style.display='none';
         document.getElementById('btn-calc-txt').textContent='🔍 Calcular Precio y Ruta';
@@ -3893,6 +3910,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       async function calcular(){
+        if (_calculandoPrecio) return;
         const nombre=document.getElementById('inp-nombre').value.trim();
         document.getElementById('error-msg').style.display='none';
         if(!nombre){mostrarError('Por favor ingresa el nombre del cliente');return;}
@@ -3919,14 +3937,18 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             return;
           }
         }
+        _calculandoPrecio = true;
+        bloquearCamposCotizacion(true);
         document.getElementById('btn-calc').disabled=true;
         document.getElementById('spin').style.display='block';
         document.getElementById('btn-calc-txt').textContent='Calculando...';
         document.getElementById('results').style.display='none';
+        try {
         let distanciaKm=0,duracionMin=0;
+        let duracionConTrafico=0;
         const esFijoCalc = tipoTraslado==='P';
         if(servicio==='I' && !esFijoCalc){
-          if (_directionsService && waypoints.length) {
+          if (_directionsService) {
             try {
               const gm = await new Promise(function(resolve, reject){
                 _directionsService.route({
@@ -3934,7 +3956,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
                   destination: _gmapsLatLng(coordDestino.lat, coordDestino.lon),
                   waypoints: waypoints,
                   optimizeWaypoints: false,
-                  travelMode: google.maps.TravelMode.DRIVING
+                  travelMode: google.maps.TravelMode.DRIVING,
+                  drivingOptions: { departureTime: new Date(), trafficModel: 'bestguess' }
                 }, function(resp, status){
                   if (status !== 'OK' || !resp) return reject(new Error('Google route status: ' + status));
                   resolve(getRouteMetrics(resp));
@@ -3942,6 +3965,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               });
               distanciaKm = gm.distanciaKm;
               duracionMin = gm.duracionMin;
+              duracionConTrafico = gm.duracionMin;
             } catch (_) {}
           }
 
@@ -4007,22 +4031,27 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           });
           stripeQuoteToken = quoteOut.token;
           distanciaKm = quoteOut.quote.distanceKm || distanciaKm;
-          duracionMin = quoteOut.quote.durationMin || duracionMin;
+          duracionMin = duracionConTrafico || quoteOut.quote.durationMin || duracionMin;
           casetasTotal = quoteOut.quote.tolls || casetasTotal;
           totalPrecio = quoteOut.quote.amountMx || totalPrecio;
         } catch (quoteErr) {
-          resetBtn();
           mostrarError(quoteErr.message || 'No se pudo calcular en servidor');
           return;
         }
 
         resultado={distanciaKm,duracionMin,totalPrecio,casetasTotal};
         renderResults();
-        resetBtn();
+        } catch (calcError) {
+          console.error('[Calcular viaje]', calcError);
+          mostrarError(calcError.message || 'No se pudo calcular el viaje. Intenta otra vez.');
+        } finally {
+          resetBtn();
+        }
       }
 
       let _mapaIniciado = false;
       let _mapaInstance = null;
+      let _trafficLayer = null;
       let _rutaId = null;
       let _rutaLayerIds = [];
       let _routeCounter = 0;
@@ -4057,6 +4086,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           fullscreenControl: false,
           gestureHandling: 'greedy'
         });
+        _trafficLayer = new google.maps.TrafficLayer();
+        _trafficLayer.setMap(_mapaInstance);
         _directionsService = new google.maps.DirectionsService();
         _directionsRenderer = new google.maps.DirectionsRenderer({
           map: _mapaInstance,
@@ -4104,7 +4135,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           destination: _gmapsLatLng(latD, lngD),
           waypoints: waypoints,
           optimizeWaypoints: false,
-          travelMode: google.maps.TravelMode.DRIVING
+          travelMode: google.maps.TravelMode.DRIVING,
+          drivingOptions: { departureTime: new Date(), trafficModel: 'bestguess' }
         }, function(response, status) {
           if (reqId !== _routeCounter) return;
           if (status !== 'OK' || !response) {
@@ -4708,7 +4740,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         _directionsService.route({
           origin: _gmapsLatLng(latChofer, lngChofer),
           destination: _gmapsLatLng(latOrigen, lngOrigen),
-          travelMode: google.maps.TravelMode.DRIVING
+          travelMode: google.maps.TravelMode.DRIVING,
+          drivingOptions: { departureTime: new Date(), trafficModel: 'bestguess' }
         }, function(response, status) {
           if (reqId !== _choferRouteCounter) return;
           if (status !== 'OK' || !response || !response.routes || !response.routes[0]) {
@@ -4732,7 +4765,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           }
           const route = response.routes[0];
           const path = google.maps.geometry.encoding.decodePath(route.overview_polyline.points);
-          const mins = Math.max(1, Math.round((route.legs || []).reduce(function(a, l) { return a + (l.duration ? l.duration.value : 0); }, 0) / 60));
+          const mins = Math.max(1, Math.round((route.legs || []).reduce(function(a, l) {
+            return a + ((l.duration_in_traffic && l.duration_in_traffic.value) || (l.duration ? l.duration.value : 0));
+          }, 0) / 60));
           actualizarEtaChofer(mins);
 
           _rutaChoferPolylineSombra = new google.maps.Polyline({ path: path, strokeColor: '#5A3F05', strokeWeight: 10, strokeOpacity: 0.5, map: _mapaInstance, zIndex: 1 });
@@ -8402,7 +8437,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
               method:'POST',
               headers:{'Content-Type':'application/json'},
               body:JSON.stringify({messages}),
-              signal: AbortSignal.timeout(15000)
+              signal: AbortSignal.timeout(i === 0 ? 8500 : 2500)
             });
             if (r.ok) {
               var d = await r.json();
@@ -8439,6 +8474,40 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
       async function _buildPrompt(){
         var idioma = (typeof _idiomaActual !== 'undefined' && _idiomaActual) || localStorage.getItem('lux_idioma') || 'es';
         return 'Responde en ' + idioma + '. El backend contiene las reglas, precios y catalogo oficiales de LuxRides.';
+      }
+
+      async function _obtenerContextoTraficoLovox(){
+        if (!coordOrigen || !coordDestino || !window.google || !google.maps || !google.maps.DirectionsService) return '';
+        try {
+          return await new Promise(function(resolve) {
+            var terminado = false;
+            var timer = setTimeout(function() { if (!terminado) { terminado = true; resolve(''); } }, 1800);
+            new google.maps.DirectionsService().route({
+              origin: _gmapsLatLng(coordOrigen.lat, coordOrigen.lon),
+              destination: _gmapsLatLng(coordDestino.lat, coordDestino.lon),
+              waypoints: getWaypointsFromStops(),
+              optimizeWaypoints: false,
+              travelMode: google.maps.TravelMode.DRIVING,
+              drivingOptions: { departureTime: new Date(), trafficModel: 'bestguess' }
+            }, function(response, status) {
+              if (terminado) return;
+              terminado = true;
+              clearTimeout(timer);
+              if (status !== 'OK' || !response || !response.routes || !response.routes[0]) { resolve(''); return; }
+              var legs = response.routes[0].legs || [];
+              var trafficSeconds = legs.reduce(function(total, leg) {
+                return total + ((leg.duration_in_traffic && leg.duration_in_traffic.value) || (leg.duration && leg.duration.value) || 0);
+              }, 0);
+              var normalSeconds = legs.reduce(function(total, leg) { return total + ((leg.duration && leg.duration.value) || 0); }, 0);
+              if (!trafficSeconds) { resolve(''); return; }
+              var minutes = Math.max(1, Math.round(trafficSeconds / 60));
+              var extra = Math.max(0, Math.round((trafficSeconds - normalSeconds) / 60));
+              resolve('Tiempo de manejo con tráfico actual para la ruta seleccionada: aproximadamente ' + minutes + ' minutos' + (extra ? ', unos ' + extra + ' minutos adicionales respecto al flujo libre' : '') + '. Usa este dato como estimación en vivo, no como garantía.');
+            });
+          });
+        } catch (e) {
+          return '';
+        }
       }
 
       window.abrirAsistente = async function(){
@@ -8585,6 +8654,10 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
         try {
           var sys = await _buildPrompt();
           var messages = [{role:'system',content:sys}].concat(_iovoxHistory.slice(-6));
+          if (/(trafico|tráfico|transito|tránsito|congestion|congestión|atasco|traffic|jam)/i.test(texto)) {
+            var trafficContext = await _obtenerContextoTraficoLovox();
+            if (trafficContext) messages.push({ role: 'system', content: trafficContext });
+          }
           var ia = await _callIA(messages);
           var reply = ia && ia.reply ? ia.reply : ia;
           _setIovoxConnStatus(ia && ia.source ? ia.source : 'esperando');
