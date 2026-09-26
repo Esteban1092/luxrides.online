@@ -2651,7 +2651,9 @@ function renderDriverChatWidget() {
   var selectionStart = hadFocus ? previousInput.selectionStart : null;
   var selectionEnd = hadFocus ? previousInput.selectionEnd : null;
   var wasAtBottom = panel.scrollHeight - panel.scrollTop - panel.clientHeight < 48;
-  panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:8px;margin-bottom:8px;"><strong style="font-size:12px;color:#f8e7a6;">💬 Chat con clientes</strong><span style="font-size:11px;color:#9aa0b5;">' + (choferData && choferData.nombre ? choferData.nombre : 'Chofer') + '</span></div>';
+  panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:8px;margin-bottom:8px;"><strong style="font-size:12px;color:#f8e7a6;">💬 Chat con clientes</strong><button id="lux-driver-chat-close" type="button" aria-label="Cerrar chat" style="width:30px;height:30px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;font-size:18px;line-height:1;cursor:pointer;">✕</button></div>';
+  var closeButton = document.getElementById('lux-driver-chat-close');
+  if (closeButton) closeButton.onclick = function() { panel.style.display = 'none'; };
   if (!driverChatMessages.length) {
     panel.innerHTML += '<div style="padding:12px;color:#b8bfd5;font-size:12px;line-height:1.5;">Aún no tienes mensajes de clientes. Cuando un usuario escriba, aparecerá aquí.</div>';
   }
