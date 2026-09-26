@@ -37,6 +37,19 @@ export async function enviarPushAChofer(choferId) {
   return rows[0].subscription;
 }
 
+export async function enviarPushACliente(userId) {
+  const res = await fetch(
+    env.supabaseUrl + '/rest/v1/push_subscriptions?user_id=eq.' + encodeURIComponent(userId) + '&select=subscription',
+    { headers: { apikey: env.supabaseServiceKey, Authorization: 'Bearer ' + env.supabaseServiceKey } }
+  );
+
+  if (!res.ok) throw new Error('No se pudo obtener la suscripción del cliente');
+  const rows = await res.json();
+  if (!rows || !rows.length) throw new Error('El cliente no tiene suscripción push registrada');
+
+  return rows[0].subscription;
+}
+
 export async function enviarPush(subscription, payload) {
   return webpush.sendNotification(subscription, JSON.stringify(payload));
 }

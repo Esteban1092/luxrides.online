@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { env } from '../config/env.js';
 import { readAdminSession } from '../middleware/admin-auth.js';
 import { readDriverSession } from '../middleware/driver-auth.js';
+import { enviarPushAChofer, enviarPushACliente, enviarPush } from '../services/push.service.js';
 
 const router = Router();
 
@@ -116,7 +117,55 @@ router.post('/driver-chat/messages', async (req, res, next) => {
         message
       })
     });
+    try {
+      if (senderRole === 'customer' || senderRole === 'admin') {
+        const subscription = await enviarPushAChofer(driverId);
+        await enviarPush(subscription, {
+          title: senderRole === 'admin' ? 'Mensaje de LuxRides' : 'Nuevo mensaje de tu cliente',
+          body: principal.name + ': ' + message,
+          tag: 'luxrides-chat-' + customerId,
+          url: '/ses.html'
+        });
+      } else if (senderRole === 'driver' && customerId !== 'admin') {
+        const subscription = await enviarPushACliente(customerId);
+        await enviarPush(subscription, {
+          title: 'Mensaje de tu chofer',
+          body: principal.name + ': ' + message,
+          tag: 'luxrides-chat-' + driverId,
+          url: '/sas.html'
+        });
+      }
+    } catch (pushError) {
+      console.warn('[driver-chat] mensaje guardado; push no disponible:', pushError.message);
+    }
+
     return res.status(201).json({ ok: true, message: row?.[0] || null });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/driver-chat/push-subscription', async (req, res, next) => {
+  try {
+    const principal = await getPrincipal(req);
+    const subscription = req.body?.subscription;
+    if (!principal || principal.role !== 'customer' || !subscription) {
+      return res.status(401).json({ ok: false, error: 'Se requiere una sesión de cliente y una suscripción push.' });
+    }
+    const rows = await supabaseRequest('push_subscriptions?on_conflict=user_id', {
+      method: 'POST',
+      headers: {
+        ...supabaseHeaders(true),
+        Prefer: 'resolution=merge-duplicates,return=representation'
+      },
+      body: JSON.stringify({
+        user_id: principal.id,
+        chofer_id: null,
+        subscription,
+        updated_at: new Date().toISOString()
+      })
+    });
+    return res.status(201).json({ ok: true, data: rows?.[0] || null });
   } catch (error) {
     next(error);
   }

@@ -2541,6 +2541,7 @@ var driverChatWidget = null;
 var driverChatMessages = [];
 var driverChatRenderedSnapshot = null;
 var driverChatSelectedCustomerId = null;
+var driverChatKnownMessageIds = null;
 
 function buildDriverChatWidget() {
   if (driverChatWidget || !document.body) return;
@@ -2575,6 +2576,18 @@ async function refreshDriverChat() {
     var messages = Array.isArray(data.messages) ? data.messages : [];
     var snapshot = JSON.stringify(messages);
     if (snapshot === driverChatRenderedSnapshot) return;
+    var currentIds = messages.map(function(item) { return String(item.id); });
+    if (driverChatKnownMessageIds) {
+      var knownIds = new Set(driverChatKnownMessageIds);
+      var newIncoming = messages.filter(function(item) {
+        return (item.sender_role === 'customer' || item.sender_role === 'admin') && !knownIds.has(String(item.id));
+      });
+      if (newIncoming.length && driverChatWidget.panel.style.display !== 'block') {
+        var from = newIncoming[newIncoming.length - 1].sender_name || 'cliente';
+        notify('💬 Nuevo mensaje de ' + from, 'ok');
+      }
+    }
+    driverChatKnownMessageIds = currentIds;
     driverChatMessages = messages;
     var incoming = messages.filter(function(item) { return item.sender_role === 'customer' || item.sender_role === 'admin'; });
     if (!incoming.some(function(item) { return String(item.customer_id) === String(driverChatSelectedCustomerId); })) {

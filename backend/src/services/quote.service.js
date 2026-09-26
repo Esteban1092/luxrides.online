@@ -186,6 +186,23 @@ export function buildTransferQuote(input) {
   return { quote, token: encodeQuote(quote) };
 }
 
+export function buildReservationQuote(input) {
+  const reservationId = String(input?.reservationId || '').trim();
+  const userId = String(input?.userId || '').trim();
+  const amountMx = Number(input?.amountMx);
+  if (!reservationId || !userId || !Number.isFinite(amountMx) || amountMx <= 0) {
+    throw new Error('Reserva o monto inválido');
+  }
+  const quote = {
+    type: 'reservation',
+    reservationId,
+    userId,
+    amountMx: Number(amountMx.toFixed(2)),
+    expiresAt: Date.now() + (15 * 60 * 1000)
+  };
+  return { quote, token: encodeQuote(quote) };
+}
+
 export function buildTourQuote(input) {
   const tourId = String(input?.tourId || '').trim();
   const tarifaLabel = String(input?.tarifaLabel || '').trim();
