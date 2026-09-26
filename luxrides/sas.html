@@ -2539,6 +2539,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       async function guardarViajeEnServidor(datos) {
+        const authUser = window._getUser ? window._getUser() : null;
+        if (!authUser) {
+          mostrarToast('🔐 Inicia sesión para crear tu reserva.', 'err');
+          if (typeof abrirAuth === 'function') abrirAuth();
+          return false;
+        }
         const nombreCliente = (document.getElementById('inp-nombre')?.value || '').trim();
         const emailCliente = obtenerEmailClienteReserva();
         const conciergeSlug = resolverConciergeSlugActivo();
@@ -2569,9 +2575,15 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1';
           const configuredBase = (window.LuxCfg && LuxCfg.backendUrl ? LuxCfg.backendUrl() : '') || (window.LuxCfg && LuxCfg.apiBaseUrl ? LuxCfg.apiBaseUrl() : '');
           const base = configuredBase || (!isLocal && location.origin ? location.origin : '');
+          const authSession = window._luxAuth && window._luxAuth.auth
+            ? await window._luxAuth.auth.getSession()
+            : null;
+          const accessToken = authSession && authSession.data && authSession.data.session
+            ? authSession.data.session.access_token
+            : '';
           const res = await fetch((base || '') + '/api/reservas', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: Object.assign({ 'Content-Type': 'application/json' }, accessToken ? { Authorization: 'Bearer ' + accessToken } : {}),
             body: JSON.stringify(payload)
           });
           const body = await res.json().catch(function() { return {}; });
@@ -9033,7 +9045,9 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
             }
           } catch (error) {
             console.warn('[Chat push customer]', error);
-            if (Notification.permission === 'granted') mostrarToast('⚠️ No se pudieron activar las notificaciones del chat.', 'err');
+            if (Notification.permission === 'granted') {
+              mostrarToast('🔔 El chat seguirá avisándote dentro de la app. Activa la migración de notificaciones en Supabase para recibir avisos con la app cerrada.', 'err');
+            }
           } finally {
             driverChatPushSaving = false;
           }

@@ -43,6 +43,18 @@ function inferEmail(body) {
   return clean(body.email_cliente || body.email || body.email_cliente_reserva || body.email_user || body.emailUsuario);
 }
 
+async function getAuthenticatedCustomer(req) {
+  const authorization = String(req.headers?.authorization || '');
+  if (!authorization.toLowerCase().startsWith('bearer ')) return null;
+  const token = authorization.slice(7).trim();
+  if (!token || !env.supabaseUrl || !env.supabaseServiceKey) return null;
+  const response = await fetch(env.supabaseUrl + '/auth/v1/user', {
+    headers: { apikey: env.supabaseServiceKey, Authorization: 'Bearer ' + token }
+  });
+  if (!response.ok) return null;
+  return response.json().catch(() => null);
+}
+
 function normalizePaymentMethod(value) {
   const raw = clean(value).toLowerCase();
   if (!raw) return 'tarjeta';
@@ -118,9 +130,16 @@ router.post('/reservas',
 
     try {
     const body = req.body || {};
+    const authUser = await getAuthenticatedCustomer(req);
+    if (!authUser?.id || !authUser.email) {
+      return res.status(401).json({ ok: false, error: 'Inicia sesión para crear una reserva.' });
+    }
     const passengerName = inferPassengerName(body);
     const confirmationCode = inferConfirmationCode(body) || 'LUX-' + Date.now();
     const email = inferEmail(body);
+    if (email && email.toLowerCase() !== String(authUser.email).toLowerCase()) {
+      return res.status(403).json({ ok: false, error: 'La reserva debe usar el correo de tu cuenta.' });
+    }
     const customerName = clean(body.customer || body.cliente || body.nombre || passengerName);
     const paymentMethod = normalizePaymentMethod(body.metodo_pago || body.payment_method);
 
@@ -146,7 +165,7 @@ router.post('/reservas',
       servicio: clean(body.servicio || body.service_kind || body.serviceKind),
       vehiculo: clean(body.vehiculo || body.vehicle),
       timestamp: body.timestamp || new Date().toISOString(),
-      email_cliente: email,
+      email_cliente: authUser.email,
       pasajeros: body.pasajeros ?? null,
       metodo_pago: paymentMethod,
       payment_method: paymentMethod,
