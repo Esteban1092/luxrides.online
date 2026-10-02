@@ -24,7 +24,7 @@ jobs:
       - name: Upload site files to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          server: ftp.luxrides.online
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           protocol: ftps
@@ -40,7 +40,7 @@ jobs:
       - name: Upload backend files to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          server: ftp.luxrides.online
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           protocol: ftps
