@@ -28,7 +28,7 @@ jobs:
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           protocol: ftps
-          port: ${{ secrets.HOSTINGER_FTP_PORT }}
+          port: 21
           local-dir: ./luxrides/
           server-dir: ${{ secrets.HOSTINGER_TARGET_DIR }}/
           exclude: |
@@ -44,7 +44,7 @@ jobs:
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           protocol: ftps
-          port: ${{ secrets.HOSTINGER_FTP_PORT }}
+          port: 21
           local-dir: ./backend/
           server-dir: ${{ secrets.HOSTINGER_TARGET_DIR }}/backend/
           exclude: |
