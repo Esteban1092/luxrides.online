@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "online.luxrides.app",
+      "sha256_cert_fingerprints": [
+        "A8:B1:2B:76:E5:3F:3C:4F:6E:AD:C3:B3:14:48:1B:01:5B:73:5E:0E:B8:56:06:13:C8:36:10:E6:CE:3B:51:14"
+      ]
+    }
+  }
+]

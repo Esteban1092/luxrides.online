@@ -33,6 +33,8 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 
+// Express ignora carpetas con punto; Google necesita /.well-known/assetlinks.json
+app.use('/.well-known', express.static(path.join(frontendDir, '.well-known'), { dotfiles: 'allow' }));
 app.use(express.static(frontendDir));
 
 app.get('/', (req, res) => {

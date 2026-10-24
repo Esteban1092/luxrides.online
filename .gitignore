@@ -3,3 +3,6 @@ luxrides/backend/.env
 .env
 npm-debug.log*
 .DS_Store
+
+# Llave y bundle de Play Store: nunca subir a Git
+android-release/
