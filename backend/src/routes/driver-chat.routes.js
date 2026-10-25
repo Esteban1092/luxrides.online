@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { env } from '../config/env.js';
 import { readAdminSession } from '../middleware/admin-auth.js';
 import { readDriverSession } from '../middleware/driver-auth.js';
+import { isSchemaMissingError } from '../lib/supabase-compat.js';
 import { enviarPushAChofer, enviarPushACliente, enviarPush } from '../services/push.service.js';
 
 const router = Router();
@@ -48,6 +49,7 @@ async function getCustomerFromToken(req) {
   return {
     role: 'customer',
     id: String(user.id),
+    email: clean(user.email, 160).toLowerCase(),
     name: clean(user.user_metadata?.nombre_completo || user.email || 'Usuario', 120)
   };
 }
@@ -152,18 +154,23 @@ router.post('/driver-chat/push-subscription', async (req, res, next) => {
     if (!principal || principal.role !== 'customer' || !subscription) {
       return res.status(401).json({ ok: false, error: 'Se requiere una sesión de cliente y una suscripción push.' });
     }
-    const rows = await supabaseRequest('customer_push_subscriptions?on_conflict=user_id', {
+    const upsert = (row) => supabaseRequest('customer_push_subscriptions?on_conflict=user_id', {
       method: 'POST',
       headers: {
         ...supabaseHeaders(true),
         Prefer: 'resolution=merge-duplicates,return=representation'
       },
-      body: JSON.stringify({
-        user_id: principal.id,
-        subscription,
-        updated_at: new Date().toISOString()
-      })
+      body: JSON.stringify(row)
     });
+    const base = { user_id: principal.id, subscription, updated_at: new Date().toISOString() };
+    let rows;
+    try {
+      rows = await upsert(principal.email ? { ...base, email: principal.email } : base);
+    } catch (error) {
+      // Sin el SQL de notificaciones aún no existe la columna email: se guarda como antes.
+      if (!principal.email || !isSchemaMissingError(error)) throw error;
+      rows = await upsert(base);
+    }
     return res.status(201).json({ ok: true, data: rows?.[0] || null });
   } catch (error) {
     next(error);

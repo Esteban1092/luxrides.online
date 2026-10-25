@@ -21,6 +21,7 @@ import quoteRoutes from './routes/quote.routes.js';
 import stripeRoutes from './routes/stripe.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import mayahuelRoutes from './routes/mayahuel.routes.js';
+import { startNotificationScheduler } from './services/customer-notifications.service.js';
 import { errorHandler, notFound } from './middleware/error.js';
 
 const app = express();
@@ -137,4 +138,5 @@ app.use(errorHandler);
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[luxrides-backend] escuchando en puerto ${PORT}`);
   console.log('[luxrides-backend] origin permitido: ' + env.frontendOrigin);
+  startNotificationScheduler();
 });

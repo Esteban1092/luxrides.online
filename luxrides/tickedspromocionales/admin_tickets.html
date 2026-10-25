@@ -19,7 +19,7 @@
     .primary{width:100%;height:48px;margin-top:12px;border:0;border-radius:6px;background:var(--gold);color:#181207;font-weight:800;cursor:pointer;transition:.2s}.primary:hover{background:#e7c35e;transform:translateY(-1px)}.login-error{min-height:20px;color:#ff8d8d;font-size:.8rem;margin-top:10px}
     .app{display:none;min-height:100vh}.app.ready{display:block}
     .sidebar{position:fixed;inset:0 auto 0 0;width:245px;padding:28px 18px;border-right:1px solid var(--line);background:#0b0e0c;z-index:5}.side-brand{display:flex;align-items:center;gap:11px;padding:0 8px 28px;border-bottom:1px solid var(--line)}.side-logo{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:var(--gold);color:#151109;font:800 1.2rem 'Playfair Display',serif}.side-brand strong{font:700 1.25rem 'Playfair Display',serif}.side-brand small{display:block;color:var(--muted);font:500 .62rem 'DM Sans';letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
-    .side-label{margin:28px 10px 10px;color:#626b63;font-size:.62rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.side-item{display:flex;align-items:center;gap:10px;padding:12px;border-radius:6px;color:#c8cec9;font-size:.86rem}.side-item.active{background:rgba(215,174,66,.12);color:var(--gold-soft);border-left:2px solid var(--gold)}
+    .side-label{margin:28px 10px 10px;color:#626b63;font-size:.62rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.side-item{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:0;border-left:2px solid transparent;border-radius:6px;background:transparent;color:#c8cec9;font-size:.86rem;text-align:left;cursor:pointer}.side-item:hover{color:var(--gold-soft)}.side-item.active{background:rgba(215,174,66,.12);color:var(--gold-soft);border-left:2px solid var(--gold)}
     .logout{position:absolute;left:18px;right:18px;bottom:25px;border:1px solid var(--line);background:transparent;color:#aeb5af;border-radius:6px;padding:10px;cursor:pointer}
     main{margin-left:245px;padding:30px clamp(20px,3vw,48px) 52px}.topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:28px}.eyebrow{color:var(--gold);font-size:.64rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase}.topbar h1{font:800 clamp(1.8rem,3vw,2.7rem) 'Playfair Display',serif;margin:5px 0 0}.top-actions{display:flex;align-items:center;gap:10px}.sync{color:var(--muted);font-size:.72rem}.refresh{height:40px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:#d7ddd8;cursor:pointer}.refresh:hover{border-color:var(--gold);color:var(--gold-soft)}
     .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{padding:17px 18px;border:1px solid var(--line);border-radius:7px;background:var(--panel)}.stat-label{color:var(--muted);font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}.stat-value{font:800 1.8rem 'Playfair Display',serif;margin-top:6px}
@@ -30,7 +30,10 @@
     .ticket-main{flex:1;min-width:0}.ticket-main strong{display:block;font-size:.94rem}.ticket-main small{color:var(--muted);font-size:.72rem}
     .ticket-code{display:inline-flex;margin-top:5px;padding:3px 8px;border-radius:4px;background:rgba(215,174,66,.14);color:var(--gold-soft);font-size:.62rem;font-weight:800;letter-spacing:.08em}
     .ticket-meta{text-align:right;flex:0 0 auto}.ticket-uses{font-size:.82rem;font-weight:800}.ticket-uses small{display:block;color:var(--muted);font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}.ticket-toggle{margin-top:8px;padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:#1b211c;color:#d7ddd8;font-size:.66rem;font-weight:800;cursor:pointer}.ticket-toggle.off{border-color:rgba(239,75,75,.4);color:#ff9090}
-    .chip{display:inline-flex;margin-top:6px;padding:4px 9px;border-radius:999px;font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.chip.active{background:rgba(52,201,107,.16);color:var(--green)}.chip.expired{background:rgba(239,75,75,.16);color:var(--red)}
+    .chip{display:inline-flex;margin-top:6px;padding:4px 9px;border-radius:999px;font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.chip.active{background:rgba(52,201,107,.16);color:var(--green)}.chip.expired{background:rgba(239,75,75,.16);color:var(--red)}.chip.public{background:rgba(215,174,66,.16);color:var(--gold-soft)}.chip.hidden{background:rgba(151,159,152,.16);color:var(--muted)}.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px;border-bottom:1px solid var(--line);padding-bottom:14px}.tab{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:#c8cec9;font-weight:700;font-size:.82rem;cursor:pointer}.tab:hover{border-color:var(--gold);color:var(--gold-soft)}.tab.active{background:rgba(215,174,66,.14);border-color:var(--gold);color:var(--gold-soft)}.tab-count{min-width:22px;padding:2px 7px;border-radius:999px;background:#1b211c;font-size:.66rem;text-align:center}.view{display:none}.view.active{display:block}
+    .home-note{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;padding:14px 18px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:#c8cec9;font-size:.82rem;line-height:1.5}.home-note a{color:var(--gold-soft);font-weight:700;text-decoration:none;white-space:nowrap}.home-note a:hover{text-decoration:underline}
+    .ticket-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:8px}.ticket-actions .ticket-toggle{margin-top:0}.ticket-delete{padding:7px 9px;border:1px solid rgba(239,75,75,.4);border-radius:5px;background:#1b211c;color:#ff9090;font-size:.66rem;font-weight:800;cursor:pointer}.ticket-delete:hover{background:rgba(239,75,75,.12)}.ticket-row.is-hidden{opacity:.62}
     .create-panel{position:sticky;top:20px}.create-body{padding:20px}form{display:grid;gap:10px}
     label{font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:-4px}
     input,select{width:100%;height:42px;border:1px solid var(--line);border-radius:6px;background:#0c100d;color:#fff;padding:0 12px;outline:none}
@@ -42,7 +45,7 @@
     .loading{padding:60px;text-align:center;color:var(--muted)}
     .toast{position:fixed;right:22px;bottom:22px;z-index:30;max-width:330px;padding:13px 16px;border-radius:6px;background:#202620;border:1px solid #3b463d;box-shadow:0 18px 40px rgba(0,0,0,.45);font-size:.8rem;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}.toast.show{transform:translateY(0);opacity:1}.toast.error{border-color:#8f3434;color:#ffabab}
     @media(max-width:950px){.sidebar{position:static;width:auto;height:auto;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-right:0;border-bottom:1px solid var(--line)}.side-brand{padding:0;border:0}.side-label,.side-item{display:none}.logout{position:static;width:auto}main{margin-left:0;padding:22px 16px 40px}.workspace{grid-template-columns:1fr}.create-panel{position:static}}
-    @media(max-width:560px){.topbar{align-items:flex-start;flex-direction:column}.top-actions{width:100%;justify-content:space-between}.stats{grid-template-columns:repeat(3,1fr)}.stat{padding:12px 10px}.stat-value{font-size:1.45rem}.stat-label{font-size:.55rem}.row-2{grid-template-columns:1fr}.ticket-meta{text-align:left}}
+    @media(max-width:560px){.topbar{align-items:flex-start;flex-direction:column}.top-actions{width:100%;justify-content:space-between}.stats{grid-template-columns:repeat(3,1fr)}.stat{padding:12px 10px}.stat-value{font-size:1.45rem}.stat-label{font-size:.55rem}.row-2{grid-template-columns:1fr}.ticket-row{flex-wrap:wrap}.ticket-meta{flex:1 1 100%;text-align:left}.chips,.ticket-actions{justify-content:flex-start}}
   </style>
 </head>
 <body>
@@ -63,7 +66,8 @@
     <aside class="sidebar">
       <div class="side-brand"><div class="side-logo">🎟️</div><div><strong>Tickets</strong><small>Mayahuel</small></div></div>
       <div class="side-label">Operación</div>
-      <div class="side-item active">🎫 Tickets</div>
+      <button class="side-item active" type="button" data-tab="tickets" onclick="setTab('tickets')">🎫 Tickets</button>
+      <button class="side-item" type="button" data-tab="home" onclick="setTab('home')">🏠 Pantalla de inicio</button>
       <button class="logout" type="button" onclick="cerrarSesion()">Cerrar sesión</button>
     </aside>
 
@@ -72,6 +76,11 @@
         <div><div class="eyebrow">Marketing en tiempo real</div><h1>Tickets Mayahuel</h1></div>
         <div class="top-actions"><span class="sync" id="sync-label">Sincronizando...</span><button class="refresh" type="button" onclick="cargarTickets()">Actualizar</button></div>
       </header>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" type="button" role="tab" data-tab="tickets" onclick="setTab('tickets')">🎫 Tickets</button>
+        <button class="tab" type="button" role="tab" data-tab="home" onclick="setTab('home')">🏠 Pantalla de inicio <span class="tab-count" id="tab-home-count">0</span></button>
+      </nav>
+      <div class="view active" id="view-tickets">
       <section class="stats">
         <article class="stat"><div class="stat-label">Total tickets</div><div class="stat-value" id="stat-total">0</div></article>
         <article class="stat"><div class="stat-label">Activos</div><div class="stat-value" id="stat-active">0</div></article>
@@ -133,6 +142,17 @@
           </div>
         </aside>
       </section>
+      </div>
+      <div class="view" id="view-home">
+        <div class="home-note">
+          <span id="home-summary">Cargando...</span>
+          <a href="tickets_luxrides.html" target="_blank" rel="noopener">Ver como cliente ↗</a>
+        </div>
+        <div class="board">
+          <div class="panel-head"><h2>Lo que ven los clientes</h2><span>Oculta o borra los que ya no quieras mostrar</span></div>
+          <div class="ticket-list" id="home-list"><div class="loading">Cargando tickets...</div></div>
+        </div>
+      </div>
     </main>
   </div>
   <div class="toast" id="toast"></div>
@@ -141,6 +161,7 @@
   <script>
     var API_BASE = (window.LuxCfg && LuxCfg.apiBaseUrl ? LuxCfg.apiBaseUrl() : location.origin).replace(/\/+$/, '');
     var TOKEN_KEY = 'mayahuel_tickets_admin_session';
+    var TAB_KEY = 'mayahuel_tickets_admin_tab';
     var token = sessionStorage.getItem(TOKEN_KEY) || '';
     var tickets = [];
     var refreshTimer = null;
@@ -188,6 +209,9 @@
     function abrirPanel() {
       document.getElementById('login-screen').classList.add('hidden');
       document.getElementById('app').classList.add('ready');
+      var savedTab = '';
+      try { savedTab = sessionStorage.getItem(TAB_KEY) || ''; } catch (e) {}
+      setTab(savedTab === 'home' ? 'home' : 'tickets');
       cargarTickets();
       clearInterval(refreshTimer);
       refreshTimer = setInterval(cargarTickets, 15000);
@@ -209,6 +233,19 @@
       return (ticket.is_active && !expired && !exhausted) ? 'active' : 'expired';
     }
 
+    function setTab(name) {
+      document.querySelectorAll('[data-tab]').forEach(function(el) {
+        el.classList.toggle('active', el.getAttribute('data-tab') === name);
+      });
+      document.getElementById('view-tickets').classList.toggle('active', name === 'tickets');
+      document.getElementById('view-home').classList.toggle('active', name === 'home');
+      try { sessionStorage.setItem(TAB_KEY, name); } catch (e) {}
+    }
+
+    function isPublic(ticket) {
+      return ticket.is_public !== false;
+    }
+
     function formatDiscount(ticket) {
       return ticket.discount_type === 'PERCENTAGE' ? Number(ticket.discount_value) + '%' : '$' + Number(ticket.discount_value);
     }
@@ -227,7 +264,7 @@
               '<div class="ticket-code">' + escapeHtml(ticket.code) + '</div>' +
             '</div>' +
             '<div class="ticket-meta"><div class="ticket-uses">' + Number(ticket.uses_count || 0) + '/' + Number(ticket.max_uses || 0) + '<small>Canjes</small></div>' +
-              '<span class="chip ' + status + '">' + (status === 'active' ? 'Activo' : 'Caducado') + '</span><button class="ticket-toggle ' + (ticket.is_active ? '' : 'off') + '" type="button" data-ticket-id="' + escapeHtml(ticket.id) + '" data-next-state="' + (!ticket.is_active) + '" onclick="toggleTicket(this)">' + (ticket.is_active ? 'Desactivar' : 'Activar') + '</button>' +
+              '<span class="chip ' + status + '">' + (status === 'active' ? 'Activo' : 'Caducado') + '</span>' + (isPublic(ticket) ? '' : ' <span class="chip hidden">Oculto a clientes</span>') + '<button class="ticket-toggle ' + (ticket.is_active ? '' : 'off') + '" type="button" data-ticket-id="' + escapeHtml(ticket.id) + '" data-next-state="' + (!ticket.is_active) + '" onclick="toggleTicket(this)">' + (ticket.is_active ? 'Desactivar' : 'Activar') + '</button>' +
             '</div>' +
           '</div>';
         }).join('');
@@ -235,6 +272,37 @@
       document.getElementById('stat-total').textContent = tickets.length;
       document.getElementById('stat-active').textContent = tickets.filter(function(t){ return ticketStatus(t) === 'active'; }).length;
       document.getElementById('stat-uses').textContent = tickets.reduce(function(sum, t){ return sum + Number(t.uses_count || 0); }, 0);
+      renderHome();
+    }
+
+    function renderHome() {
+      var wrap = document.getElementById('home-list');
+      var visible = tickets.filter(isPublic);
+      document.getElementById('tab-home-count').textContent = visible.length;
+      document.getElementById('home-summary').textContent = tickets.length
+        ? 'Los clientes ven ' + visible.length + ' de ' + tickets.length + ' tickets en su pantalla de inicio.'
+        : 'Todavía no hay tickets creados.';
+      if (!tickets.length) { wrap.innerHTML = '<div class="ticket-empty">Todavía no has creado ningún ticket.</div>'; return; }
+      wrap.innerHTML = tickets.slice().sort(function(a, b) { return Number(isPublic(b)) - Number(isPublic(a)); }).map(function(ticket) {
+        var status = ticketStatus(ticket);
+        var pub = isPublic(ticket);
+        var label = ticket.venue_name + ' · ' + ticket.description;
+        var expiry = new Date(ticket.expiration_date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+        return '<div class="ticket-row' + (pub ? '' : ' is-hidden') + '">' +
+          '<div class="ticket-icon">' + escapeHtml(ticket.icon || '🎟️') + '</div>' +
+          '<div class="ticket-main"><strong>' + escapeHtml(label) + '</strong>' +
+            '<small>' + escapeHtml(ticket.category || 'General') + ' · ' + formatDiscount(ticket) + ' de descuento · Vence ' + expiry + ' · ' + Number(ticket.uses_count || 0) + ' canjes</small>' +
+            '<div class="ticket-code">' + escapeHtml(ticket.code) + '</div>' +
+          '</div>' +
+          '<div class="ticket-meta">' +
+            '<div class="chips"><span class="chip ' + (pub ? 'public' : 'hidden') + '">' + (pub ? 'Visible para clientes' : 'Oculto') + '</span><span class="chip ' + status + '">' + (status === 'active' ? 'Activo' : 'Caducado') + '</span></div>' +
+            '<div class="ticket-actions">' +
+              '<button class="ticket-toggle' + (pub ? ' off' : '') + '" type="button" data-ticket-id="' + escapeHtml(ticket.id) + '" data-next-public="' + (!pub) + '" onclick="togglePublic(this)">' + (pub ? 'Ocultar a clientes' : 'Mostrar a clientes') + '</button>' +
+              '<button class="ticket-delete" type="button" data-ticket-id="' + escapeHtml(ticket.id) + '" data-label="' + escapeHtml(label) + '" onclick="deleteTicket(this)">Borrar</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
     }
 
     async function cargarTickets() {
@@ -263,6 +331,41 @@
         showToast(err.message, true);
         button.disabled = false;
         button.textContent = originalText;
+      }
+    }
+
+    async function togglePublic(button) {
+      var ticketId = button.getAttribute('data-ticket-id');
+      var nextPublic = button.getAttribute('data-next-public') === 'true';
+      if (!ticketId || !window.confirm(nextPublic ? '¿Mostrar este ticket a los clientes?' : '¿Ocultar este ticket a los clientes? Seguirá guardado y podrás mostrarlo de nuevo.')) return;
+      var originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Guardando...';
+      try {
+        await api('/mayahuel/tickets-admin/tickets/' + encodeURIComponent(ticketId), { method: 'PATCH', body: JSON.stringify({ is_public: nextPublic }) });
+        showToast(nextPublic ? 'Ahora los clientes lo ven' : 'Oculto para los clientes');
+        await cargarTickets();
+      } catch (err) {
+        showToast(err.message, true);
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    async function deleteTicket(button) {
+      var ticketId = button.getAttribute('data-ticket-id');
+      var label = button.getAttribute('data-label') || 'este ticket';
+      if (!ticketId || !window.confirm('¿Borrar "' + label + '" definitivamente? Esta acción no se puede deshacer.')) return;
+      button.disabled = true;
+      button.textContent = 'Borrando...';
+      try {
+        await api('/mayahuel/tickets-admin/tickets/' + encodeURIComponent(ticketId), { method: 'DELETE' });
+        showToast('Ticket borrado');
+        await cargarTickets();
+      } catch (err) {
+        showToast(err.message, true);
+        button.disabled = false;
+        button.textContent = 'Borrar';
       }
     }
 

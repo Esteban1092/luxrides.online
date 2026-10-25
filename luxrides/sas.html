@@ -2605,6 +2605,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               _ratingReservaId = payload.reserva_id;
               iniciarSeguimientoReserva(payload.reserva_id);
             }
+            if (window.activarPushChatCliente) window.activarPushChatCliente(true);
             return true;
           }
         } catch (err) {
@@ -5336,6 +5337,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       window._getUser = function(){ return _userSesion; };
       window._getPerfil = function(){ return _perfilDatos; };
 
+      // Solo renueva la suscripcion si el cliente ya dio permiso; nunca lo pide por su cuenta.
+      function refrescarPushClienteSiPermitido() {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        setTimeout(function() { if (window.activarPushChatCliente) window.activarPushChatCliente(true); }, 1500);
+      }
+
       function mensajeErrorAuth(error) {
         if (!error) return 'Error desconocido.';
         const msg = String(error.message || error).toLowerCase();
@@ -5363,6 +5370,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             const inpN = document.getElementById('inp-nombre');
             if (inpN && !inpN.value && _perfilDatos && _perfilDatos.nombre_completo)
               inpN.value = _perfilDatos.nombre_completo;
+            refrescarPushClienteSiPermitido();
           }
           sbAuth.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session) {
@@ -5373,6 +5381,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               const inpN = document.getElementById('inp-nombre');
               if (inpN && _perfilDatos && _perfilDatos.nombre_completo)
                 inpN.value = _perfilDatos.nombre_completo;
+              refrescarPushClienteSiPermitido();
             } else if (event === 'SIGNED_OUT') {
               _userSesion = null; _perfilDatos = null;
               actualizarMiniAvatar();
@@ -9016,7 +9025,7 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
           return bytes;
         }
 
-        async function activarPushChatCliente() {
+        async function activarPushChatCliente(silent) {
           if (driverChatPushSaving || !('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
           const user = window._getUser ? window._getUser() : null;
           if (!user) return;
@@ -9049,13 +9058,14 @@ body{font-family:'Outfit',sans-serif;background:#f0ece4;padding:32px 16px;color:
             }
           } catch (error) {
             console.warn('[Chat push customer]', error);
-            if (Notification.permission === 'granted') {
+            if (!silent && Notification.permission === 'granted') {
               mostrarToast('🔔 El chat seguirá avisándote dentro de la app. Activa la migración de notificaciones en Supabase para recibir avisos con la app cerrada.', 'err');
             }
           } finally {
             driverChatPushSaving = false;
           }
         }
+        window.activarPushChatCliente = activarPushChatCliente;
 
         function actualizarBadgeChatCliente() {
           var badge = document.getElementById('nav-chat-badge');

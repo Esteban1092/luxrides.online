@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { env } from '../config/env.js';
 import { clearDriverSessionCookie, createDriverSessionCookieValue, requireDriverSession, setDriverSessionCookie } from '../middleware/driver-auth.js';
 import { isSchemaMissingError } from '../lib/supabase-compat.js';
+import { notifyCustomerOnDriverMove } from '../services/customer-notifications.service.js';
 
 const router = Router();
 
@@ -264,6 +265,7 @@ router.patch('/driver/chofer', requireDriverSession, async (req, res, next) => {
     }
 
     const chofer = await updateChofer(req.driverSession.choferId, patch);
+    if (patch.ubicacion && chofer) notifyCustomerOnDriverMove(chofer);
     return res.json({ ok: true, data: chofer });
   } catch (error) {
     next(error);
@@ -280,6 +282,7 @@ router.patch('/driver/location', requireDriverSession, async (req, res, next) =>
       estado: cleanString(req.body?.estado || 'en linea') || 'en linea'
     };
     const chofer = await updateChofer(req.driverSession.choferId, patch);
+    notifyCustomerOnDriverMove(chofer);
     return res.json({ ok: true, data: chofer });
   } catch (error) {
     next(error);

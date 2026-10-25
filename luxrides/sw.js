@@ -14,16 +14,20 @@ self.addEventListener('push', event => {
   let data = {};
   try { data = event.data.json(); } catch (e) { data = { title: 'LuxRides', body: event.data.text() }; }
 
+  const silent = data.silent === true;
   const options = {
     body: data.body || data.cuerpo || '',
-    icon: '/logo-luxrides.png',
-    badge: '/logo-luxrides.png',
+    icon: data.icon || '/icon-192.png',
+    badge: data.badge || '/badge-96.png',
     tag: data.tag || 'luxrides-viaje',
-    renotify: true,
-    requireInteraction: true,
-    vibrate: [300, 100, 300, 100, 600],
+    renotify: !silent && data.renotify !== false,
+    requireInteraction: data.requireInteraction !== false,
+    silent: silent,
     data: { url: data.url || '/ses.html' }
   };
+  // La API lanza TypeError si se combina silent con vibrate.
+  if (!silent) options.vibrate = [300, 100, 300, 100, 600];
+  if (data.image) options.image = data.image;
 
   event.waitUntil(
     self.registration.showNotification(data.title || data.titulo || 'LuxRides — Nuevo viaje', options)
@@ -32,14 +36,14 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || '/ses.html';
+  const target = new URL((event.notification.data && event.notification.data.url) || '/ses.html', self.location.origin);
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       for (const c of list) {
-        if (c.url.includes('ses.html') && 'focus' in c) return c.focus();
+        if (new URL(c.url).pathname === target.pathname && 'focus' in c) return c.focus();
       }
-      if (clients.openWindow) return clients.openWindow(url);
+      if (clients.openWindow) return clients.openWindow(target.href);
     })
   );
 });

@@ -96,5 +96,12 @@ export const env = {
   ticketsAdmin: {
     pass: optional('MAYAHUEL_TICKETS_ADMIN_PASS', '13112025'),
     sessionSecret: optionalFirst(['MAYAHUEL_TICKETS_SESSION_SECRET', 'MAYAHUEL_SESSION_SECRET', 'SESSION_SECRET', 'QUOTE_SECRET'], optional('MAYAHUEL_TICKETS_ADMIN_PASS', '13112025'))
+  },
+
+  notifications: {
+    enabled: optional('CUSTOMER_NOTIFICATIONS', 'on').toLowerCase() !== 'off',
+    cronSecret: optional('NOTIFICATIONS_CRON_SECRET', ''),
+    osrmUrl: optional('OSRM_URL', 'https://router.project-osrm.org').replace(/\/+$/, ''),
+    staticMapsKey: optional('STATIC_MAPS_KEY', '')
   }
 };

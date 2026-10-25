@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 import nodemailer from 'nodemailer';
 import crypto from 'node:crypto';
 import bwipjs from 'bwip-js';
 import { env } from '../config/env.js';
+import { isSchemaMissingError } from '../lib/supabase-compat.js';
 
 const router = Router();
 const MAYAHUEL_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
@@ -342,7 +343,15 @@ router.get('/mayahuel/promos/public', async (req, res, next) => {
     if (!env.supabaseUrl || !env.supabaseServiceKey) {
       return res.json({ ok: true, data: [], source: 'fallback' });
     }
-    const rows = await supabaseRequest('mayahuel_promotions?select=code,venue_name,description,category,icon,discount_type,discount_value,expiration_date,max_uses,uses_count,is_active&order=is_active.desc,expiration_date.asc', { headers: supabaseHeaders() });
+    const publicQuery = 'mayahuel_promotions?select=code,venue_name,description,category,icon,discount_type,discount_value,expiration_date,max_uses,uses_count,is_active&order=is_active.desc,expiration_date.asc';
+    let rows;
+    try {
+      rows = await supabaseRequest(publicQuery + '&is_public=eq.true', { headers: supabaseHeaders() });
+    } catch (error) {
+      // Sin el SQL de visibilidad todavia no existe is_public: se muestran todos, como antes.
+      if (!isSchemaMissingError(error)) throw error;
+      rows = await supabaseRequest(publicQuery, { headers: supabaseHeaders() });
+    }
     const now = Date.now();
     const data = (rows || []).map((promo) => {
       const expired = now > new Date(promo.expiration_date).getTime();
@@ -441,10 +450,16 @@ router.post('/mayahuel/tickets-admin/tickets', requireTicketsAdminSession,
 );
 
 router.patch('/mayahuel/tickets-admin/tickets/:id', requireTicketsAdminSession,
-  body('is_active').isBoolean(),
+  param('id').isUUID(),
+  body('is_active').optional().isBoolean(),
+  body('is_public').optional().isBoolean(),
   async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    const patch = {};
+    if (req.body.is_active !== undefined) patch.is_active = req.body.is_active === true || req.body.is_active === 'true';
+    if (req.body.is_public !== undefined) patch.is_public = req.body.is_public === true || req.body.is_public === 'true';
+    if (!Object.keys(patch).length) return res.status(400).json({ ok: false, error: 'No hay cambios que guardar.' });
     try {
       if (!env.supabaseUrl || !env.supabaseServiceKey) {
         return res.status(503).json({ ok: false, error: 'La actualizacion de tickets no esta disponible en este momento.' });
@@ -452,10 +467,48 @@ router.patch('/mayahuel/tickets-admin/tickets/:id', requireTicketsAdminSession,
       const rows = await supabaseRequest('mayahuel_promotions?id=eq.' + encodeURIComponent(req.params.id), {
         method: 'PATCH',
         headers: supabaseHeaders(true),
-        body: JSON.stringify({ is_active: req.body.is_active })
+        body: JSON.stringify(patch)
       });
       if (!rows?.length) return res.status(404).json({ ok: false, error: 'Ticket no encontrado.' });
       return res.json({ ok: true, data: rows[0] });
+    } catch (error) {
+      if ('is_public' in patch && isSchemaMissingError(error)) {
+        return res.status(503).json({ ok: false, error: 'Falta ejecutar el SQL de visibilidad de tickets en Supabase.' });
+      }
+      next(error);
+    }
+  }
+);
+
+router.delete('/mayahuel/tickets-admin/tickets/:id', requireTicketsAdminSession,
+  param('id').isUUID(),
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    try {
+      if (!env.supabaseUrl || !env.supabaseServiceKey) {
+        return res.status(503).json({ ok: false, error: 'El borrado de tickets no esta disponible en este momento.' });
+      }
+      const id = encodeURIComponent(req.params.id);
+      const promo = (await supabaseRequest('mayahuel_promotions?id=eq.' + id + '&select=id,uses_count&limit=1', { headers: supabaseHeaders() }))?.[0];
+      if (!promo) return res.status(404).json({ ok: false, error: 'Ticket no encontrado.' });
+
+      // La tabla de canjes usa ON DELETE CASCADE: borrar un ticket con canjes destruiria su historial.
+      let hasRedemptions = Number(promo.uses_count || 0) > 0;
+      if (!hasRedemptions) {
+        try {
+          const redemptions = await supabaseRequest('mayahuel_promo_redemptions?promo_id=eq.' + id + '&select=id&limit=1', { headers: supabaseHeaders() });
+          hasRedemptions = Boolean(redemptions?.length);
+        } catch (error) {
+          if (!isSchemaMissingError(error)) throw error;
+        }
+      }
+      if (hasRedemptions) {
+        return res.status(409).json({ ok: false, code: 'HAS_REDEMPTIONS', error: 'Este ticket ya tiene canjes. Ocultalo a los clientes para no perder el historial.' });
+      }
+
+      await supabaseRequest('mayahuel_promotions?id=eq.' + id, { method: 'DELETE', headers: supabaseHeaders() });
+      return res.json({ ok: true });
     } catch (error) {
       next(error);
     }
