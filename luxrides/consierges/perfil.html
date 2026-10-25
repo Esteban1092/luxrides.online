@@ -74,7 +74,7 @@ const WA_CENTRAL = window.LuxCfg ? LuxCfg.whatsapp() : '+525527729551';
 
   const waNum = WA_CENTRAL.replace(/\D/g,'');
   const waMsg = encodeURIComponent(`Hola, me contacta el concierge ${data.nombre_concierge} del ${data.nombre_hotel}. ¿Podrían ayudarme con una reserva?`);
-  const reservaUrl = `https://luxrides.online/sas.html?c=${encodeURIComponent(data.url_unica_slug || slug)}`;
+  const reservaUrl = `https://luxrides.online/?c=${encodeURIComponent(data.url_unica_slug || slug)}`;
 
   content.innerHTML = `
     <div class="avatar">🤵</div>

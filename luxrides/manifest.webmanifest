@@ -1,10 +1,10 @@
 {
-  "id": "/sas.html",
+  "id": "/",
   "name": "LuxRides — Transporte Ejecutivo VIP",
   "short_name": "LuxRides",
   "description": "Reserva tu chofer privado en CDMX. Sedán VIP y SUV de lujo, traslados al aeropuerto y tours.",
   "lang": "es-MX",
-  "start_url": "/sas.html?source=app",
+  "start_url": "/?source=app",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

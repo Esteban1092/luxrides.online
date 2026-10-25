@@ -36,10 +36,11 @@ app.use(morgan('dev'));
 
 // Express ignora carpetas con punto; Google necesita /.well-known/assetlinks.json
 app.use('/.well-known', express.static(path.join(frontendDir, '.well-known'), { dotfiles: 'allow' }));
+app.get('/sas.html', (req, res) => res.redirect(301, '/' + req.originalUrl.slice('/sas.html'.length)));
 app.use(express.static(frontendDir));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(frontendDir, 'sas.html'), (error) => {
+  res.sendFile(path.join(frontendDir, 'index.html'), (error) => {
     if (error && !res.headersSent) {
       res.status(404).json({ ok: false, error: 'Frontend no disponible en este deploy' });
     }

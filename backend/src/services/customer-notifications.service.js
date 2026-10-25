@@ -235,7 +235,7 @@ function payloadFor(reservaId, content, options = {}) {
     title: content.title,
     body: content.body,
     tag: 'luxrides-trip-' + reservaId,
-    url: '/sas.html',
+    url: '/',
     icon: ICON,
     badge: BADGE,
     silent: Boolean(options.silent),

@@ -6,11 +6,6 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://luxrides.online/sas.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.95</priority>
-  </url>
-  <url>
     <loc>https://luxrides.online/guias.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

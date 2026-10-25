@@ -24,7 +24,7 @@
       <p class="warning">Esta acción es definitiva. La reserva se eliminará y no podrá recuperarse.</p>
       <div class="actions">
         <button class="confirm" id="confirm" type="button">Confirmar cancelación</button>
-        <a class="keep" href="/sas.html">Conservar mi reserva</a>
+        <a class="keep" href="/">Conservar mi reserva</a>
       </div>
     </section>
     <p class="footer">LuxRides | Transporte ejecutivo</p>
@@ -55,7 +55,7 @@
           body: JSON.stringify({ reservaId, token })
         });
         if (!response.ok) throw new Error('El enlace de cancelación no es válido o ha vencido.');
-        document.getElementById('card').innerHTML = '<div class="icon" style="background:#e9f8ef;color:#16803c;">✓</div><p class="eyebrow" style="color:#16803c;">GESTIÓN DE RESERVA</p><h1 class="title">Reserva cancelada</h1><p class="copy">Tu solicitud fue procesada correctamente. La reserva ya no aparece como activa.</p><div class="reservation"><small>CÓDIGO CANCELADO</small><strong>' + reservaId.replace(/[&<>"']/g, '') + '</strong></div><div class="actions"><a class="confirm" style="background:#b8860b;" href="/sas.html">Volver a LuxRides</a></div>';
+        document.getElementById('card').innerHTML = '<div class="icon" style="background:#e9f8ef;color:#16803c;">✓</div><p class="eyebrow" style="color:#16803c;">GESTIÓN DE RESERVA</p><h1 class="title">Reserva cancelada</h1><p class="copy">Tu solicitud fue procesada correctamente. La reserva ya no aparece como activa.</p><div class="reservation"><small>CÓDIGO CANCELADO</small><strong>' + reservaId.replace(/[&<>"']/g, '') + '</strong></div><div class="actions"><a class="confirm" style="background:#b8860b;" href="/">Volver a LuxRides</a></div>';
       } catch (error) {
         confirmButton.disabled = false;
         confirmButton.textContent = 'Confirmar cancelación';

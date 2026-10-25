@@ -134,7 +134,7 @@ router.post('/driver-chat/messages', async (req, res, next) => {
           title: 'Mensaje de tu chofer',
           body: principal.name + ': ' + message,
           tag: 'luxrides-chat-' + driverId,
-          url: '/sas.html'
+          url: '/'
         });
       }
     } catch (pushError) {
