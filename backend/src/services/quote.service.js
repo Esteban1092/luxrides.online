@@ -64,7 +64,9 @@ export function decodeQuoteToken(token) {
   if (parts.length !== 2) throw new Error('quoteToken invalido');
   const [payload, sig] = parts;
   const expected = signPayload(payload);
-  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+  const suppliedBuffer = Buffer.from(sig);
+  const expectedBuffer = Buffer.from(expected);
+  if (suppliedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
     throw new Error('Firma de quote invalida');
   }
   const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));

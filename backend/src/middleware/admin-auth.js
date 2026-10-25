@@ -42,7 +42,9 @@ export function verifyAdminSessionCookieValue(raw) {
   const [payload, sig] = token.split('.');
   if (!payload || !sig) return null;
   const expected = sign(payload);
-  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  const suppliedBuffer = Buffer.from(sig);
+  const expectedBuffer = Buffer.from(expected);
+  if (suppliedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) return null;
   let data;
   try {
     data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
