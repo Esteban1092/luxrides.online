@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import bwipjs from 'bwip-js';
 import { env } from '../config/env.js';
 import { isSchemaMissingError } from '../lib/supabase-compat.js';
+import { notifyCustomersAboutPromotion } from '../services/customer-notifications.service.js';
 
 const router = Router();
 const MAYAHUEL_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
@@ -410,6 +411,7 @@ router.post('/mayahuel/tickets-admin/tickets', requireTicketsAdminSession,
   body('discount_value').isFloat({ min: 0 }),
   body('max_uses').isInt({ min: 1, max: 100000 }),
   body('expiration_date').isISO8601(),
+  body('notify_customers').optional().isBoolean(),
   async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
@@ -438,7 +440,17 @@ router.post('/mayahuel/tickets-admin/tickets', requireTicketsAdminSession,
         headers: supabaseHeaders(true),
         body: JSON.stringify(payload)
       });
-      return res.status(201).json({ ok: true, data: rows?.[0] || payload });
+      const created = rows?.[0] || payload;
+      let notifications = null;
+      if (req.body.notify_customers === true) {
+        try {
+          notifications = await notifyCustomersAboutPromotion(created);
+        } catch (error) {
+          console.warn('[mayahuel-promo-push]', error.message);
+          notifications = { sent: 0, failed: 1 };
+        }
+      }
+      return res.status(201).json({ ok: true, data: created, notifications });
     } catch (error) {
       if (error.status === 409 || /duplicate/i.test(String(error.message || ''))) {
         return res.status(409).json({ ok: false, error: 'Ya existe un ticket con ese codigo.' });

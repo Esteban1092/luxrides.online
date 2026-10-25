@@ -69,4 +69,53 @@ revoke all on function public.claim_customer_notification(text, text, text, inte
 grant execute on function public.claim_customer_notification(text, text, text, integer, jsonb)
   to service_role;
 
+-- 4) Avisos promocionales: maximo un push promocional por cliente cada 24 horas
+create table if not exists public.customer_promotion_push_log (
+  promo_code text not null,
+  user_id text not null,
+  sent_at timestamptz not null default now(),
+  primary key (promo_code, user_id)
+);
+
+create index if not exists idx_customer_promotion_push_log_user_sent
+  on public.customer_promotion_push_log (user_id, sent_at desc);
+
+alter table public.customer_promotion_push_log enable row level security;
+
+create or replace function public.claim_customer_promotion_push(
+  p_promo_code text,
+  p_user_id text,
+  p_cooldown_hours integer default 24
+) returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_claimed boolean;
+begin
+  perform pg_advisory_xact_lock(hashtextextended(p_user_id, 0));
+
+  if exists (
+    select 1 from public.customer_promotion_push_log
+    where user_id = p_user_id
+      and sent_at > now() - make_interval(hours => greatest(1, p_cooldown_hours))
+  ) then
+    return false;
+  end if;
+
+  insert into public.customer_promotion_push_log (promo_code, user_id)
+  values (p_promo_code, p_user_id)
+  on conflict (promo_code, user_id) do nothing
+  returning true into v_claimed;
+
+  return coalesce(v_claimed, false);
+end;
+$$;
+
+revoke all on function public.claim_customer_promotion_push(text, text, integer)
+  from public, anon, authenticated;
+grant execute on function public.claim_customer_promotion_push(text, text, integer)
+  to service_role;
+
 notify pgrst, 'reload schema';

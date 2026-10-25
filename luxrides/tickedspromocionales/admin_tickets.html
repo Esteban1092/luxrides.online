@@ -40,6 +40,8 @@
     input:focus,select:focus{border-color:var(--gold)}
     .icon-presets{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 4px}.icon-preset{width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:#0c100d;font-size:1.1rem;cursor:pointer;display:grid;place-items:center}.icon-preset:hover{border-color:var(--gold)}
     .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .notify-option{display:flex;align-items:flex-start;gap:10px;margin-top:4px;padding:12px;border:1px solid var(--line);border-radius:6px;background:#0c100d;color:#c8cec9;font-size:.74rem;line-height:1.45;cursor:pointer;text-transform:none;letter-spacing:0;}
+    .notify-option input{width:18px;height:18px;flex:0 0 18px;margin:0;accent-color:var(--gold);}
     .submit-btn{height:46px;border:0;border-radius:6px;background:var(--gold);color:#181207;font-weight:800;cursor:pointer;margin-top:4px}.submit-btn:hover{background:#e7c35e}.submit-btn:disabled{opacity:.6;cursor:not-allowed}
     .form-error{min-height:18px;color:#ff8d8d;font-size:.76rem}
     .loading{padding:60px;text-align:center;color:var(--muted)}
@@ -136,6 +138,7 @@
                   <input id="f-expiration" type="datetime-local" required>
                 </div>
               </div>
+              <label class="notify-option"><input id="f-notify-customers" type="checkbox"><span>Enviar notificación push de esta promoción a clientes suscritos. Máximo 1 promoción por cliente cada 24 horas.</span></label>
               <button class="submit-btn" type="submit">Crear ticket</button>
               <div class="form-error" id="form-error"></div>
             </form>
@@ -391,10 +394,18 @@
           discount_type: document.getElementById('f-discount-type').value,
           discount_value: Number(document.getElementById('f-discount-value').value),
           max_uses: Number(document.getElementById('f-max-uses').value),
-          expiration_date: new Date(document.getElementById('f-expiration').value).toISOString()
+          expiration_date: new Date(document.getElementById('f-expiration').value).toISOString(),
+          notify_customers: document.getElementById('f-notify-customers').checked
         };
-        await api('/mayahuel/tickets-admin/tickets', { method: 'POST', body: JSON.stringify(payload) });
-        showToast('🎟️ Ticket creado con éxito');
+        var createResult = await api('/mayahuel/tickets-admin/tickets', { method: 'POST', body: JSON.stringify(payload) });
+        var delivery = createResult.notifications;
+        if (payload.notify_customers && delivery) {
+          showToast(delivery.sent
+            ? 'Ticket creado; push enviado a ' + delivery.sent + ' cliente' + (delivery.sent === 1 ? '' : 's')
+            : 'Ticket creado; no había clientes suscritos o no se pudo enviar.', delivery.failed > 0);
+        } else {
+          showToast('🎟️ Ticket creado con éxito');
+        }
         event.target.reset();
         document.getElementById('f-venue').value = 'Mayahuel';
         document.getElementById('f-icon').value = '🎟️';

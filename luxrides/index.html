@@ -6856,6 +6856,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       volverPassCatalogo();
     }
 
+    document.addEventListener('DOMContentLoaded', function() {
+      if (new URLSearchParams(location.search).get('promociones') === '1') {
+        switchTab('pass');
+      }
+    });
+
     function mostrarMayahuelCatalogo() {
       const overview = document.getElementById('pass-overview');
       const detail = document.getElementById('mayahuel-detail');

@@ -455,3 +455,89 @@ export function startNotificationScheduler() {
   setInterval(run, 60_000);
   console.log('[notify] avisos automáticos al cliente activos');
 }
+
+export async function notifyCustomersAboutPromotion(promotion) {
+  if (!enabled()) return { sent: 0, skipped: 0, failed: 0, disabled: true };
+  const code = String(promotion?.code || '').trim().toUpperCase();
+  const expiration = Date.parse(promotion?.expiration_date || '');
+  const active = promotion?.is_public !== false
+    && promotion?.is_active === true
+    && Number(promotion?.uses_count || 0) < Number(promotion?.max_uses || 0)
+    && Number.isFinite(expiration)
+    && expiration > Date.now();
+  if (!code || !active) return { sent: 0, skipped: 0, failed: 0, inactive: true };
+
+  const discount = promotion.discount_type === 'PERCENTAGE'
+    ? Number(promotion.discount_value) + '% de descuento'
+    : '$' + Number(promotion.discount_value) + ' MXN de descuento';
+  const ends = new Date(expiration).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+  const venue = String(promotion.venue_name || 'LuxRides').trim();
+  const description = String(promotion.description || '').trim();
+  const title = `${promotion.icon || '🎟️'} ${venue}: nueva promoción`;
+  const body = `${description} · ${discount} · Código ${code} · Vence ${ends}`;
+  const results = { sent: 0, skipped: 0, failed: 0, limited: false };
+  const pageSize = 500;
+  const maxRecipients = 5000;
+
+  for (let offset = 0; offset < maxRecipients; offset += pageSize) {
+    let subscriptions;
+    try {
+      subscriptions = await sb('customer_push_subscriptions?select=user_id,subscription&order=user_id.asc', {
+        headers: { Range: `${offset}-${offset + pageSize - 1}` }
+      });
+    } catch (error) {
+      warnOnce('promo-subscriptions', 'no se pudieron leer suscripciones: ' + error.message);
+      results.failed++;
+      return results;
+    }
+    if (!subscriptions?.length) break;
+
+    const batch = subscriptions.slice(0, pageSize);
+    for (let start = 0; start < batch.length; start += 20) {
+      await Promise.all(batch.slice(start, start + 20).map(async (row) => {
+      const userId = String(row?.user_id || '').trim();
+      if (!userId || !row?.subscription) { results.skipped++; return; }
+      let claimed;
+      try {
+        claimed = await sb('rpc/claim_customer_promotion_push', {
+          method: 'POST',
+          body: JSON.stringify({ p_promo_code: code, p_user_id: userId, p_cooldown_hours: 24 })
+        });
+      } catch (error) {
+        warnOnce('promo-claim', 'falta ejecutar el SQL de avisos promocionales: ' + error.message);
+        results.failed++;
+        return;
+      }
+      if (claimed !== true) { results.skipped++; return; }
+
+      try {
+        await enviarPush(row.subscription, {
+          title,
+          body,
+          tag: 'luxrides-promo-' + code,
+          url: '/?promociones=1',
+          icon: ICON,
+          badge: BADGE,
+          requireInteraction: false
+        });
+        results.sent++;
+      } catch (error) {
+        results.failed++;
+        if (error?.statusCode === 404 || error?.statusCode === 410) {
+          await dropSubscription(userId);
+          try {
+            await sb('customer_promotion_push_log?promo_code=eq.' + encodeURIComponent(code) + '&user_id=eq.' + encodeURIComponent(userId), { method: 'DELETE' });
+          } catch {}
+        } else {
+          console.warn('[notify] promo push no enviado:', error?.message || error);
+        }
+      }
+      }));
+    }
+
+    if (batch.length < pageSize) break;
+    if (offset + pageSize >= maxRecipients) results.limited = true;
+  }
+
+  return results;
+}
