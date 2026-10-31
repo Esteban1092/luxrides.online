@@ -87,13 +87,13 @@ test('activation is saved per account and restored after a page reload', async (
   const first = customerContext('customer-a');
   await first.context.prepararCodigoDescuento(' viaje10 ');
   assert.equal(first.saved.get('customer-a').code, 'VIAJE10');
-  assert.equal(first.document.getElementById('ride-discount-code').value, 'VIAJE10');
+  assert.equal(vm.runInContext('_rideActiveTicketCode', first.context), 'VIAJE10');
   const reloaded = customerContext('customer-a', first.saved);
   await reloaded.context.restaurarTicketViaje();
-  assert.equal(reloaded.document.getElementById('ride-discount-code').value, 'VIAJE10');
+  assert.equal(vm.runInContext('_rideActiveTicketCode', reloaded.context), 'VIAJE10');
   const other = customerContext('customer-b', first.saved);
   await other.context.restaurarTicketViaje();
-  assert.equal(other.document.getElementById('ride-discount-code').value, '');
+  assert.equal(vm.runInContext('_rideActiveTicketCode', other.context), '');
   await first.context.prepararCodigoDescuento('VIAJE20');
   assert.equal(first.saved.get('customer-a').code, 'VIAJE20');
   assert.equal(first.saved.size, 1);
@@ -108,7 +108,7 @@ test('a session change during activation cannot apply another account ticket', a
     return response;
   };
   await client.context.prepararCodigoDescuento('VIAJE10');
-  assert.equal(client.document.getElementById('ride-discount-code').value, '');
+  assert.equal(vm.runInContext('_rideActiveTicketCode', client.context), '');
   assert.ok(client.notices.some(message => message.includes('La cuenta cambió')));
 });
 
@@ -117,7 +117,10 @@ test('each new journey automatically validates the saved ticket and updates its 
   for (const token of ['trip-one', 'trip-two']) {
     vm.runInContext(`resultado = { totalPrecio: 1000 }; _rideBaseQuoteToken = "${token}"; limpiarDescuentoViaje();`, client.context);
     await client.context.aplicarTicketActivoAlViaje();
-    assert.equal(client.document.getElementById('r-precio').textContent, '$900');
+    assert.equal(client.document.getElementById('r-precio').textContent, '$900.00');
+    assert.equal(client.document.getElementById('ride-original-price').hidden, false);
+    assert.equal(client.document.getElementById('ride-original-amount').textContent, '$1,000.00');
+    assert.match(client.document.getElementById('ride-discount-status').textContent, /VIAJE10.*\$100\.00.*automáticamente/);
     assert.equal(vm.runInContext('stripeQuoteToken', client.context), 'discounted-' + token);
   }
   assert.deepEqual(client.requests.filter(r => r.body).map(r => r.body.quoteToken), ['trip-one', 'trip-two']);
@@ -153,7 +156,7 @@ test('a stale discount response cannot overwrite a newer quote', async () => {
   const client = customerContext('customer-a');
   let resolveFetch;
   client.context.fetch = () => new Promise(resolve => { resolveFetch = resolve; });
-  client.document.getElementById('ride-discount-code').value = 'VIAJE10';
+  vm.runInContext('_rideActiveTicketCode = "VIAJE10";', client.context);
   vm.runInContext('resultado = { totalPrecio: 1000 };', client.context);
   const applying = client.context.window.aplicarDescuentoViaje();
   assert.equal(client.context.ticketViajeValidando(), true);
@@ -167,7 +170,37 @@ test('a stale discount response cannot overwrite a newer quote', async () => {
   });
   await applying;
   assert.equal(vm.runInContext('_ridePromoApplied', client.context), null);
-  assert.equal(client.document.getElementById('r-precio').textContent, '$1,000');
+  assert.equal(client.document.getElementById('r-precio').textContent, '$1,000.00');
+  assert.equal(client.document.getElementById('ride-original-price').hidden, true);
+});
+
+test('re-rendering and repeated application preserve the discounted total', async () => {
+  const client = customerContext('customer-a', new Map([['customer-a', { code: 'VIAJE10' }]]));
+  vm.runInContext('resultado = { totalPrecio: 1000 };', client.context);
+  await client.context.aplicarTicketActivoAlViaje();
+  client.context.mostrarPrecioViaje();
+  await client.context.window.aplicarDescuentoViaje();
+  assert.equal(client.requests.filter(r => r.body).length, 2);
+  assert.equal(client.document.getElementById('r-precio').textContent, '$900.00');
+  assert.equal(client.document.getElementById('ride-original-price').hidden, false);
+  assert.match(section(mainHtml, 'function renderResults()', 'function calcHoraLlegada'), /mostrarPrecioViaje\(\)/);
+});
+
+test('failed discounts explain the original price and do not show a false saving', async () => {
+  const client = customerContext('customer-a', new Map([['customer-a', { code: 'VIAJE10' }]]));
+  vm.runInContext('resultado = { totalPrecio: 1000 };', client.context);
+  client.context.fetch = async () => ({
+    ok: false, json: async () => ({ ok: false, error: 'El ticket venció.' })
+  });
+  await client.context.aplicarTicketActivoAlViaje();
+  assert.equal(client.document.getElementById('r-precio').textContent, '$1,000.00');
+  assert.equal(client.document.getElementById('ride-original-price').hidden, true);
+  assert.match(client.document.getElementById('ride-discount-status').textContent, /precio original.*VIAJE10.*venció/);
+});
+
+test('price results contain no manual discount input or apply button', () => {
+  assert.doesNotMatch(mainHtml, /id="ride-discount-code"|onclick="aplicarDescuentoViaje\(\)"/);
+  assert.ok(mainHtml.indexOf('id="ride-original-price"') < mainHtml.indexOf('id="r-precio"'));
 });
 
 test('the ride category routes to ride promotions while ally tickets keep their endpoint', async () => {

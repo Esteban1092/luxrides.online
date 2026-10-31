@@ -299,7 +299,9 @@
       .info-cell-lbl{font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
       .info-cell-val{font-size:1.1rem;font-weight:600;}
       .casetas-notice{display:none !important;}
-      .price-box{display:flex;align-items:baseline;justify-content:center;gap:8px;padding:20px;background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05));border:1px solid var(--gold);margin-bottom:12px;}
+      .price-box{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:8px;padding:20px;background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05));border:1px solid var(--gold);margin-bottom:12px;}
+      .price-original{flex-basis:100%;text-align:center;font-size:.78rem;color:var(--muted);}
+      .price-original[hidden]{display:none;}
       .price-label{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.2em;color:var(--muted);}
       .price-amount{font-family:'Playfair Display',serif;font-size:3rem;font-weight:700;color:var(--gold);}
       .price-currency{font-size:0.9rem;color:var(--muted);}
@@ -1847,18 +1849,12 @@
             </div>
             <div class="casetas-notice" id="casetas-notice" style="display:none;"></div>
             <div class="price-box">
+              <div class="price-original" id="ride-original-price" hidden>Precio original: <s id="ride-original-amount"></s> MXN</div>
               <span class="price-label">Total</span>
               <span class="price-amount" id="r-precio">$0</span>
               <span class="price-currency">MXN</span>
             </div>
-            <div class="field" style="margin-top:10px;">
-              <label class="lbl" for="ride-discount-code">Código de descuento para tu viaje</label>
-              <div style="display:flex;gap:8px;">
-                <input id="ride-discount-code" type="text" maxlength="50" placeholder="Ej: VIAJE10" autocomplete="off" style="flex:1;min-width:0;text-transform:uppercase;">
-                <button type="button" onclick="aplicarDescuentoViaje()" style="padding:0 14px;border:1px solid var(--gold);border-radius:8px;background:rgba(212,175,55,.14);color:var(--gold);font-weight:700;cursor:pointer;">Aplicar</button>
-              </div>
-              <div id="ride-discount-status" role="status" style="min-height:18px;margin-top:5px;font-size:.78rem;"></div>
-            </div>
+            <div id="ride-discount-status" role="status" aria-live="polite" style="margin:5px 0 12px;font-size:.78rem;line-height:1.5;"></div>
             <div class="field" id="payment-method-box" style="margin-top:8px;">
               <label class="lbl">Método de pago</label>
               <div class="btn-row">
@@ -3695,25 +3691,37 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       let _calculandoPrecio = false;
       let _ridePromoApplied = null;
+      let _rideActiveTicketCode = '';
       let _rideTicketCodePending = '';
       let _rideTicketSyncPromise = null;
       let _ridePromoRequestId = 0;
       let _ridePromoValidating = false;
+
+      function mostrarPrecioViaje() {
+        if (!resultado) return;
+        const promo = _ridePromoApplied &&
+          _ridePromoApplied.amount === Number(resultado.totalPrecio) &&
+          _ridePromoApplied.passengers === Number(pasajeros)
+          ? _ridePromoApplied : null;
+        const money = value => '$' + Number(value).toLocaleString('es-MX', {
+          minimumFractionDigits: 2, maximumFractionDigits: 2
+        });
+        document.getElementById('r-precio').textContent = money(promo ? promo.total : resultado.totalPrecio);
+        document.getElementById('ride-original-price').hidden = !promo;
+        document.getElementById('ride-original-amount').textContent = promo ? money(promo.amount) : '';
+        const status = document.getElementById('ride-discount-status');
+        status.textContent = promo
+          ? 'Tu ticket ' + promo.code + ' te ahorra ' + money(promo.discount) + ' MXN. El total ya incluye este descuento, aplicado automáticamente.'
+          : 'Este es el precio original del viaje, sin descuento. Activa un ticket de viajes en Promociones para obtener un ahorro.';
+        status.style.color = promo ? '#16a34a' : 'var(--muted)';
+      }
 
       function limpiarDescuentoViaje() {
         _ridePromoRequestId++;
         _ridePromoValidating = false;
         if (_ridePromoApplied && _rideBaseQuoteToken) stripeQuoteToken = _rideBaseQuoteToken;
         _ridePromoApplied = null;
-        const status = document.getElementById('ride-discount-status');
-        if (status) {
-          status.textContent = '';
-          status.style.color = '';
-        }
-        if (resultado) {
-          const price = document.getElementById('r-precio');
-          if (price) price.textContent = '$' + Number(resultado.totalPrecio).toLocaleString('es-MX');
-        }
+        mostrarPrecioViaje();
       }
 
       window.aplicarDescuentoViaje = async function() {
@@ -3721,12 +3729,10 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           mostrarToast('Primero calcula el precio del viaje.', 'err');
           return;
         }
-        const codeInput = document.getElementById('ride-discount-code');
         const status = document.getElementById('ride-discount-status');
-        const code = String(codeInput.value || '').trim().toUpperCase();
+        const code = _rideActiveTicketCode;
         if (!code) {
-          status.textContent = 'Escribe un código de descuento.';
-          status.style.color = '#ef4444';
+          mostrarPrecioViaje();
           return;
         }
         limpiarDescuentoViaje();
@@ -3755,20 +3761,15 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             total: Number(data.quote.amountMx),
             quoteToken: data.token
           };
-          document.getElementById('r-precio').textContent = '$' + _ridePromoApplied.total.toLocaleString('es-MX');
-          status.textContent = 'Descuento de $' + _ridePromoApplied.discount.toLocaleString('es-MX') + ' aplicado. Pagarás $' + _ridePromoApplied.total.toLocaleString('es-MX') + ' MXN.';
-          status.style.color = '#22c55e';
+          mostrarPrecioViaje();
         } catch (error) {
           if (requestId !== _ridePromoRequestId) return;
-          status.textContent = error.message;
+          status.textContent = 'Se muestra el precio original porque no se pudo aplicar tu ticket ' + code + ': ' + error.message;
           status.style.color = '#ef4444';
         } finally {
           if (requestId === _ridePromoRequestId) _ridePromoValidating = false;
         }
       };
-      document.getElementById('ride-discount-code').addEventListener('input', function() {
-        limpiarDescuentoViaje();
-      });
 
       function ticketViajeValidando() {
         if (!_calculandoPrecio && !_ridePromoValidating && !_rideTicketSyncPromise) return false;
@@ -4327,7 +4328,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           document.getElementById('r-arrival').textContent=calcHoraLlegada(duracionMin);
         }
         document.getElementById('r-vehiculo').textContent=vehiculo;
-        document.getElementById('r-precio').textContent='$'+totalPrecio.toLocaleString();
+        mostrarPrecioViaje();
         const casetasEl=document.getElementById('casetas-notice');
         if(casetasEl){
           if(casetasTotal > 0 && esKm){
@@ -5591,7 +5592,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               _userSesion = null; _perfilDatos = null;
               _rideTicketCodePending = '';
               limpiarDescuentoViaje();
-              document.getElementById('ride-discount-code').value = '';
+              _rideActiveTicketCode = '';
               actualizarMiniAvatar();
             }
           });
@@ -7251,10 +7252,10 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const ticket = await sincronizarTicketViaje();
         if (!ticket) {
           limpiarDescuentoViaje();
-          document.getElementById('ride-discount-code').value = '';
+          _rideActiveTicketCode = '';
           return;
         }
-        document.getElementById('ride-discount-code').value = ticket.code;
+        _rideActiveTicketCode = ticket.code;
         if (resultado && resultado.totalPrecio && !_calculandoPrecio) {
           await window.aplicarDescuentoViaje();
         }
@@ -7267,13 +7268,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
     async function aplicarTicketActivoAlViaje() {
       try {
         const ticket = await sincronizarTicketViaje();
-        if (!ticket) return;
-        document.getElementById('ride-discount-code').value = ticket.code;
+        if (!ticket) {
+          _rideActiveTicketCode = '';
+          limpiarDescuentoViaje();
+          return;
+        }
+        _rideActiveTicketCode = ticket.code;
         await window.aplicarDescuentoViaje();
       } catch (error) {
         console.error('[Ticket de viaje]', error);
         const status = document.getElementById('ride-discount-status');
-        status.textContent = 'No se pudo recuperar tu ticket: ' + error.message;
+        status.textContent = 'Se muestra el precio original porque no se pudo recuperar tu ticket: ' + error.message;
         status.style.color = '#ef4444';
       }
     }
@@ -7294,7 +7299,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           abrirAuth();
           return;
         }
-        document.getElementById('ride-discount-code').value = ticket.code;
+        _rideActiveTicketCode = ticket.code;
         mostrarToast('Ticket activado en tu cuenta. Se aplicará en tus viajes compatibles hasta vencer o agotar los canjes.');
         if (resultado && resultado.totalPrecio && !_calculandoPrecio) {
           await window.aplicarDescuentoViaje();
