@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0a0704">
-  <title>LuxRides Tickets | Promociones activas</title>
-  <meta name="description" content="Tickets y promociones activas de LuxRides. Canjea tu ticket antes de que expire.">
+  <title>LuxRides | Ofertas de transporte</title>
+  <meta name="description" content="Descuentos activos para tus viajes con LuxRides.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
@@ -77,9 +77,9 @@
   <div class="sparks" id="sparks"></div>
 
   <header>
-    <div class="eyebrow">LuxRides Pass</div>
-    <h1>Tickets &amp; Promociones</h1>
-    <p>Descubre los tickets activos de nuestros restaurantes aliados. Cánjealos directo en LuxRides antes de que expiren.</p>
+    <div class="eyebrow">Promociones LuxRides</div>
+    <h1>Ofertas de transporte</h1>
+    <p>Elige una oferta, calcula tu viaje y el descuento se resta automáticamente del total antes de reservar.</p>
   </header>
 
   <div class="wrap">
@@ -88,7 +88,7 @@
     </div>
   </div>
 
-  <footer>LuxRides Mexico · Tickets promocionales</footer>
+  <footer>LuxRides · Descuentos para tus viajes</footer>
 
   <script src="../config.js"></script>
   <script>
@@ -113,7 +113,7 @@
     }
 
     function ticketRedeemUrl(code) {
-      return '../?ticket=' + encodeURIComponent(code);
+      return '../?promo=' + encodeURIComponent(code);
     }
 
     function renderTickets(tickets) {
@@ -129,17 +129,21 @@
       grid.innerHTML = tickets.map(function(ticket, index) {
         var expired = ticket.status !== 'active';
         var ribbon = expired ? '<div class="ribbon expired">Caducado</div>' : '<div class="ribbon active">Activo</div>';
-        var cta = expired
-          ? '<span class="cta disabled">Ticket no disponible</span>'
-          : '<a class="cta enabled" href="' + ticketRedeemUrl(ticket.code) + '">Canjear en LuxRides →</a>';
+          var passengers = Number(ticket.min_passengers) === Number(ticket.max_passengers)
+            ? Number(ticket.min_passengers) + ' pasajeros'
+            : Number(ticket.min_passengers) + '–' + Number(ticket.max_passengers) + ' pasajeros';
+          var cta = expired
+            ? '<span class="cta disabled">Oferta no disponible</span>'
+            : '<a class="cta enabled" href="' + ticketRedeemUrl(ticket.code) + '">Activar ticket de viaje →</a>';
         return '<div class="card' + (expired ? ' expired' : '') + '" style="animation-delay:' + (index * 0.08) + 's">' +
           ribbon +
           '<div class="card-body">' +
             '<div class="icon">' + escapeHtml(ticket.icon || '🎟️') + '</div>' +
-            '<div class="venue">' + escapeHtml(ticket.venue_name) + '</div>' +
+            '<div class="venue">LuxRides</div>' +
             '<div class="desc">' + escapeHtml(ticket.description) + '</div>' +
             '<div class="discount-pill">🏷️ ' + formatDiscount(ticket.discount_type, ticket.discount_value) + '</div>' +
             '<div class="code-tag">CÓDIGO: ' + escapeHtml(ticket.code) + '</div>' +
+            '<div class="expiry">Aplica para <b>' + escapeHtml(passengers) + '</b> · ' + Number(ticket.remaining_uses || 0) + ' usos disponibles</div>' +
             '<div class="expiry">' + (expired ? 'Venció el ' : 'Vence el ') + '<b>' + formatExpiry(ticket.expiration_date) + '</b></div>' +
             cta +
           '</div>' +
@@ -149,7 +153,7 @@
 
     async function cargarTickets() {
       try {
-        var res = await fetch(apiBase() + '/api/mayahuel/promos/public', { headers: { 'Accept': 'application/json' } });
+        var res = await fetch(apiBase() + '/api/rides/promos/public', { headers: { 'Accept': 'application/json' } });
         var body = await res.json().catch(function(){ return {}; });
         if (!res.ok || !body.ok) throw new Error(body.error || 'No se pudieron cargar los tickets');
         renderTickets(Array.isArray(body.data) ? body.data : []);

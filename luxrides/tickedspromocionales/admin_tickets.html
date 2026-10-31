@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#080a09">
-  <title>Mayahuel | Admin de Tickets</title>
+  <title>LuxRides | Admin de Tickets</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
@@ -54,7 +54,7 @@
   <section class="login" id="login-screen">
     <div class="login-card">
       <div class="brand-mark">🎟️</div>
-      <h1>Tickets Mayahuel</h1>
+      <h1>Tickets</h1>
       <p>Panel de administración</p>
       <form id="login-form">
         <input id="password" type="password" placeholder="Contraseña de acceso" autocomplete="current-password" required autofocus>
@@ -66,20 +66,22 @@
 
   <div class="app" id="app">
     <aside class="sidebar">
-      <div class="side-brand"><div class="side-logo">🎟️</div><div><strong>Tickets</strong><small>Mayahuel</small></div></div>
+      <div class="side-brand"><div class="side-logo">🎟️</div><div><strong>Tickets</strong><small>LuxRides</small></div></div>
       <div class="side-label">Operación</div>
       <button class="side-item active" type="button" data-tab="tickets" onclick="setTab('tickets')">🎫 Tickets</button>
+      <button class="side-item" type="button" data-tab="rides" onclick="setTab('rides')">🚘 Tickets de viajes</button>
       <button class="side-item" type="button" data-tab="home" onclick="setTab('home')">🏠 Pantalla de inicio</button>
       <button class="logout" type="button" onclick="cerrarSesion()">Cerrar sesión</button>
     </aside>
 
     <main>
       <header class="topbar">
-        <div><div class="eyebrow">Marketing en tiempo real</div><h1>Tickets Mayahuel</h1></div>
+        <div><div class="eyebrow">Promociones de LuxRides</div><h1>Tickets</h1></div>
         <div class="top-actions"><span class="sync" id="sync-label">Sincronizando...</span><button class="refresh" type="button" onclick="cargarTickets()">Actualizar</button></div>
       </header>
       <nav class="tabs" role="tablist">
         <button class="tab active" type="button" role="tab" data-tab="tickets" onclick="setTab('tickets')">🎫 Tickets</button>
+        <button class="tab" type="button" role="tab" data-tab="rides" onclick="setTab('rides')">🚘 Tickets de viajes</button>
         <button class="tab" type="button" role="tab" data-tab="home" onclick="setTab('home')">🏠 Pantalla de inicio <span class="tab-count" id="tab-home-count">0</span></button>
       </nav>
       <div class="view active" id="view-tickets">
@@ -98,13 +100,18 @@
           <div class="create-body">
             <form id="ticket-form">
               <label>Código del ticket</label>
-              <input id="f-code" type="text" placeholder="Ej: MAYAHUELVIP" required>
-              <label>Nombre del lugar</label>
-              <input id="f-venue" type="text" placeholder="Mayahuel" value="Mayahuel" required>
+              <input id="f-code" type="text" placeholder="Ej: ALIADOVIP" required>
+              <label>Nombre del aliado</label>
+              <input id="f-venue" type="text" placeholder="Nombre del aliado" required>
               <label>¿De qué se trata?</label>
               <input id="f-desc" type="text" placeholder="Ej: 10% en comida" required>
               <label>Categoría</label>
+              <select id="f-category-kind">
+                <option value="ALLY">Aliados (categoría personalizada)</option>
+                <option value="RIDE">Viajes LuxRides (descuento en el viaje)</option>
+              </select>
               <input id="f-category" type="text" placeholder="Ej: Comida, bebidas, recuerdos" required>
+              <p id="f-ride-note" class="sync" hidden>Exclusivo para viajes de 1 a 7 pasajeros. El cliente activa el ticket en su cuenta y el descuento se aplica automáticamente hasta vencer o agotar los canjes. Activar no consume canjes; reservar sí. Para otro rango de pasajeros o fecha de inicio, usa la pestaña Tickets de viajes.</p>
               <label>Ícono</label>
               <div class="icon-presets">
                 <button type="button" class="icon-preset" data-icon="🍽️">🍽️</button>
@@ -113,6 +120,7 @@
                 <button type="button" class="icon-preset" data-icon="🎂">🎂</button>
                 <button type="button" class="icon-preset" data-icon="🥃">🥃</button>
                 <button type="button" class="icon-preset" data-icon="🎟️">🎟️</button>
+                <button type="button" class="icon-preset" data-icon="🚘">🚘</button>
               </div>
               <input id="f-icon" type="text" placeholder="Emoji del ticket" value="🎟️" maxlength="4" required>
               <div class="row-2">
@@ -156,6 +164,63 @@
           <div class="ticket-list" id="home-list"><div class="loading">Cargando tickets...</div></div>
         </div>
       </div>
+      <div class="view" id="view-rides">
+        <section class="workspace">
+          <div class="board">
+            <div class="panel-head"><h2>Tickets de viajes</h2><span>Categoría exclusiva: Viajes LuxRides</span></div>
+            <div class="ticket-list" id="ride-promo-list"><div class="loading">Cargando descuentos...</div></div>
+          </div>
+          <aside class="create-panel">
+            <div class="panel-head"><h2>Crear ticket de viaje</h2></div>
+            <div class="create-body">
+              <p class="sync">El último ticket activado queda guardado en la cuenta del cliente y descuenta automáticamente sus viajes compatibles. No se acumula con otros tickets. Cada reserva consume un canje.</p>
+              <form id="ride-promo-form">
+                <label>Código</label>
+                <input id="rp-code" type="text" placeholder="Ej: VIAJE10" maxlength="50" required>
+                <label>Descripción</label>
+                <input id="rp-description" type="text" placeholder="Ej: Descuento de lanzamiento" maxlength="200" required>
+                <div class="row-2">
+                  <div>
+                    <label>Tipo de descuento</label>
+                    <select id="rp-discount-type">
+                      <option value="PERCENTAGE">Porcentaje</option>
+                      <option value="FIXED_AMOUNT">Monto fijo (MXN)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Valor</label>
+                    <input id="rp-discount-value" type="number" min="0.01" step="0.01" placeholder="10" required>
+                  </div>
+                </div>
+                <div class="row-2">
+                  <div>
+                    <label>Desde pasajeros</label>
+                    <input id="rp-min-passengers" type="number" min="1" max="100" value="1" required>
+                  </div>
+                  <div>
+                    <label>Hasta pasajeros</label>
+                    <input id="rp-max-passengers" type="number" min="1" max="100" value="7" required>
+                  </div>
+                </div>
+                <div class="row-2">
+                  <div>
+                    <label>Máximo de usos</label>
+                    <input id="rp-max-uses" type="number" min="1" max="100000" value="100" required>
+                  </div>
+                  <div>
+                    <label>Inicia</label>
+                    <input id="rp-starts-at" type="datetime-local" required>
+                  </div>
+                </div>
+                <label>Vence</label>
+                <input id="rp-expires-at" type="datetime-local" required>
+                <button class="submit-btn" type="submit">Crear oferta</button>
+                <div class="form-error" id="ride-promo-error"></div>
+              </form>
+            </div>
+          </aside>
+        </section>
+      </div>
     </main>
   </div>
   <div class="toast" id="toast"></div>
@@ -167,6 +232,8 @@
     var TAB_KEY = 'mayahuel_tickets_admin_tab';
     var token = sessionStorage.getItem(TOKEN_KEY) || '';
     var tickets = [];
+    var ridePromos = [];
+    var ridePromoError = '';
     var refreshTimer = null;
 
     function api(path, options) {
@@ -214,7 +281,7 @@
       document.getElementById('app').classList.add('ready');
       var savedTab = '';
       try { savedTab = sessionStorage.getItem(TAB_KEY) || ''; } catch (e) {}
-      setTab(savedTab === 'home' ? 'home' : 'tickets');
+      setTab(['home', 'rides'].indexOf(savedTab) >= 0 ? savedTab : 'tickets');
       cargarTickets();
       clearInterval(refreshTimer);
       refreshTimer = setInterval(cargarTickets, 15000);
@@ -242,6 +309,7 @@
       });
       document.getElementById('view-tickets').classList.toggle('active', name === 'tickets');
       document.getElementById('view-home').classList.toggle('active', name === 'home');
+      document.getElementById('view-rides').classList.toggle('active', name === 'rides');
       try { sessionStorage.setItem(TAB_KEY, name); } catch (e) {}
     }
 
@@ -308,11 +376,52 @@
       }).join('');
     }
 
+    function renderRidePromos() {
+      var wrap = document.getElementById('ride-promo-list');
+      if (ridePromoError) {
+        wrap.innerHTML = '<div class="ticket-empty">' + escapeHtml(ridePromoError) + '</div>';
+        return;
+      }
+      if (!ridePromos.length) {
+        wrap.innerHTML = '<div class="ticket-empty">Todavía no has creado descuentos para viajes.</div>';
+        return;
+      }
+      wrap.innerHTML = ridePromos.map(function(promo) {
+        var expired = Date.now() > new Date(promo.expires_at).getTime();
+        var exhausted = Number(promo.uses_count || 0) >= Number(promo.max_uses || 0);
+        var active = Boolean(promo.is_active) && !expired && !exhausted;
+        var discount = promo.discount_type === 'PERCENTAGE'
+          ? Number(promo.discount_value) + '%'
+          : '$' + Number(promo.discount_value).toLocaleString('es-MX') + ' MXN';
+        var expiry = new Date(promo.expires_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+        return '<div class="ticket-row">' +
+          '<div class="ticket-icon">🚘</div>' +
+          '<div class="ticket-main"><strong>' + escapeHtml(promo.description) + '</strong>' +
+            '<small>' + discount + ' · ' + Number(promo.min_passengers) + '–' + Number(promo.max_passengers) + ' pasajeros · Vence ' + expiry + '</small>' +
+            '<div class="ticket-code">' + escapeHtml(promo.code) + '</div>' +
+          '</div>' +
+          '<div class="ticket-meta"><div class="ticket-uses">' + Number(promo.uses_count || 0) + '/' + Number(promo.max_uses || 0) + '<small>Usos</small></div>' +
+            '<span class="chip ' + (active ? 'active' : 'expired') + '">' + (active ? 'Activo' : 'Inactivo / vencido') + '</span>' +
+            '<button class="ticket-toggle ' + (promo.is_active ? '' : 'off') + '" type="button" data-promo-id="' + escapeHtml(promo.id) + '" data-next-state="' + (!promo.is_active) + '" onclick="toggleRidePromo(this)">' + (promo.is_active ? 'Desactivar' : 'Activar') + '</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
     async function cargarTickets() {
       try {
         var result = await api('/mayahuel/tickets-admin/list');
         tickets = result.data || [];
+        ridePromoError = '';
+        try {
+          var promoResult = await api('/mayahuel/tickets-admin/ride-promos');
+          ridePromos = promoResult.data || [];
+        } catch (promoError) {
+          ridePromos = [];
+          ridePromoError = promoError.message;
+        }
         renderTickets();
+        renderRidePromos();
         document.getElementById('sync-label').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
       } catch (err) {
         showToast(err.message, true);
@@ -372,11 +481,86 @@
       }
     }
 
+    async function toggleRidePromo(button) {
+      var promoId = button.getAttribute('data-promo-id');
+      var nextState = button.getAttribute('data-next-state') === 'true';
+      if (!promoId || !window.confirm(nextState ? '¿Activar este descuento?' : '¿Desactivar este descuento?')) return;
+      button.disabled = true;
+      try {
+        await api('/mayahuel/tickets-admin/ride-promos/' + encodeURIComponent(promoId), {
+          method: 'PATCH',
+          body: JSON.stringify({ is_active: nextState })
+        });
+        showToast(nextState ? 'Descuento activado' : 'Descuento desactivado');
+        await cargarTickets();
+      } catch (err) {
+        showToast(err.message, true);
+        button.disabled = false;
+      }
+    }
+
+    document.getElementById('ride-promo-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      var errorEl = document.getElementById('ride-promo-error');
+      var submitBtn = event.target.querySelector('.submit-btn');
+      errorEl.textContent = '';
+      submitBtn.disabled = true;
+      try {
+        var payload = {
+          code: document.getElementById('rp-code').value.trim().toUpperCase(),
+          description: document.getElementById('rp-description').value.trim(),
+          discount_type: document.getElementById('rp-discount-type').value,
+          discount_value: Number(document.getElementById('rp-discount-value').value),
+          min_passengers: Number(document.getElementById('rp-min-passengers').value),
+          max_passengers: Number(document.getElementById('rp-max-passengers').value),
+          max_uses: Number(document.getElementById('rp-max-uses').value),
+          starts_at: new Date(document.getElementById('rp-starts-at').value).toISOString(),
+          expires_at: new Date(document.getElementById('rp-expires-at').value).toISOString()
+        };
+        await api('/mayahuel/tickets-admin/ride-promos', { method: 'POST', body: JSON.stringify(payload) });
+        showToast('🚘 Descuento de viaje creado');
+        event.target.reset();
+        document.getElementById('rp-min-passengers').value = '1';
+        document.getElementById('rp-max-passengers').value = '7';
+        document.getElementById('rp-max-uses').value = '100';
+        await cargarTickets();
+      } catch (err) {
+        errorEl.textContent = err.message;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
     document.querySelectorAll('.icon-preset').forEach(function(btn) {
       btn.addEventListener('click', function() {
         document.getElementById('f-icon').value = btn.getAttribute('data-icon');
       });
     });
+
+    function actualizarCategoriaTicket() {
+      var isRide = document.getElementById('f-category-kind').value === 'RIDE';
+      var category = document.getElementById('f-category');
+      var venue = document.getElementById('f-venue');
+      if (isRide && !venue.disabled) {
+        venue.dataset.allyVenue = venue.value;
+        venue.value = 'LuxRides';
+      } else if (!isRide && venue.disabled) {
+        venue.value = venue.dataset.allyVenue || '';
+      }
+      venue.disabled = isRide;
+      category.hidden = isRide;
+      category.required = !isRide;
+      document.getElementById('f-ride-note').hidden = !isRide;
+      var notify = document.getElementById('f-notify-customers');
+      notify.disabled = isRide;
+      if (isRide) {
+        notify.checked = false;
+        document.getElementById('f-icon').value = '🚘';
+      }
+      notify.closest('label').hidden = isRide;
+    }
+
+    document.getElementById('f-category-kind').addEventListener('change', actualizarCategoriaTicket);
 
     document.getElementById('ticket-form').addEventListener('submit', async function(event) {
       event.preventDefault();
@@ -397,20 +581,38 @@
           expiration_date: new Date(document.getElementById('f-expiration').value).toISOString(),
           notify_customers: document.getElementById('f-notify-customers').checked
         };
-        var createResult = await api('/mayahuel/tickets-admin/tickets', { method: 'POST', body: JSON.stringify(payload) });
+        var isRide = document.getElementById('f-category-kind').value === 'RIDE';
+        var path = '/mayahuel/tickets-admin/tickets';
+        if (isRide) {
+          path = '/mayahuel/tickets-admin/ride-promos';
+          payload = {
+            code: payload.code.toUpperCase(),
+            description: payload.description,
+            discount_type: payload.discount_type,
+            discount_value: payload.discount_value,
+            max_uses: payload.max_uses,
+            min_passengers: 1,
+            max_passengers: 7,
+            starts_at: new Date().toISOString(),
+            expires_at: payload.expiration_date
+          };
+        }
+        var createResult = await api(path, { method: 'POST', body: JSON.stringify(payload) });
         var delivery = createResult.notifications;
         if (payload.notify_customers && delivery) {
           showToast(delivery.sent
             ? 'Ticket creado; push enviado a ' + delivery.sent + ' cliente' + (delivery.sent === 1 ? '' : 's')
             : 'Ticket creado; no había clientes suscritos o no se pudo enviar.', delivery.failed > 0);
         } else {
-          showToast('🎟️ Ticket creado con éxito');
+          showToast(isRide ? '🚘 Ticket de viaje creado con éxito' : '🎟️ Ticket creado con éxito');
         }
         event.target.reset();
-        document.getElementById('f-venue').value = 'Mayahuel';
+        actualizarCategoriaTicket();
+        document.getElementById('f-venue').value = '';
         document.getElementById('f-icon').value = '🎟️';
         document.getElementById('f-max-uses').value = '100';
         await cargarTickets();
+        if (isRide) setTab('rides');
       } catch (err) {
         errorEl.textContent = err.message;
       } finally {

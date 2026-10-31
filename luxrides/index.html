@@ -1423,7 +1423,7 @@
       .promo-card-meta{margin-top:9px;color:#7a6740;font-size:.68rem;line-height:1.45;}
       .promo-card-state{display:inline-flex;margin-top:10px;padding:4px 8px;border-radius:999px;background:rgba(22,163,74,.13);color:#166534;font-size:.64rem;font-weight:800;text-transform:uppercase;}
       .promo-card.is-expired .promo-card-state{background:rgba(100,116,139,.14);color:#475569;}
-      .promo-card-action{width:100%;min-height:40px;margin-top:12px;border:0;border-radius:12px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font:800 .78rem 'Outfit',sans-serif;cursor:pointer;}
+      .promo-card-action{display:flex;align-items:center;justify-content:center;width:100%;min-height:40px;margin-top:12px;border:0;border-radius:12px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font:800 .78rem 'Outfit',sans-serif;text-decoration:none;cursor:pointer;}
       .promo-card-action:hover{filter:brightness(1.06);}
       .promo-card-action:active{transform:scale(.98);}
       .promo-state{grid-column:1/-1;padding:22px;border:1px dashed rgba(244,212,106,.3);border-radius:14px;color:#f6e6bd;font-size:.82rem;line-height:1.5;text-align:center;}
@@ -1850,6 +1850,14 @@
               <span class="price-label">Total</span>
               <span class="price-amount" id="r-precio">$0</span>
               <span class="price-currency">MXN</span>
+            </div>
+            <div class="field" style="margin-top:10px;">
+              <label class="lbl" for="ride-discount-code">Código de descuento para tu viaje</label>
+              <div style="display:flex;gap:8px;">
+                <input id="ride-discount-code" type="text" maxlength="50" placeholder="Ej: VIAJE10" autocomplete="off" style="flex:1;min-width:0;text-transform:uppercase;">
+                <button type="button" onclick="aplicarDescuentoViaje()" style="padding:0 14px;border:1px solid var(--gold);border-radius:8px;background:rgba(212,175,55,.14);color:var(--gold);font-weight:700;cursor:pointer;">Aplicar</button>
+              </div>
+              <div id="ride-discount-status" role="status" style="min-height:18px;margin-top:5px;font-size:.78rem;"></div>
             </div>
             <div class="field" id="payment-method-box" style="margin-top:8px;">
               <label class="lbl">Método de pago</label>
@@ -2599,6 +2607,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           trip_kind: datos.trip_kind || 'normal',
           metodo_pago: datos.metodo_pago || datos.payment_method || metodoPagoSeleccionado,
           payment_method: datos.payment_method || datos.metodo_pago || metodoPagoSeleccionado,
+          pasajeros: Number(datos.pasajeros || pasajeros),
+          discount_code: _ridePromoApplied &&
+            _ridePromoApplied.amount === Number(datos.total) &&
+            _ridePromoApplied.passengers === Number(pasajeros)
+            ? _ridePromoApplied.code
+            : '',
+          quote_token: _ridePromoApplied &&
+            _ridePromoApplied.amount === Number(datos.total) &&
+            _ridePromoApplied.passengers === Number(pasajeros)
+            ? _ridePromoApplied.quoteToken
+            : '',
           concierge_slug: datos.concierge_slug || slugSafe || null,
           booking_source: datos.booking_source || (slugSafe ? 'concierge_profile' : 'web')
         });
@@ -2802,6 +2821,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       let stripeCardCvc = null;
       let stripeMontoActual = 0;
       let stripeQuoteToken = '';
+      let _rideBaseQuoteToken = '';
       const CLIP_PAYMENT_URL = 'https://clip.mx/@Luxrides';
 
       const MEXICO_STATE_SUGGESTIONS = [
@@ -3655,6 +3675,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       function setPax(p){
         pasajeros = p;
+        limpiarDescuentoViaje();
         document.querySelectorAll('.btn-pax').forEach(b => b.classList.toggle('active', parseInt(b.dataset.pax)===p));
         buildPax();
         refreshRapidoUI();
@@ -3673,6 +3694,87 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       let _calculandoPrecio = false;
+      let _ridePromoApplied = null;
+      let _rideTicketCodePending = '';
+      let _rideTicketSyncPromise = null;
+      let _ridePromoRequestId = 0;
+      let _ridePromoValidating = false;
+
+      function limpiarDescuentoViaje() {
+        _ridePromoRequestId++;
+        _ridePromoValidating = false;
+        if (_ridePromoApplied && _rideBaseQuoteToken) stripeQuoteToken = _rideBaseQuoteToken;
+        _ridePromoApplied = null;
+        const status = document.getElementById('ride-discount-status');
+        if (status) {
+          status.textContent = '';
+          status.style.color = '';
+        }
+        if (resultado) {
+          const price = document.getElementById('r-precio');
+          if (price) price.textContent = '$' + Number(resultado.totalPrecio).toLocaleString('es-MX');
+        }
+      }
+
+      window.aplicarDescuentoViaje = async function() {
+        if (!resultado || !resultado.totalPrecio) {
+          mostrarToast('Primero calcula el precio del viaje.', 'err');
+          return;
+        }
+        const codeInput = document.getElementById('ride-discount-code');
+        const status = document.getElementById('ride-discount-status');
+        const code = String(codeInput.value || '').trim().toUpperCase();
+        if (!code) {
+          status.textContent = 'Escribe un código de descuento.';
+          status.style.color = '#ef4444';
+          return;
+        }
+        limpiarDescuentoViaje();
+        const requestId = _ridePromoRequestId;
+        const baseToken = _rideBaseQuoteToken;
+        _ridePromoValidating = true;
+        status.textContent = 'Validando descuento...';
+        status.style.color = '';
+        try {
+          if (!_rideBaseQuoteToken) throw new Error('Recalcula el precio antes de aplicar el descuento.');
+          const base = (window.LuxCfg && LuxCfg.apiBaseUrl ? LuxCfg.apiBaseUrl() : '') || 'https://luxrides.online';
+          const response = await fetch(base.replace(/\/+$/, '') + '/api/quotes/transfer/discount', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code, quoteToken: _rideBaseQuoteToken })
+          });
+          const data = await response.json().catch(function(){ return {}; });
+          if (requestId !== _ridePromoRequestId || baseToken !== _rideBaseQuoteToken) return;
+          if (!response.ok || !data.ok || !data.quote || !data.token) throw new Error(data.error || 'No se pudo validar el descuento.');
+          stripeQuoteToken = data.token;
+          _ridePromoApplied = {
+            code: data.quote.discountCode,
+            amount: Number(data.quote.originalAmountMx),
+            passengers: Number(pasajeros),
+            discount: Number(data.quote.discountAmountMx),
+            total: Number(data.quote.amountMx),
+            quoteToken: data.token
+          };
+          document.getElementById('r-precio').textContent = '$' + _ridePromoApplied.total.toLocaleString('es-MX');
+          status.textContent = 'Descuento de $' + _ridePromoApplied.discount.toLocaleString('es-MX') + ' aplicado. Pagarás $' + _ridePromoApplied.total.toLocaleString('es-MX') + ' MXN.';
+          status.style.color = '#22c55e';
+        } catch (error) {
+          if (requestId !== _ridePromoRequestId) return;
+          status.textContent = error.message;
+          status.style.color = '#ef4444';
+        } finally {
+          if (requestId === _ridePromoRequestId) _ridePromoValidating = false;
+        }
+      };
+      document.getElementById('ride-discount-code').addEventListener('input', function() {
+        limpiarDescuentoViaje();
+      });
+
+      function ticketViajeValidando() {
+        if (!_calculandoPrecio && !_ridePromoValidating && !_rideTicketSyncPromise) return false;
+        mostrarToast('Espera a que termine la validación del precio y del ticket.', 'err');
+        return true;
+      }
 
       function bloquearCamposCotizacion(bloquear) {
         const selector = '#inp-nombre,#inp-email,#inp-origen,#inp-destino,#inp-fecha,#inp-hora,#inp-min,#inp-aerolinea,#inp-vuelo,#inp-vuelo-salida,#inp-cliente-num,#stops input,#tyc-mini-check,.btn-toggle,.btn-pax,.btn-hour';
@@ -3704,6 +3806,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       function reservarEnEfectivo(){
+        if (ticketViajeValidando()) return;
         const user = window._getUser ? window._getUser() : null;
         if (!user) {
           mostrarToast('🔐 Inicia sesión para reservar y pagar.', 'err');
@@ -3956,6 +4059,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
       async function calcular(){
         if (_calculandoPrecio) return;
+        limpiarDescuentoViaje();
         const nombre=document.getElementById('inp-nombre').value.trim();
         document.getElementById('error-msg').style.display='none';
         if(!nombre){mostrarError('Por favor ingresa el nombre del cliente');return;}
@@ -4072,6 +4176,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             destinationText: coordDestino?.display || document.getElementById('inp-destino')?.value || ''
           });
           stripeQuoteToken = quoteOut.token;
+          _rideBaseQuoteToken = quoteOut.token;
           distanciaKm = quoteOut.quote.distanceKm || distanciaKm;
           duracionMin = quoteOut.quote.durationMin || duracionMin;
           casetasTotal = quoteOut.quote.tolls || casetasTotal;
@@ -4083,6 +4188,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
         resultado={distanciaKm,duracionMin,totalPrecio,casetasTotal};
         renderResults();
+        await aplicarTicketActivoAlViaje();
         } catch (calcError) {
           console.error('[Calcular viaje]', calcError);
           mostrarError(calcError.message || 'No se pudo calcular el viaje. Intenta otra vez.');
@@ -4270,6 +4376,9 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const trasladoTexto = tipoTraslado==='P' ? 'Pick Up' : 'Normal';
         const destinoReserva = coordDestino?.display || '';
 
+        const promoValido = _ridePromoApplied &&
+          _ridePromoApplied.amount === Number(resultado.totalPrecio) &&
+          _ridePromoApplied.passengers === Number(pasajeros);
         const lines=[
           '🚗 *RESERVA LUXRIDES VIP*',
           '─────────────────────────',
@@ -4290,7 +4399,8 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
           servicio==='I'?'🏁 *Hora est. llegada:* '+horaLleg:'',
           '👥 *Pasajeros:* '+pasajeros,
           '─────────────────────────',
-          '💰 *TOTAL: $'+resultado.totalPrecio.toLocaleString()+' MXN*',
+          promoValido ? '🎟️ *Descuento '+_ridePromoApplied.code+': -$'+_ridePromoApplied.discount.toLocaleString('es-MX')+' MXN*' : '',
+          '💰 *TOTAL: $'+(promoValido ? _ridePromoApplied.total : resultado.totalPrecio).toLocaleString('es-MX')+' MXN*',
         ].filter(l=>l!=='').join('\n');
 
         const numeroCentral = normalizarNumeroWhatsApp(WHATSAPP_CENTRAL);
@@ -4343,11 +4453,16 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       function pagarConClip() {
+        if (ticketViajeValidando()) return;
         if (!resultado || !resultado.totalPrecio) {
           alert('Primero calcula el precio del servicio.');
           return;
         }
-        const monto = resultado.totalPrecio.toLocaleString('es-MX');
+        const promoValido = _ridePromoApplied &&
+          _ridePromoApplied.amount === Number(resultado.totalPrecio) &&
+          _ridePromoApplied.passengers === Number(pasajeros);
+        const total = promoValido ? _ridePromoApplied.total : resultado.totalPrecio;
+        const monto = total.toLocaleString('es-MX');
         const confirmar = confirm('Serás redirigido a Clip.mx para pagar $' + monto + ' MXN.\n\n¿Deseas continuar?');
         if (!confirmar) return;
         window.open('https://clip.mx/@Luxrides', '_blank');
@@ -4364,13 +4479,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       }
 
       async function abrirPagoStripe(){
+        if (!_stripeTourContext && !window._stripeReservationContext && ticketViajeValidando()) return;
         const user = window._getUser ? window._getUser() : null;
         if (!user) {
           mostrarToast('🔐 Inicia sesión para pagar con tarjeta.', 'err');
           if (typeof abrirAuth === 'function') abrirAuth();
           return;
         }
-        var montoBase = _stripeTourContext ? _stripeTourContext.amount : ((resultado && resultado.totalPrecio) || window._stripeMonto);
+        var promoValido = _ridePromoApplied &&
+          _ridePromoApplied.amount === Number(resultado && resultado.totalPrecio) &&
+          _ridePromoApplied.passengers === Number(pasajeros);
+        var montoBase = _stripeTourContext ? _stripeTourContext.amount : (promoValido ? _ridePromoApplied.total : ((resultado && resultado.totalPrecio) || window._stripeMonto));
         if (!montoBase) {
           alert('Primero calcula el precio del servicio.');
           return;
@@ -4539,7 +4658,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               origen, destino,
               fecha: getFechaISO(),
               hora_recogida: document.getElementById('inp-hora').value + ':' + (document.getElementById('inp-min').value||'00').toString().padStart(2,'0') + ' ' + ampm,
-              total: stripeMontoActual,
+              total: _ridePromoApplied &&
+                _ridePromoApplied.amount === Number(resultado && resultado.totalPrecio) &&
+                _ridePromoApplied.passengers === Number(pasajeros)
+                ? _ridePromoApplied.amount
+                : stripeMontoActual,
               estado: 'pagado',
               servicio: _stripeTourContext ? 'G' : servicio,
               vehiculo: _stripeTourContext ? ('Tour · ' + _stripeTourContext.tarifaLabel) : (pasajeros <= 3 ? 'Sedán VIP Diamond' : 'SUV Platinum Diamond'),
@@ -5451,6 +5574,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
             if (inpN && !inpN.value && _perfilDatos && _perfilDatos.nombre_completo)
               inpN.value = _perfilDatos.nombre_completo;
             refrescarPushClienteSiPermitido();
+            setTimeout(restaurarTicketViaje, 0);
           }
           sbAuth.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session) {
@@ -5462,8 +5586,12 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
               if (inpN && _perfilDatos && _perfilDatos.nombre_completo)
                 inpN.value = _perfilDatos.nombre_completo;
               refrescarPushClienteSiPermitido();
+              setTimeout(restaurarTicketViaje, 0);
             } else if (event === 'SIGNED_OUT') {
               _userSesion = null; _perfilDatos = null;
+              _rideTicketCodePending = '';
+              limpiarDescuentoViaje();
+              document.getElementById('ride-discount-code').value = '';
               actualizarMiniAvatar();
             }
           });
@@ -6370,11 +6498,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
 
     document.addEventListener('DOMContentLoaded', function() {
       setTimeout(actualizarTopProfileCard, 100);
-      const ticketCode = new URLSearchParams(location.search).get('ticket');
+      const params = new URLSearchParams(location.search);
+      const ticketCode = params.get('promo') || params.get('ticket');
       if (ticketCode) {
         setTimeout(function() {
-          switchTab('pass');
-          abrirCanjeTicket(ticketCode);
+          prepararCodigoDescuento(ticketCode);
         }, 400);
       }
     });
@@ -6662,23 +6790,14 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         <div class="pass-hero">
           <div class="pass-hero-title">LuxRides<span>Promociones</span></div>
         </div>
-        <div class="pass-orbit"><span>🍽️</span><span>🎟️</span><span>🛒</span></div>
+        <div class="pass-orbit"><span>🚘</span><span>🎟️</span><span>💸</span></div>
         <div class="pass-content">
           <div class="pass-overview" id="pass-overview">
             <div class="pass-topline">
               <div class="pass-title"><small>Tickets para clientes</small>Promociones</div>
-              <button class="pass-ticket" id="pass-ticket-btn" type="button" onclick="abrirCanjeTicket()">🎟️ Canjear tickets</button>
+              <button class="pass-ticket" id="pass-ticket-btn" type="button" onclick="abrirCanjeTicket()">🎟️ Activar ticket de viaje</button>
             </div>
-            <div class="pass-grid pass-grid-single">
-              <section class="pass-card pass-restaurant" onclick="mostrarMayahuelCatalogo()">
-                <div class="pass-rest-logo">🍽️</div>
-                <div>
-                  <div class="pass-rest-name">Mayahuel</div>
-                  <div class="pass-rest-sub">Restaurante en San Francisco Mazapa, Teotihuacán. Reserva mesa antes o después de tu tour.</div>
-                </div>
-              </section>
-            </div>
-            <div class="pass-section-title">Tickets y promociones de todos nuestros aliados</div>
+            <div class="pass-section-title">Ofertas de transporte de la aplicación</div>
             <div class="promo-grid" id="public-promotions-grid" aria-live="polite">
               <div class="promo-state">Cargando promociones…</div>
             </div>
@@ -6732,19 +6851,13 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
     <div id="ticket-modal" class="ticket-modal">
       <div class="ticket-modal-card">
         <button class="ticket-modal-close" type="button" onclick="cerrarCanjeTicket()" aria-label="Cerrar">✕</button>
-        <div class="ticket-modal-title">🎟️ Canjear tickets</div>
-        <div class="ticket-modal-sub">Inicia sesión para validar tu código y recibir el comprobante con código de barras en tu correo.</div>
-        <form id="ticket-form" onsubmit="canjearTicket(event)">
-          <input id="ticket-code" type="text" placeholder="Código del ticket (ej: MAYAHUELVIP)" aria-label="Código del ticket" autocomplete="off" required />
-          <input id="ticket-name" type="text" placeholder="Nombre completo" aria-label="Nombre completo" autocomplete="name" required />
-          <input id="ticket-contact" type="email" placeholder="Correo donde recibir tu ticket" aria-label="Correo donde recibir tu ticket" autocomplete="email" required />
-          <button id="ticket-submit-btn" type="submit">Validar y canjear</button>
-        </form>
-        <div class="ticket-result" id="ticket-result"></div>
-        <div class="ticket-history">
-          <div class="ticket-history-title">Mis tickets canjeados</div>
-          <div id="ticket-history-list"></div>
-        </div>
+          <div class="ticket-modal-title">🎟️ Activar ticket de viaje</div>
+          <div class="ticket-modal-sub">Guarda un ticket en tu cuenta para descontar automáticamente tus viajes compatibles hasta vencer o agotar sus canjes. Activarlo no consume canjes. El último ticket activado reemplaza al anterior; no se acumulan descuentos.</div>
+          <form id="ticket-form" onsubmit="canjearTicket(event)">
+            <input id="ticket-code" type="text" placeholder="Código de descuento" aria-label="Código de descuento" autocomplete="off" required />
+            <button id="ticket-submit-btn" type="submit">Usar en mi viaje</button>
+          </form>
+          <div class="ticket-result" id="ticket-result"></div>
       </div>
     </div>
 
@@ -6885,14 +6998,17 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         const expiryText = Number.isNaN(expiration.getTime())
           ? ''
           : 'Vence ' + expiration.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+        const passengerText = Number(ticket.min_passengers) === Number(ticket.max_passengers)
+          ? Number(ticket.min_passengers) + ' pasajeros'
+          : Number(ticket.min_passengers) + '–' + Number(ticket.max_passengers) + ' pasajeros';
         return '<article class="promo-card' + (active ? '' : ' is-expired') + '">' +
           '<div class="promo-card-top"><div class="promo-card-icon" aria-hidden="true">' + escapePromotionHtml(ticket.icon || '🎟️') + '</div>' +
           '<div class="promo-card-copy"><div class="promo-card-venue">' + escapePromotionHtml(ticket.venue_name || 'LuxRides') + '</div>' +
           '<div class="promo-card-desc">' + escapePromotionHtml(ticket.description || '') + '</div></div></div>' +
           '<div class="promo-card-value">' + escapePromotionHtml(value) + '</div>' +
-          '<div class="promo-card-meta">' + escapePromotionHtml(ticket.category || 'Promoción') + (expiryText ? ' · ' + escapePromotionHtml(expiryText) : '') + '</div>' +
+          '<div class="promo-card-meta">Aplica para ' + escapePromotionHtml(passengerText) + ' · ' + Number(ticket.remaining_uses || 0) + ' usos disponibles' + (expiryText ? ' · ' + escapePromotionHtml(expiryText) : '') + '</div>' +
           '<span class="promo-card-state">' + (active ? 'Vigente' : 'No disponible') + '</span>' +
-          (active ? '<button class="promo-card-action" type="button" data-promo-code="' + escapePromotionHtml(ticket.code || '') + '">Canjear promoción</button>' : '') +
+          (active ? '<a class="promo-card-action" href="/?promo=' + encodeURIComponent(ticket.code || '') + '">Activar ticket de viaje</a>' : '') +
           '</article>';
       }).join('');
     }
@@ -6902,7 +7018,7 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       _promoLoadActive = true;
       const grid = document.getElementById('public-promotions-grid');
       try {
-        const response = await fetch(passApiBase() + '/api/mayahuel/promos/public', { headers: { Accept: 'application/json' } });
+        const response = await fetch(passApiBase() + '/api/rides/promos/public', { headers: { Accept: 'application/json' } });
         const result = await response.json().catch(function() { return {}; });
         if (!response.ok || !result.ok) throw new Error(result.error || 'No se pudieron cargar las promociones');
         const data = Array.isArray(result.data) ? result.data : [];
@@ -6916,11 +7032,6 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
         _promoLoadActive = false;
       }
     }
-
-    document.getElementById('public-promotions-grid')?.addEventListener('click', function(event) {
-      const button = event.target.closest('[data-promo-code]');
-      if (button) abrirCanjeTicket(button.getAttribute('data-promo-code'));
-    });
 
     function iniciarLuxPass() {
       const wrap = document.getElementById('pass-anim-wrap');
@@ -7092,29 +7203,109 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
     }
 
     function abrirCanjeTicket(codePrefill) {
-      if (!requerirSesionLuxRides()) return;
       const modal = document.getElementById('ticket-modal');
       if (!modal) return;
       const result = document.getElementById('ticket-result');
       if (result) { result.className = 'ticket-result'; result.textContent = ''; }
-      const user = window._getUser && window._getUser();
-      const perfil = window._getPerfil && window._getPerfil();
       const codeInp = document.getElementById('ticket-code');
-      const nameInp = document.getElementById('ticket-name');
-      const contactInp = document.getElementById('ticket-contact');
       if (codeInp && codePrefill) codeInp.value = codePrefill;
-      if (nameInp && !nameInp.value) nameInp.value = (perfil && perfil.nombre_completo) || '';
-      if (contactInp && !contactInp.value) contactInp.value = (user && user.email) || (document.getElementById('inp-email') ? document.getElementById('inp-email').value.trim() : '');
-      renderHistorialTickets();
       modal.classList.add('show');
     }
 
-    function requerirSesionLuxRides() {
-      const user = window._getUser && window._getUser();
-      if (user) return true;
-      mostrarToast('Inicia sesión para reservar o canjear tickets.', 'err');
-      if (typeof abrirAuth === 'function') abrirAuth();
-      return false;
+    async function sincronizarTicketViaje() {
+      if (_rideTicketSyncPromise) return _rideTicketSyncPromise;
+      _rideTicketSyncPromise = (async function() {
+        if (!window._luxAuth) throw new Error('El servicio de sesión no está disponible.');
+        const sessionResult = await window._luxAuth.auth.getSession();
+        if (sessionResult.error) throw sessionResult.error;
+        if (!sessionResult.data.session) return null;
+        const customerId = sessionResult.data.session.user.id;
+        const pending = _rideTicketCodePending;
+        const response = pending
+          ? await window._luxAuth.rpc('activate_luxrides_ride_ticket', { p_code: pending })
+          : await window._luxAuth.rpc('get_active_luxrides_ride_ticket');
+        if (response.error) {
+          if (_rideTicketCodePending === pending) _rideTicketCodePending = '';
+          throw response.error;
+        }
+        const currentSession = await window._luxAuth.auth.getSession();
+        if (currentSession.error) throw currentSession.error;
+        if (currentSession.data.session?.user.id !== customerId) {
+          throw new Error('La cuenta cambió. Vuelve a activar tu ticket.');
+        }
+        if (pending && !response.data?.[0]?.code) {
+          throw new Error('No se pudo guardar el ticket en tu cuenta.');
+        }
+        if (pending && _rideTicketCodePending === pending) _rideTicketCodePending = '';
+        return response.data && response.data[0] || null;
+      })();
+      try {
+        return await _rideTicketSyncPromise;
+      } finally {
+        _rideTicketSyncPromise = null;
+      }
+    }
+
+    async function restaurarTicketViaje() {
+      try {
+        const ticket = await sincronizarTicketViaje();
+        if (!ticket) {
+          limpiarDescuentoViaje();
+          document.getElementById('ride-discount-code').value = '';
+          return;
+        }
+        document.getElementById('ride-discount-code').value = ticket.code;
+        if (resultado && resultado.totalPrecio && !_calculandoPrecio) {
+          await window.aplicarDescuentoViaje();
+        }
+      } catch (error) {
+        console.error('[Restaurar ticket de viaje]', error);
+        mostrarToast('No se pudo recuperar tu ticket: ' + error.message, 'err');
+      }
+    }
+
+    async function aplicarTicketActivoAlViaje() {
+      try {
+        const ticket = await sincronizarTicketViaje();
+        if (!ticket) return;
+        document.getElementById('ride-discount-code').value = ticket.code;
+        await window.aplicarDescuentoViaje();
+      } catch (error) {
+        console.error('[Ticket de viaje]', error);
+        const status = document.getElementById('ride-discount-status');
+        status.textContent = 'No se pudo recuperar tu ticket: ' + error.message;
+        status.style.color = '#ef4444';
+      }
+    }
+
+    async function prepararCodigoDescuento(code) {
+      const normalized = String(code || '').trim().toUpperCase();
+      if (!normalized) {
+        mostrarToast('Escribe el código del ticket de viaje.', 'err');
+        return;
+      }
+      switchTab('inicio');
+      try {
+        if (_rideTicketSyncPromise) await _rideTicketSyncPromise;
+        _rideTicketCodePending = normalized;
+        const ticket = await sincronizarTicketViaje();
+        if (!ticket) {
+          mostrarToast('Inicia sesión para guardar y activar tu ticket de viaje.', 'err');
+          abrirAuth();
+          return;
+        }
+        document.getElementById('ride-discount-code').value = ticket.code;
+        mostrarToast('Ticket activado en tu cuenta. Se aplicará en tus viajes compatibles hasta vencer o agotar los canjes.');
+        if (resultado && resultado.totalPrecio && !_calculandoPrecio) {
+          await window.aplicarDescuentoViaje();
+        } else {
+          document.getElementById('inp-origen')?.focus({ preventScroll: true });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      } catch (error) {
+        console.error('[Activar ticket de viaje]', error);
+        mostrarToast('No se pudo activar el ticket: ' + error.message, 'err');
+      }
     }
 
     function cerrarCanjeTicket() {
@@ -7122,81 +7313,11 @@ const _SUPABASE_URL = (window.LuxCfg && LuxCfg.supabaseUrl()) || '';
       if (modal) modal.classList.remove('show');
     }
 
-    async function canjearTicket(event) {
+    function canjearTicket(event) {
       event.preventDefault();
-      const btn = document.getElementById('ticket-submit-btn');
-      const result = document.getElementById('ticket-result');
-      const payload = {
-        code: document.getElementById('ticket-code').value.trim(),
-        customer_name: document.getElementById('ticket-name').value.trim(),
-        customer_email: document.getElementById('ticket-contact').value.trim()
-      };
-      if (ticketYaCanjeado(payload.code)) {
-        if (result) {
-          result.textContent = '⚠️ Este código ya fue usado en este dispositivo y sólo se puede canjear una vez.';
-          result.className = 'ticket-result show err';
-        }
-        return;
-      }
-      if (btn) { btn.disabled = true; btn.textContent = 'Validando…'; }
-      if (result) { result.className = 'ticket-result'; result.textContent = ''; }
-      try {
-        const res = await fetch(passApiBase() + '/api/mayahuel/promos/redeem', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const body = await res.json().catch(function(){ return {}; });
-        if (!res.ok || !body.ok) throw new Error(body.error || 'No se pudo canjear el ticket');
-        const promoTitle = (body.redemption && body.redemption.promo_title) || 'Promoción Mayahuel';
-        const emailSent = body.email_status && body.email_status.ok;
-        if (result) {
-          result.textContent = emailSent
-            ? '✓ ' + promoTitle + ' aplicada. Revisa tu correo: ahí está tu código de barras para mostrar en el restaurante.'
-            : '✓ ' + promoTitle + ' aplicada. Muestra esta pantalla en el restaurante.';
-          result.className = 'ticket-result show ' + (emailSent ? 'ok' : 'err');
-        }
-        guardarTicketCanjeado(payload.code, promoTitle);
-        renderHistorialTickets();
-        mostrarToast('🎟️ Ticket canjeado con éxito');
-        event.target.reset();
-      } catch (error) {
-        if (result) {
-          result.textContent = '⚠️ ' + error.message;
-          result.className = 'ticket-result show err';
-        }
-      } finally {
-        if (btn) { btn.disabled = false; btn.textContent = 'Validar y canjear'; }
-      }
-    }
-
-    function historialTickets() {
-      try { return JSON.parse(localStorage.getItem('lux_ticket_redemptions') || '[]'); } catch (error) { return []; }
-    }
-
-    function ticketYaCanjeado(code) {
-      const normalized = String(code || '').trim().toUpperCase();
-      return historialTickets().some(function(ticket) { return ticket.code === normalized; });
-    }
-
-    function guardarTicketCanjeado(code, title) {
-      const tickets = historialTickets();
-      tickets.unshift({ code: String(code || '').trim().toUpperCase(), title: String(title || 'Ticket Mayahuel'), redeemedAt: new Date().toISOString() });
-      localStorage.setItem('lux_ticket_redemptions', JSON.stringify(tickets.slice(0, 12)));
-    }
-
-    function renderHistorialTickets() {
-      const list = document.getElementById('ticket-history-list');
-      if (!list) return;
-      const tickets = historialTickets();
-      if (!tickets.length) {
-        list.innerHTML = '<div class="ticket-history-empty">Aún no has canjeado tickets.</div>';
-        return;
-      }
-      list.innerHTML = tickets.map(function(ticket) {
-        const date = new Date(ticket.redeemedAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
-        return '<div class="ticket-history-item"><span>✕ ' + ticket.code + '</span><small>Usado · ' + date + '</small></div>';
-      }).join('');
+      const code = document.getElementById('ticket-code').value.trim();
+      cerrarCanjeTicket();
+      prepararCodigoDescuento(code);
     }
 
     document.addEventListener('lux:langchange', function() {

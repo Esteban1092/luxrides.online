@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { env } from '../config/env.js';
 import { createCancellationToken, enviarCorreoReserva, verifyCancellationToken } from '../services/email.service.js';
+import { decodeQuoteToken } from '../services/quote.service.js';
 
 const router = Router();
 
@@ -121,6 +122,8 @@ router.post('/reservas',
   body('email_cliente').optional({ checkFalsy: true }).isEmail().normalizeEmail(),
   body('email').optional({ checkFalsy: true }).isEmail().normalizeEmail(),
   body('total').optional().isFloat({ min: 0, max: 1_000_000 }),
+  body('discount_code').optional({ checkFalsy: true }).isString().trim().isLength({ min: 2, max: 50 }),
+  body('pasajeros').optional({ checkFalsy: true }).isInt({ min: 1, max: 100 }),
   body('fecha').optional().isString().isLength({ max: 30 }),
   body('metodo_pago').optional().isString().isLength({ max: 20 }),
   body('payment_method').optional().isString().isLength({ max: 20 }),
@@ -148,6 +151,9 @@ router.post('/reservas',
     }
 
     const reservaId = clean(body.reserva_id || body.reservaId) || 'LUX-' + Date.now();
+    const discountCode = clean(body.discount_code).toUpperCase();
+    const passengerCount = Number(body.pasajeros || body.passengers || 0);
+    const originalTotal = Number(body.total || 0);
     // Solo columnas que existen en la tabla Supabase (sin passenger_name, confirmation_code, customer, email)
     const payload = {
       reserva_id: reservaId,
@@ -160,7 +166,7 @@ router.post('/reservas',
       destino_lng: body.destino_lng ?? body.destination_lng ?? null,
       fecha: clean(body.fecha || body.booking_date || body.date),
       hora_recogida: clean(body.hora_recogida || body.pickup_time || body.hora || body.time),
-      total: Number(body.total || 0),
+      total: originalTotal,
       estado: clean(body.estado || 'pendiente') || 'pendiente',
       servicio: clean(body.servicio || body.service_kind || body.serviceKind),
       vehiculo: clean(body.vehiculo || body.vehicle),
@@ -174,6 +180,56 @@ router.post('/reservas',
       distancia_km: body.distancia_km ?? body.distance_km ?? null,
       duracion_min: body.duracion_min ?? body.duration_min ?? null
     };
+
+    let rideDiscount = null;
+    if (discountCode) {
+      if (!env.supabaseUrl || !env.supabaseServiceKey) {
+        return res.status(503).json({ ok: false, error: 'No se pueden aplicar descuentos de viaje en este momento.' });
+      }
+      if (!Number.isInteger(passengerCount) || passengerCount < 1 || originalTotal <= 0) {
+        return res.status(400).json({ ok: false, error: 'Faltan el número de pasajeros o el total válido para aplicar el descuento.' });
+      }
+      let signedQuote;
+      try {
+        signedQuote = decodeQuoteToken(String(body.quote_token || '').trim());
+      } catch {
+        return res.status(400).json({ ok: false, error: 'La cotización con descuento expiró. Recalcula el viaje y vuelve a intentarlo.' });
+      }
+      if (
+        signedQuote.type !== 'transfer' ||
+        String(signedQuote.discountCode || '').toUpperCase() !== discountCode ||
+        Number(signedQuote.passengers) !== passengerCount ||
+        Math.abs(Number(signedQuote.originalAmountMx) - originalTotal) > 0.01
+      ) {
+        return res.status(400).json({ ok: false, error: 'El descuento no coincide con la cotización del viaje.' });
+      }
+      const rows = await supabaseRequest('rpc/redeem_luxrides_ride_promo', {
+        method: 'POST',
+        headers: supabaseHeaders(),
+        body: JSON.stringify({
+          p_code: discountCode,
+          p_passengers: passengerCount,
+          p_amount: originalTotal,
+          p_reservation_id: reservaId
+        })
+      });
+      rideDiscount = rows?.[0];
+      if (!rideDiscount?.is_valid) {
+        return res.status(400).json({ ok: false, error: rideDiscount?.message || 'No se pudo aplicar el descuento.' });
+      }
+      if (Math.abs(Number(rideDiscount.discounted_total) - Number(signedQuote.amountMx)) > 0.01) {
+        await supabaseRequest('rpc/release_luxrides_ride_promo', {
+          method: 'POST',
+          headers: supabaseHeaders(),
+          body: JSON.stringify({ p_reservation_id: reservaId })
+        });
+        return res.status(409).json({ ok: false, error: 'El monto del descuento cambió. Recalcula el viaje antes de reservar.' });
+      }
+      payload.total_sin_descuento = originalTotal;
+      payload.codigo_descuento = rideDiscount.promo_code;
+      payload.monto_descuento = Number(rideDiscount.discount_amount);
+      payload.total = Number(rideDiscount.discounted_total);
+    }
 
     let persisted = null;
     let persistenceStatus = 'skipped';
@@ -193,6 +249,19 @@ router.post('/reservas',
       }
     } else {
       persisted = payload;
+    }
+
+    if (rideDiscount && persistenceStatus !== 'saved') {
+      try {
+        await supabaseRequest('rpc/release_luxrides_ride_promo', {
+          method: 'POST',
+          headers: supabaseHeaders(),
+          body: JSON.stringify({ p_reservation_id: reservaId })
+        });
+      } catch (releaseError) {
+        console.error('[reservas] no se pudo liberar el uso de promoción:', releaseError.message || releaseError);
+      }
+      return res.status(503).json({ ok: false, error: 'No se pudo guardar la reserva; el descuento no se aplicó. Intenta nuevamente.' });
     }
 
     const created = {

@@ -188,6 +188,21 @@ export function buildTransferQuote(input) {
   return { quote, token: encodeQuote(quote) };
 }
 
+export function buildDiscountedTransferQuote(baseQuote, discount) {
+  if (baseQuote?.type !== 'transfer' || !discount?.code) {
+    throw new Error('Cotización de viaje inválida para aplicar el descuento');
+  }
+  const quote = {
+    ...baseQuote,
+    amountMx: Number(discount.discountedTotal),
+    originalAmountMx: Number(baseQuote.amountMx),
+    discountCode: String(discount.code),
+    discountAmountMx: Number(discount.discountAmount),
+    expiresAt: Date.now() + (15 * 60 * 1000)
+  };
+  return { quote, token: encodeQuote(quote) };
+}
+
 export function buildReservationQuote(input) {
   const reservationId = String(input?.reservationId || '').trim();
   const userId = String(input?.userId || '').trim();

@@ -117,6 +117,22 @@ router.post('/stripe/pagar',
       const email = String(req.body?.email || '').trim();
 
       const quote = decodeQuoteToken(quoteToken);
+      if (quote.discountCode) {
+        const promoRows = await supabaseRequest('rpc/validate_luxrides_ride_promo', {
+          method: 'POST',
+          body: JSON.stringify({
+            p_code: quote.discountCode,
+            p_passengers: Number(quote.passengers),
+            p_amount: Number(quote.originalAmountMx)
+          })
+        });
+        if (!promoRows?.[0]?.is_valid) {
+          return res.status(409).json({
+            ok: false,
+            error: promoRows?.[0]?.message || 'El descuento de viaje ya no está disponible. Recalcula tu viaje.'
+          });
+        }
+      }
       if (quote.type === 'reservation') {
         const user = await getCustomerFromRequest(req);
         if (!user || String(user.id) !== String(quote.userId)) {

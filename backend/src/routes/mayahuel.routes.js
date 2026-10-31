@@ -401,6 +401,133 @@ router.get('/mayahuel/tickets-admin/list', requireTicketsAdminSession, async (re
   }
 });
 
+router.get('/mayahuel/tickets-admin/ride-promos', requireTicketsAdminSession, async (req, res, next) => {
+  try {
+    if (!env.supabaseUrl || !env.supabaseServiceKey) {
+      return res.status(503).json({ ok: false, error: 'Los descuentos de viajes no están disponibles.' });
+    }
+    const rows = await supabaseRequest('luxrides_ride_promotions?select=*&order=created_at.desc', { headers: supabaseHeaders() });
+    res.set('Cache-Control', 'no-store');
+    return res.json({ ok: true, data: rows || [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/mayahuel/tickets-admin/ride-promos', requireTicketsAdminSession,
+  body('code').isString().trim().matches(/^[a-z0-9_-]{2,50}$/i),
+  body('description').isString().trim().isLength({ min: 2, max: 200 }),
+  body('discount_type').isIn(['PERCENTAGE', 'FIXED_AMOUNT']),
+  body('discount_value').isFloat({ gt: 0, max: 1000000 }),
+  body('min_passengers').isInt({ min: 1, max: 100 }),
+  body('max_passengers').isInt({ min: 1, max: 100 }),
+  body('max_uses').isInt({ min: 1, max: 100000 }),
+  body('starts_at').isISO8601(),
+  body('expires_at').isISO8601(),
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    const minPassengers = Number(req.body.min_passengers);
+    const maxPassengers = Number(req.body.max_passengers);
+    const discountValue = Number(req.body.discount_value);
+    if (minPassengers > maxPassengers) {
+      return res.status(400).json({ ok: false, error: 'El mínimo de pasajeros no puede superar el máximo.' });
+    }
+    if (req.body.discount_type === 'PERCENTAGE' && discountValue > 100) {
+      return res.status(400).json({ ok: false, error: 'El descuento porcentual no puede superar 100%.' });
+    }
+    if (new Date(req.body.expires_at) <= new Date(req.body.starts_at)) {
+      return res.status(400).json({ ok: false, error: 'La fecha de vencimiento debe ser posterior al inicio.' });
+    }
+    try {
+      if (!env.supabaseUrl || !env.supabaseServiceKey) {
+        return res.status(503).json({ ok: false, error: 'La creación de descuentos no está disponible.' });
+      }
+      const payload = {
+        code: clean(req.body.code).toUpperCase(),
+        description: clean(req.body.description),
+        discount_type: clean(req.body.discount_type),
+        discount_value: discountValue,
+        min_passengers: minPassengers,
+        max_passengers: maxPassengers,
+        max_uses: Number(req.body.max_uses),
+        starts_at: new Date(req.body.starts_at).toISOString(),
+        expires_at: new Date(req.body.expires_at).toISOString(),
+        is_active: true
+      };
+      const rows = await supabaseRequest('luxrides_ride_promotions', {
+        method: 'POST',
+        headers: supabaseHeaders(true),
+        body: JSON.stringify(payload)
+      });
+      return res.status(201).json({ ok: true, data: rows?.[0] || payload });
+    } catch (error) {
+      if (error.status === 409 || /duplicate/i.test(String(error.message || ''))) {
+        return res.status(409).json({ ok: false, error: 'Ya existe un descuento con ese código.' });
+      }
+      console.error('[luxrides-ride-promo-create]', error.message);
+      return res.status(503).json({ ok: false, error: 'No se pudo crear el descuento. Verifica que la migración de descuentos de viajes esté aplicada.' });
+    }
+  }
+);
+
+router.patch('/mayahuel/tickets-admin/ride-promos/:id', requireTicketsAdminSession,
+  param('id').isUUID(),
+  body('is_active').isBoolean(),
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    try {
+      const rows = await supabaseRequest('luxrides_ride_promotions?id=eq.' + encodeURIComponent(req.params.id), {
+        method: 'PATCH',
+        headers: supabaseHeaders(true),
+        body: JSON.stringify({ is_active: req.body.is_active === true || req.body.is_active === 'true' })
+      });
+      if (!rows?.length) return res.status(404).json({ ok: false, error: 'Descuento no encontrado.' });
+      return res.json({ ok: true, data: rows[0] });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get('/rides/promos/public', async (req, res, next) => {
+  try {
+    if (!env.supabaseUrl || !env.supabaseServiceKey) {
+      return res.status(503).json({ ok: false, error: 'Las ofertas de transporte no están disponibles.' });
+    }
+    const rows = await supabaseRequest(
+      'luxrides_ride_promotions?select=code,description,discount_type,discount_value,min_passengers,max_passengers,max_uses,uses_count,starts_at,expires_at,is_active&order=created_at.desc',
+      { headers: supabaseHeaders() }
+    );
+    const now = Date.now();
+    const data = (rows || []).map((promo) => {
+      const active = Boolean(promo.is_active) &&
+        now >= new Date(promo.starts_at).getTime() &&
+        now <= new Date(promo.expires_at).getTime() &&
+        Number(promo.uses_count || 0) < Number(promo.max_uses || 0);
+      return {
+        code: promo.code,
+        venue_name: 'LuxRides',
+        description: promo.description,
+        category: 'Viajes LuxRides',
+        icon: '🚘',
+        discount_type: promo.discount_type,
+        discount_value: promo.discount_value,
+        expiration_date: promo.expires_at,
+        min_passengers: promo.min_passengers,
+        max_passengers: promo.max_passengers,
+        remaining_uses: Math.max(0, Number(promo.max_uses || 0) - Number(promo.uses_count || 0)),
+        status: active ? 'active' : 'expired'
+      };
+    });
+    res.set('Cache-Control', 'no-store');
+    return res.json({ ok: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/mayahuel/tickets-admin/tickets', requireTicketsAdminSession,
   body('code').isString().trim().isLength({ min: 2, max: 50 }),
   body('venue_name').isString().trim().isLength({ min: 2, max: 100 }),
