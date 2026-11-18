@@ -22,51 +22,119 @@
       <meta property="og:image" content="https://luxrides.online/logo-luxrides.png"/>
       <meta property="og:image:width" content="1200"/>
       <meta property="og:image:height" content="630"/>
+      <meta property="og:image:alt" content="LuxRides, transporte ejecutivo VIP en CDMX"/>
       <meta property="og:locale" content="es_MX"/>
 
       <meta name="twitter:card" content="summary_large_image"/>
       <meta name="twitter:title" content="LuxRides — Transporte Ejecutivo VIP en CDMX"/>
       <meta name="twitter:description" content="Chofer privado en CDMX. Sedán VIP y SUV de lujo. Reserva en línea en luxrides.online"/>
       <meta name="twitter:image" content="https://luxrides.online/logo-luxrides.png"/>
+      <meta name="twitter:image:alt" content="LuxRides, transporte ejecutivo VIP en CDMX"/>
 
       <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "LocalBusiness",
-        "name": "LuxRides",
-        "description": "Servicio de transporte ejecutivo de lujo en Ciudad de México. Sedán VIP y SUV para hasta 6 pasajeros. Choferes profesionales y traslados al aeropuerto.",
-        "url": "https://luxrides.online",
-        "logo": "https://luxrides.online/logo-luxrides.png",
-        "image": "https://luxrides.online/logo-luxrides.png",
-        "telephone": "+525527729551",
-        "email": "luxrides@luxrides.online",
-        "address": {
-          "@type": "PostalAddress",
-          "addressLocality": "Ciudad de México",
-          "addressRegion": "CDMX",
-          "addressCountry": "MX"
-        },
-        "geo": {
-          "@type": "GeoCoordinates",
-          "latitude": "19.4326",
-          "longitude": "-99.1332"
-        },
-        "areaServed": ["Ciudad de México", "CDMX", "Estado de México", "EDOMEX"],
-        "priceRange": "$$",
-        "openingHours": "Mo-Su 00:00-24:00",
-        "sameAs": [
-          "https://luxrides.online"
-        ],
-        "hasOfferCatalog": {
-          "@type": "OfferCatalog",
-          "name": "Servicios de transporte ejecutivo",
-          "itemListElement": [
-            { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Traslado por kilometraje CDMX" } },
-            { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Chofer por horas CDMX" } },
-            { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Traslado aeropuerto Ciudad de México" } },
-            { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Tours privados CDMX en SUV VIP" } }
-          ]
-        }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://luxrides.online/#website",
+            "url": "https://luxrides.online/",
+            "name": "LuxRides",
+            "alternateName": ["LuxRides México", "LuxRides CDMX"],
+            "description": "Sitio oficial para reservar transporte ejecutivo VIP, chofer privado, traslados al aeropuerto y tours en Ciudad de México.",
+            "inLanguage": "es-MX",
+            "publisher": { "@id": "https://luxrides.online/#business" }
+          },
+          {
+            "@type": "LocalBusiness",
+            "@id": "https://luxrides.online/#business",
+            "name": "LuxRides",
+            "alternateName": ["LuxRides México", "LuxRides CDMX"],
+            "description": "Plataforma de transporte ejecutivo VIP en Ciudad de México. Conecta pasajeros con conductores independientes para traslados privados, aeropuerto y tours.",
+            "url": "https://luxrides.online/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://luxrides.online/logo-luxrides.png",
+              "width": 1200,
+              "height": 630
+            },
+            "image": "https://luxrides.online/logo-luxrides.png",
+            "telephone": "+525527729551",
+            "email": "luxrides@luxrides.online",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Ciudad de México",
+              "addressRegion": "CDMX",
+              "addressCountry": "MX"
+            },
+            "geo": {
+              "@type": "GeoCoordinates",
+              "latitude": 19.4326,
+              "longitude": -99.1332
+            },
+            "areaServed": [
+              { "@type": "City", "name": "Ciudad de México" },
+              { "@type": "State", "name": "Estado de México" }
+            ],
+            "priceRange": "$$",
+            "openingHoursSpecification": {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday"
+              ],
+              "opens": "00:00",
+              "closes": "23:59"
+            },
+            "hasOfferCatalog": {
+              "@type": "OfferCatalog",
+              "name": "Servicios LuxRides",
+              "itemListElement": [
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "@id": "https://luxrides.online/#traslado-kilometraje",
+                    "name": "Traslado por kilometraje en CDMX",
+                    "serviceType": "Transporte ejecutivo"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "@id": "https://luxrides.online/#chofer-por-horas",
+                    "name": "Chofer por horas en CDMX",
+                    "serviceType": "Chofer privado"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "@id": "https://luxrides.online/#traslado-aeropuerto",
+                    "name": "Traslado al aeropuerto de Ciudad de México",
+                    "serviceType": "Traslado de aeropuerto"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "@id": "https://luxrides.online/#tours-privados",
+                    "name": "Tours privados en Ciudad de México",
+                    "serviceType": "Tour privado"
+                  }
+                }
+              ]
+            }
+          }
+        ]
       }
       </script>
       <link rel="icon" type="image/png" href="/logo-luxrides.png"/>
@@ -1671,8 +1739,8 @@
               </div>
               <span class="mini-profile-caret">⌄</span>
             </button>
-            <h1>LUXRIDES 3.7</h1>
-            <p>Transporte Ejecutivo VIP Nacional</p>
+            <h1>LuxRides</h1>
+            <p>Transporte Ejecutivo VIP en CDMX</p>
           </div>
 
           <div class="service-note" style="background:rgba(239,68,68,0.10);border:1.5px solid #EF4444;color:#991b1b;font-weight:600;margin-bottom:18px;">
